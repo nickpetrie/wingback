@@ -1,0 +1,26 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+function format(msRemaining: number): string {
+  if (msRemaining <= 0) return "locked";
+  const totalMinutes = Math.floor(msRemaining / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+export function Countdown({ lockAt }: { lockAt: string }) {
+  const target = new Date(lockAt).getTime();
+  const [label, setLabel] = useState(() => format(target - Date.now()));
+
+  useEffect(() => {
+    const id = setInterval(() => setLabel(format(target - Date.now())), 30_000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  return <span>{label}</span>;
+}
