@@ -147,15 +147,8 @@ export default async function DashboardPage() {
 
       {gameweek && (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0,1.15fr) minmax(0,1fr)",
-              gap: 0,
-              borderBottom: "2px solid var(--color-divider)",
-            }}
-          >
-            <section style={{ borderRight: "2px solid var(--color-divider)", padding: "24px 24px 24px 0" }}>
+          <div className="wb-home-split">
+            <section className="wb-home-split-left">
               <h6 style={{ margin: "0 0 12px" }}>Your pick</h6>
               {gameweek.state === "open" && pickForm ? (
                 <PickForm
@@ -246,7 +239,7 @@ export default async function DashboardPage() {
               )}
             </section>
 
-            <section style={{ padding: "24px 0 24px 24px" }}>
+            <section className="wb-home-split-right">
               <h6 style={{ margin: "0 0 12px" }}>The other four</h6>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--color-divider)" }}>
                 {others.map((o) => (
@@ -319,17 +312,7 @@ export default async function DashboardPage() {
               fixtures.map((f) => {
                 const chips = picks.filter((p) => p.team_id === f.team_h || p.team_id === f.team_a);
                 return (
-                  <div
-                    key={f.id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "180px 92px 1fr",
-                      gap: 16,
-                      alignItems: "center",
-                      padding: "11px 0",
-                      borderBottom: "1px solid var(--color-divider)",
-                    }}
-                  >
+                  <div key={f.id} className="wb-fixture-row">
                     <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>
                       <TeamBadge code={f.home_code} /> {f.home} v {f.away} <TeamBadge code={f.away_code} />
                     </span>

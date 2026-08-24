@@ -400,6 +400,52 @@ img {
   }
 }
 
+/* — Home's "Your pick" / "The other four" split, and each fixture row —
+   viewport-bound (unlike PickForm, which is embedded at different widths
+   depending on the page, these sit directly on Home), so a plain media
+   query is enough; no container-query indirection needed. — */
+.wb-home-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 0;
+  border-bottom: 2px solid var(--color-divider);
+}
+.wb-home-split-left {
+  border-right: 2px solid var(--color-divider);
+  padding: 24px 24px 24px 0;
+}
+.wb-home-split-right {
+  padding: 24px 0 24px 24px;
+}
+@media (max-width: 720px) {
+  .wb-home-split {
+    grid-template-columns: 1fr;
+  }
+  .wb-home-split-left {
+    border-right: none;
+    border-bottom: 2px solid var(--color-divider);
+    padding: 0 0 24px;
+  }
+  .wb-home-split-right {
+    padding: 24px 0 0;
+  }
+}
+.wb-fixture-row {
+  display: grid;
+  grid-template-columns: 180px 92px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+@media (max-width: 560px) {
+  .wb-fixture-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 10px 0;
+  }
+}
+
 /* — app-specific animation, not part of the shipped Modernist system — */
 @keyframes wb-in {
   from {

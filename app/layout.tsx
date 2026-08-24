@@ -11,6 +11,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://wingbacksweepstake.website"),
   title: "Wingback",
   description: "Season-long Premier League goalscorer sweepstake",
 };

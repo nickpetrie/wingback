@@ -39,32 +39,44 @@ export function Header({
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--color-bg)" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          padding: "14px 24px",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontWeight: 800,
-            fontSize: 20,
-            letterSpacing: "-.02em",
-            color: "var(--color-accent)",
-            textDecoration: "none",
-          }}
-        >
-          WINGBACK
-        </Link>
+      <div style={{ padding: "14px 24px 12px", maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <Link
+            href="/"
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontWeight: 800,
+              fontSize: 20,
+              letterSpacing: "-.02em",
+              color: "var(--color-accent)",
+              textDecoration: "none",
+            }}
+          >
+            WINGBACK
+          </Link>
+
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
+            <button
+              type="button"
+              className="btn btn-ghost wb-tap"
+              style={{ fontSize: 12 }}
+              onClick={() => signOut()}
+            >
+              Sign out
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary wb-tap"
+              style={{ fontSize: 13 }}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? "Close" : "Menu"}
+            </button>
+          </span>
+        </div>
 
         {gameweek && (
-          <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
             <span
               style={{
                 background: "var(--color-text)",
@@ -100,27 +112,8 @@ export function Header({
                 "not scheduled yet"
               )}
             </span>
-          </>
+          </div>
         )}
-
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            type="button"
-            className="btn btn-ghost wb-tap"
-            style={{ fontSize: 12 }}
-            onClick={() => signOut()}
-          >
-            Sign out
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary wb-tap"
-            style={{ fontSize: 13 }}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? "Close" : "Menu"}
-          </button>
-        </span>
       </div>
 
       {menuOpen && (
