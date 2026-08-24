@@ -61,9 +61,25 @@ export interface FplLive {
   elements: FplLiveElement[];
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+// FPL's edge (Incapsula/Cloudflare-ish) blocks requests that don't look
+// like a browser: a bare Deno `fetch()` with no User-Agent gets a flat 403,
+// even on endpoints that otherwise work fine (seen in practice: /fixtures/
+// blocked while /bootstrap-static/ in the same run succeeded). A retry is
+// also worth it here — this call only gets an hourly cron shot at success,
+// so a single transient block shouldn't cost a full hour of staleness.
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  Accept: "application/json",
+};
+
+async function getJson<T>(path: string, attempt = 1): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { headers: BROWSER_HEADERS });
   if (!res.ok) {
+    if ((res.status === 403 || res.status === 429 || res.status >= 500) && attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+      return getJson<T>(path, attempt + 1);
+    }
     throw new Error(`FPL API ${path} responded ${res.status}`);
   }
   return res.json() as Promise<T>;
