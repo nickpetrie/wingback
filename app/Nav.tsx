@@ -6,6 +6,7 @@ import { LeaderboardStrip } from "./LeaderboardStrip";
 import { GameweekStatusBar } from "./GameweekStatusBar";
 
 const LINKS = [
+  { href: "/", label: "Home", icon: "🏠" },
   { href: "/pick", label: "Pick", icon: "⚽" },
   { href: "/album", label: "Album", icon: "🗂️" },
   { href: "/leaderboard", label: "Leaderboard", icon: "🏆" },
@@ -31,9 +32,9 @@ export async function Nav() {
       <div className="bg-gradient-to-r from-pitch-900 via-pitch-800 to-pitch-700 px-4 py-3">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div className="flex items-center gap-1 overflow-x-auto">
-            <span className="mr-2 shrink-0 text-lg font-extrabold tracking-tight text-gold-400">
+            <Link href="/" className="mr-2 shrink-0 text-lg font-extrabold tracking-tight text-gold-400">
               Wingback
-            </span>
+            </Link>
             {LINKS.map((link) => (
               <Link
                 key={link.href}
