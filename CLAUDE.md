@@ -89,7 +89,17 @@ reading the project URL and service key from Supabase Vault at call time.
   run `supabase gen types` against; keep it in sync by hand and don't
   drop the `Relationships` field on any table/view, or every derived
   query type quietly collapses to `never`).
-- `app/pick`, `app/album`, `app/leaderboard` — the three main views.
+- `app/page.tsx` (home), `app/pick`, `app/leaderboard` — the three main
+  views. There's no standalone `/album` route: each entrant's 38-gameweek
+  season record is folded into their expandable row on `/leaderboard`
+  (`app/leaderboard/LeaderboardTable.tsx`), not a separate page.
+- `app/Header.tsx` (+ `app/Nav.tsx` as its async data-fetching wrapper) is
+  the one persistent chrome element — wordmark, gameweek/countdown, menu,
+  and the always-visible standings strip — replacing what used to be three
+  separate components (`GameweekStatusBar`, `LeaderboardStrip`, plus
+  `Nav`'s old nav-only role). `app/GoalToasts.tsx` mounts inside it, gated
+  on the gameweek being locked, and subscribes to Supabase Realtime on
+  `picks` UPDATEs to fire a toast when someone's `goals` increases.
 - `app/api/player-image/[code]/route.ts` — fetches the official headshot
   server-side, posterises it onto the club colour with `sharp`, falls back
   to a procedural monogram card (never an AI-generated likeness) when

@@ -29,18 +29,20 @@ export default async function OnboardingPage() {
     : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-extrabold text-foreground">Hi, {entrant.display_name}!</h1>
-        <p className="mt-1 text-sm text-foreground/50">A few quick steps before you&rsquo;re in.</p>
+    <main className="wb-in" style={{ maxWidth: 480, margin: "0 auto", padding: "56px 24px 0" }}>
+      <h1 style={{ margin: 0, fontSize: 38, letterSpacing: "-.02em" }}>Hi, {entrant.display_name}!</h1>
+      <p style={{ margin: "8px 0 0", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+        A few quick steps before you&rsquo;re in.
+      </p>
+      <div style={{ marginTop: 24, borderTop: "2px solid var(--color-divider)", paddingTop: 24 }}>
+        <OnboardingForm
+          entrantId={entrant.id}
+          initials={initials}
+          initialPhone={entrant.phone ?? ""}
+          players={players}
+          initialNomination={initialNomination}
+        />
       </div>
-      <OnboardingForm
-        entrantId={entrant.id}
-        initials={initials}
-        initialPhone={entrant.phone ?? ""}
-        players={players}
-        initialNomination={initialNomination}
-      />
     </main>
   );
 }

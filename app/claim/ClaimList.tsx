@@ -29,29 +29,44 @@ export function ClaimList({ profiles }: { profiles: Profile[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div>
       {profiles.map((p) => (
         <button
           key={p.id}
           type="button"
           disabled={p.claimed || isPending}
           onClick={() => claim(p.id)}
-          className="flex items-center justify-between rounded-2xl border border-foreground/10 bg-surface px-5 py-4 text-left shadow-sm backdrop-blur-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-pitch-500 enabled:hover:bg-white/5"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            width: "100%",
+            padding: "16px 0",
+            background: "none",
+            border: 0,
+            borderBottom: "1px solid var(--color-divider)",
+            textAlign: "left",
+            fontFamily: "var(--font-body)",
+            color: "var(--color-text)",
+            cursor: p.claimed || isPending ? "not-allowed" : "pointer",
+            opacity: p.claimed ? 0.45 : 1,
+          }}
         >
-          <span className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">{p.display_name}</span>
-            {p.stars > 0 && (
-              <span aria-label={`${p.stars} title${p.stars > 1 ? "s" : ""}`}>
-                {"⭐".repeat(p.stars)}
-              </span>
-            )}
+          <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 20 }}>{p.display_name}</span>
+            {p.stars > 0 && <span style={{ fontSize: 12 }}>{"★".repeat(p.stars)}</span>}
           </span>
-          <span className="text-sm text-foreground/40">
+          <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
             {p.claimed ? "Claimed" : pendingId === p.id && isPending ? "Claiming…" : "This is me"}
           </span>
         </button>
       ))}
-      {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {error && (
+        <p style={{ marginTop: 12, background: "var(--color-accent-100)", color: "var(--color-accent-800)", fontSize: 13, padding: "8px 10px", borderLeft: "3px solid var(--color-accent)" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

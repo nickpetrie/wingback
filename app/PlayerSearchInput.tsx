@@ -34,16 +34,31 @@ export function PlayerSearchInput({
   }, [query, players]);
 
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
       <input
         type="text"
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-full border border-foreground/15 bg-surface px-4 py-2.5 text-sm text-foreground shadow-sm placeholder:text-foreground/40 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+        className="input"
       />
       {matches.length > 0 && (
-        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-foreground/10 bg-pitch-900 shadow-lg">
+        <ul
+          style={{
+            position: "absolute",
+            zIndex: 10,
+            marginTop: 1,
+            maxHeight: 288,
+            width: "100%",
+            overflow: "auto",
+            border: "1px solid var(--color-divider)",
+            borderTop: "none",
+            background: "var(--color-bg)",
+            boxShadow: "var(--shadow-md)",
+            listStyle: "none",
+            padding: 0,
+          }}
+        >
           {matches.map((p) => (
             <li key={p.code}>
               <button
@@ -52,13 +67,31 @@ export function PlayerSearchInput({
                   onSelect(p);
                   setQuery("");
                 }}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-foreground hover:bg-white/5"
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  textAlign: "left",
+                  fontSize: 14,
+                  background: "none",
+                  border: 0,
+                  borderBottom: "1px solid var(--color-divider)",
+                  color: "var(--color-text)",
+                  cursor: "pointer",
+                }}
               >
                 <span>
-                  {p.web_name} <span className="text-foreground/40">· {p.team_short_name}</span>
+                  {p.web_name}{" "}
+                  <span style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    · {p.team_short_name}
+                  </span>
                 </span>
                 {p.status !== "a" && (
-                  <span className="text-xs text-gold-400">{STATUS_LABEL[p.status] ?? p.status}</span>
+                  <span style={{ fontSize: 12, color: "var(--color-accent-700)" }}>
+                    {STATUS_LABEL[p.status] ?? p.status}
+                  </span>
                 )}
               </button>
             </li>

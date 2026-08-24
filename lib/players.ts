@@ -7,6 +7,7 @@ export interface PlayerOption {
   code: number;
   web_name: string;
   full_name: string;
+  team_id: number;
   team_short_name: string;
   team_code: number | null;
   element_type: number;
@@ -28,6 +29,7 @@ export async function loadPlayers(
     code: p.code,
     web_name: p.web_name,
     full_name: `${p.first_name} ${p.second_name}`,
+    team_id: p.team_id,
     team_short_name: p.teams?.short_name ?? "",
     team_code: p.teams?.code ?? null,
     element_type: p.element_type,
