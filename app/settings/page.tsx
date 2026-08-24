@@ -23,18 +23,18 @@ export default async function SettingsPage() {
     : null;
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-extrabold text-foreground">Settings</h1>
-      <div className="mt-4">
-        <SettingsForm
-          entrantId={entrant.id}
-          displayName={entrant.display_name}
-          initialPhone={entrant.phone ?? ""}
-          initialSmsOptIn={entrant.sms_opt_in}
-          players={players}
-          initialNomination={initialNomination}
-        />
+    <main className="wb-in" style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px 64px" }}>
+      <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 10 }}>
+        <h1 style={{ margin: 0 }}>Settings</h1>
       </div>
+      <SettingsForm
+        entrantId={entrant.id}
+        displayName={entrant.display_name}
+        initialPhone={entrant.phone ?? ""}
+        initialSmsOptIn={entrant.sms_opt_in}
+        players={players}
+        initialNomination={initialNomination}
+      />
     </main>
   );
 }

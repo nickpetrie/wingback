@@ -51,74 +51,72 @@ export default function LoginPage() {
       setError(error.message);
       return;
     }
-    router.push("/pick");
+    router.push("/");
     router.refresh();
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-6">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-pitch-600/25 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-gold-500/10 blur-3xl"
-      />
-      <div className="relative w-full max-w-sm rounded-3xl border border-foreground/10 bg-surface-strong p-8 shadow-xl backdrop-blur-md">
-        <div className="mb-6 text-center">
-          <p className="text-3xl">⚽</p>
-          <h1 className="mt-2 text-2xl font-extrabold text-foreground">Wingback</h1>
-          <p className="mt-1 text-sm text-foreground/50">Sign in with your email — no password needed.</p>
-        </div>
+    <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: 24 }}>
+      <div style={{ width: "100%", maxWidth: 360, margin: "0 auto" }}>
+        <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 24, letterSpacing: "-.02em", color: "var(--color-accent)" }}>
+          WINGBACK
+        </span>
+        <p style={{ margin: "8px 0 24px", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+          Sign in with your email — no password needed.
+        </p>
 
         {step === "email" ? (
-          <form onSubmit={sendCode} className="flex flex-col gap-3">
-            <input
-              type="email"
-              required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-full border border-foreground/15 bg-cream px-4 py-2.5 text-sm text-pitch-900 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
-            />
-            <button
-              type="submit"
-              disabled={status === "working"}
-              className="rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-pitch-900 shadow-sm transition-colors hover:bg-gold-400 disabled:opacity-50"
-            >
+          <form onSubmit={sendCode} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="field">
+              <label htmlFor="wb-email">Email</label>
+              <input
+                id="wb-email"
+                className="input"
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary wb-tap" disabled={status === "working"}>
               {status === "working" ? "Sending…" : "Send code"}
             </button>
-            {status === "error" && <p className="text-sm text-red-400">{error}</p>}
+            {status === "error" && (
+              <p style={{ margin: 0, background: "var(--color-accent-100)", color: "var(--color-accent-800)", fontSize: 12, padding: "8px 10px", borderLeft: "3px solid var(--color-accent)" }}>
+                {error}
+              </p>
+            )}
           </form>
         ) : (
-          <form onSubmit={verifyCode} className="flex flex-col gap-3">
-            <p className="rounded-xl bg-surface p-3 text-sm text-foreground/70">
-              Check your email — enter the 6-digit code it contains below. (You can also click the
-              link in that email instead, if you&rsquo;d rather.)
+          <form onSubmit={verifyCode} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ margin: 0, fontSize: 13, background: "var(--color-surface)", padding: 12, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+              Check your email — enter the 6-digit code it contains below. (You can also click the link in that
+              email instead, if you&rsquo;d rather.)
             </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              required
-              placeholder="123456"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="rounded-full border border-foreground/15 bg-cream px-4 py-2.5 text-center text-lg tracking-[0.3em] text-pitch-900 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
-            />
-            <button
-              type="submit"
-              disabled={status === "working"}
-              className="rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-pitch-900 shadow-sm transition-colors hover:bg-gold-400 disabled:opacity-50"
-            >
+            <div className="field">
+              <label htmlFor="wb-code">Code</label>
+              <input
+                id="wb-code"
+                className="input"
+                type="text"
+                inputMode="numeric"
+                required
+                placeholder="123456"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                style={{ textAlign: "center", fontSize: 18, letterSpacing: "0.3em" }}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary wb-tap" disabled={status === "working"}>
               {status === "working" ? "Verifying…" : "Verify"}
             </button>
-            {status === "error" && <p className="text-sm text-red-400">{error}</p>}
-            <button
-              type="button"
-              onClick={() => setStep("email")}
-              className="text-sm text-foreground/50 underline"
-            >
+            {status === "error" && (
+              <p style={{ margin: 0, background: "var(--color-accent-100)", color: "var(--color-accent-800)", fontSize: 12, padding: "8px 10px", borderLeft: "3px solid var(--color-accent)" }}>
+                {error}
+              </p>
+            )}
+            <button type="button" className="btn btn-ghost wb-tap" onClick={() => setStep("email")}>
               Use a different email
             </button>
           </form>

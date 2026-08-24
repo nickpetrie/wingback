@@ -36,8 +36,21 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-pitch-100 text-2xl font-bold text-pitch-700">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+      <div
+        style={{
+          width: 72,
+          height: 72,
+          display: "grid",
+          placeItems: "center",
+          overflow: "hidden",
+          background: "var(--color-neutral-200)",
+          fontFamily: "var(--font-heading)",
+          fontWeight: 800,
+          fontSize: 24,
+          color: "var(--color-neutral-700)",
+        }}
+      >
         {broken ? (
           initials
         ) : (
@@ -45,16 +58,24 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
           <img
             src={`${avatarUrl(entrantId)}?v=${version}`}
             alt=""
-            className="h-full w-full object-cover"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={() => setBroken(true)}
           />
         )}
       </div>
-      <label className="cursor-pointer rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-400 hover:bg-gold-500/25">
-        {status === "uploading" ? "Uploading…" : broken ? "Add a photo" : "Change photo"}
-        <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={status === "uploading"} />
+      <label>
+        <span className="btn btn-secondary wb-tap" style={{ cursor: "pointer" }}>
+          {status === "uploading" ? "Uploading…" : broken ? "Add a photo" : "Change photo"}
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleFile}
+          disabled={status === "uploading"}
+        />
       </label>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p style={{ fontSize: 13, color: "var(--color-accent-700)" }}>{error}</p>}
     </div>
   );
 }

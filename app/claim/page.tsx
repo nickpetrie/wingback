@@ -20,13 +20,14 @@ export default async function ClaimPage() {
   }));
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
-      <div className="text-center">
-        <p className="text-3xl">⚽</p>
-        <h1 className="mt-2 text-2xl font-extrabold text-foreground">Which one are you?</h1>
-        <p className="mt-1 text-sm text-foreground/50">Claim your profile to get started.</p>
+    <main className="wb-in" style={{ maxWidth: 560, margin: "0 auto", padding: "56px 24px 0" }}>
+      <h1 style={{ margin: 0, fontSize: 44, letterSpacing: "-.03em" }}>Which one are you?</h1>
+      <p style={{ margin: "8px 0 0", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+        Five names, five seasons of evidence. Claim yours.
+      </p>
+      <div style={{ marginTop: 28, borderTop: "2px solid var(--color-divider)" }}>
+        <ClaimList profiles={profiles} />
       </div>
-      <ClaimList profiles={profiles} />
     </main>
   );
 }
