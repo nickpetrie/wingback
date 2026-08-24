@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getStarCounts } from "@/lib/winners";
+import { teamColor } from "@/lib/teamColors";
+import { LeaderboardTable, type BoardRow, type SeasonCell } from "./LeaderboardTable";
+
+const TOTAL_GAMEWEEKS = 38;
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -7,93 +11,104 @@ export default async function LeaderboardPage() {
   const { data: leaderboard } = await supabase
     .from("leaderboard")
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
-
   const starCounts = await getStarCounts(supabase);
 
-  // Picks for the most recently locked gameweek. RLS does the actual work
-  // here: a still-open gameweek's rows for other entrants simply won't come
-  // back, so there's no separate "is it locked yet" branch to get wrong.
-  const { data: latestLocked } = await supabase
-    .from("gameweeks")
-    .select("id")
-    .not("lock_at", "is", null)
-    .lte("lock_at", new Date().toISOString())
-    .order("id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data: gameweeks } = await supabase.from("gameweeks").select("id, finished");
+  const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));
 
-  const { data: revealedPicks } = latestLocked
-    ? await supabase
-      .from("picks")
-      .select("entrant_id, stake, goals, entrants(display_name), players(web_name, teams(short_name))")
-      .eq("gameweek", latestLocked.id)
-    : { data: null };
+  const { data: allPicks } = await supabase
+    .from("picks")
+    .select("entrant_id, gameweek, player_code, stake, goals, players(web_name, teams(short_name))");
+
+  const rows: BoardRow[] = (leaderboard ?? [])
+    .slice()
+    .sort((a, b) => b.total_points - a.total_points || b.scoring_gameweeks - a.scoring_gameweeks)
+    .map((entrant, i, sorted) => {
+      const mine = (allPicks ?? []).filter((p) => p.entrant_id === entrant.entrant_id);
+      const byGw = new Map(mine.map((p) => [p.gameweek, p]));
+
+      const album: SeasonCell[] = Array.from({ length: TOTAL_GAMEWEEKS }, (_, gwIndex) => {
+        const gw = gwIndex + 1;
+        const pick = byGw.get(gw);
+        if (!pick || !pick.players) return { state: "empty", gw };
+
+        const finished = finishedByGw.get(gw) ?? false;
+        if (!finished) return { state: "pending", gw, playerCode: pick.player_code, webName: pick.players.web_name };
+
+        const hat = pick.goals >= 3;
+        return {
+          state: pick.goals > 0 ? "scored" : "blanked",
+          gw,
+          playerCode: pick.player_code,
+          webName: pick.players.web_name,
+          teamColor: teamColor(pick.players.teams?.short_name ?? ""),
+          goals: pick.goals,
+          stake: pick.stake,
+          hat,
+        };
+      });
+
+      // Trailing streak of finished, scoreless gameweeks — the one bit of
+      // "banter" copy that's actually derived from real data rather than
+      // invented, per the design chat's confirmed banter:true setting.
+      let blankStreak = 0;
+      for (let gw = TOTAL_GAMEWEEKS; gw >= 1; gw--) {
+        if (!(finishedByGw.get(gw) ?? false)) continue;
+        const pick = byGw.get(gw);
+        if (!pick) break;
+        if (pick.goals > 0) break;
+        blankStreak++;
+      }
+      const note =
+        blankStreak >= 2
+          ? `${blankStreak} blanks running`
+          : i === 0
+            ? "top of the pile"
+            : i === sorted.length - 1
+              ? "battling the wooden spoon"
+              : "";
+
+      const stars = starCounts.get(entrant.entrant_id) ?? 0;
+      const totalPicks = mine.length;
+
+      return {
+        entrant_id: entrant.entrant_id,
+        rank: i + 1,
+        name: entrant.display_name,
+        stars,
+        note,
+        points: entrant.total_points,
+        scoring: entrant.scoring_gameweeks,
+        album,
+        summary: `${entrant.scoring_gameweeks} scoring gameweeks from ${totalPicks} pick${totalPicks === 1 ? "" : "s"}. ${
+          stars > 0 ? `${stars} title${stars > 1 ? "s" : ""} on the shirt.` : "Still waiting on a first title."
+        }`,
+      };
+    });
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-extrabold text-foreground">Leaderboard</h1>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-foreground/10 bg-surface shadow-sm backdrop-blur-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-black/20 text-left text-xs uppercase tracking-wide text-foreground/50">
-              <th className="px-4 py-3 font-medium">Entrant</th>
-              <th className="px-4 py-3 text-right font-medium">Points</th>
-              <th className="px-4 py-3 text-right font-medium">Scoring GWs</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(leaderboard ?? []).map((row, i) => (
-              <tr key={row.entrant_id} className="border-t border-foreground/5">
-                <td className="px-4 py-3 font-medium text-foreground">
-                  {i === 0 && "🏆 "}
-                  {row.display_name}
-                  {(starCounts.get(row.entrant_id) ?? 0) > 0 && (
-                    <span
-                      className="ml-1"
-                      aria-label={`${starCounts.get(row.entrant_id)} title${starCounts.get(row.entrant_id)! > 1 ? "s" : ""}`}
-                    >
-                      {"⭐".repeat(starCounts.get(row.entrant_id)!)}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums font-semibold text-gold-400">
-                  {row.total_points}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-foreground/50">
-                  {row.scoring_gameweeks}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <main className="wb-in" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 64px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          borderBottom: "2px solid var(--color-divider)",
+          paddingBottom: 10,
+        }}
+      >
+        <h1 style={{ margin: 0 }}>The table</h1>
+        <p style={{ margin: 0, fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          Click a name for their season record
+        </p>
       </div>
-      <p className="mt-2 text-xs text-foreground/40">
-        Ties are broken by the most individual gameweeks with a scoring pick.
-      </p>
 
-      {latestLocked && (
-        <section className="mt-8">
-          <h2 className="text-lg font-bold text-foreground">Gameweek {latestLocked.id} picks</h2>
-          <div className="mt-3 overflow-hidden rounded-2xl border border-foreground/10 bg-surface shadow-sm backdrop-blur-sm">
-            <ul className="divide-y divide-foreground/5">
-              {(revealedPicks ?? []).map((p, i) => (
-                <li key={i} className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="font-medium text-foreground">{p.entrants?.display_name}</span>
-                  <span className="text-foreground/80">
-                    {p.players?.web_name}{" "}
-                    <span className="text-foreground/40">({p.players?.teams?.short_name})</span>
-                    {p.stake === 6 ? " ×2" : ""}
-                  </span>
-                  <span className="tabular-nums text-foreground/50">
-                    {p.goals} goal{p.goals === 1 ? "" : "s"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
+      <LeaderboardTable rows={rows} />
+
+      <p style={{ margin: "14px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+        Ties break on the most individual gameweeks with a scoring pick. Points are never stored — they&rsquo;re
+        derived from goals every time you load this.
+      </p>
     </main>
   );
 }
