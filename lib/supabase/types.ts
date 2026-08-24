@@ -62,7 +62,22 @@ export interface Database {
         };
         Insert: Database["public"]["Tables"]["fixtures"]["Row"];
         Update: Partial<Database["public"]["Tables"]["fixtures"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "fixtures_team_h_fkey";
+            columns: ["team_h"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fixtures_team_a_fkey";
+            columns: ["team_a"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       entrants: {
         Row: {
