@@ -31,12 +31,12 @@ export default async function LeaderboardPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-extrabold text-pitch-900">Leaderboard</h1>
+      <h1 className="text-2xl font-extrabold text-foreground">Leaderboard</h1>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-pitch-900/10 bg-white shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-foreground/10 bg-surface shadow-sm backdrop-blur-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-pitch-50 text-left text-xs uppercase tracking-wide text-pitch-900/50">
+            <tr className="bg-black/20 text-left text-xs uppercase tracking-wide text-foreground/50">
               <th className="px-4 py-3 font-medium">Entrant</th>
               <th className="px-4 py-3 text-right font-medium">Points</th>
               <th className="px-4 py-3 text-right font-medium">Scoring GWs</th>
@@ -44,8 +44,8 @@ export default async function LeaderboardPage() {
           </thead>
           <tbody>
             {(leaderboard ?? []).map((row, i) => (
-              <tr key={row.entrant_id} className="border-t border-pitch-900/5">
-                <td className="px-4 py-3 font-medium text-pitch-900">
+              <tr key={row.entrant_id} className="border-t border-foreground/5">
+                <td className="px-4 py-3 font-medium text-foreground">
                   {i === 0 && "🏆 "}
                   {row.display_name}
                   {(starCounts.get(row.entrant_id) ?? 0) > 0 && (
@@ -57,10 +57,10 @@ export default async function LeaderboardPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums font-semibold text-pitch-700">
+                <td className="px-4 py-3 text-right tabular-nums font-semibold text-gold-400">
                   {row.total_points}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-pitch-900/50">
+                <td className="px-4 py-3 text-right tabular-nums text-foreground/50">
                   {row.scoring_gameweeks}
                 </td>
               </tr>
@@ -68,24 +68,24 @@ export default async function LeaderboardPage() {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-pitch-900/40">
+      <p className="mt-2 text-xs text-foreground/40">
         Ties are broken by the most individual gameweeks with a scoring pick.
       </p>
 
       {latestLocked && (
         <section className="mt-8">
-          <h2 className="text-lg font-bold text-pitch-900">Gameweek {latestLocked.id} picks</h2>
-          <div className="mt-3 overflow-hidden rounded-2xl border border-pitch-900/10 bg-white shadow-sm">
-            <ul className="divide-y divide-pitch-900/5">
+          <h2 className="text-lg font-bold text-foreground">Gameweek {latestLocked.id} picks</h2>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-foreground/10 bg-surface shadow-sm backdrop-blur-sm">
+            <ul className="divide-y divide-foreground/5">
               {(revealedPicks ?? []).map((p, i) => (
                 <li key={i} className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="font-medium text-pitch-900">{p.entrants?.display_name}</span>
-                  <span>
+                  <span className="font-medium text-foreground">{p.entrants?.display_name}</span>
+                  <span className="text-foreground/80">
                     {p.players?.web_name}{" "}
-                    <span className="text-pitch-900/40">({p.players?.teams?.short_name})</span>
+                    <span className="text-foreground/40">({p.players?.teams?.short_name})</span>
                     {p.stake === 6 ? " ×2" : ""}
                   </span>
-                  <span className="tabular-nums text-pitch-900/50">
+                  <span className="tabular-nums text-foreground/50">
                     {p.goals} goal{p.goals === 1 ? "" : "s"}
                   </span>
                 </li>

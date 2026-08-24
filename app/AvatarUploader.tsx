@@ -50,11 +50,11 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
           />
         )}
       </div>
-      <label className="cursor-pointer rounded-full bg-pitch-50 px-4 py-2 text-sm font-medium text-pitch-900 hover:bg-pitch-100">
+      <label className="cursor-pointer rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-400 hover:bg-gold-500/25">
         {status === "uploading" ? "Uploading…" : broken ? "Add a photo" : "Change photo"}
         <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={status === "uploading"} />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }

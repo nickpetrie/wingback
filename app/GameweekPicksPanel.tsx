@@ -15,20 +15,20 @@ export function GameweekPicksPanel({
 
   return (
     <div>
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-pitch-900/40">Picks so far</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Picks so far</h2>
       {fixtures.length === 0 ? (
-        <p className="mt-2 text-sm text-pitch-900/50">No fixtures confirmed yet.</p>
+        <p className="mt-2 text-sm text-foreground/50">No fixtures confirmed yet.</p>
       ) : (
         <ul className="mt-2 flex flex-col gap-2">
           {fixtures.map((f) => {
             const inFixture = [...(picksByTeam.get(f.team_h) ?? []), ...(picksByTeam.get(f.team_a) ?? [])];
             return (
-              <li key={f.id} className="rounded-xl bg-pitch-50 px-3 py-2 text-sm">
+              <li key={f.id} className="rounded-xl bg-black/20 px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-pitch-900">
+                  <span className="font-medium text-foreground">
                     {f.home} v {f.away}
                   </span>
-                  <span className="text-xs text-pitch-900/40">
+                  <span className="text-xs text-foreground/40">
                     {f.finished
                       ? "Finished"
                       : f.kickoff_time
@@ -43,13 +43,13 @@ export function GameweekPicksPanel({
                 {inFixture.length > 0 && (
                   <ul className="mt-1.5 flex flex-col gap-0.5">
                     {inFixture.map((p, i) => (
-                      <li key={i} className="flex items-center justify-between text-xs text-pitch-900/70">
+                      <li key={i} className="flex items-center justify-between text-xs text-foreground/70">
                         <span>
                           {p.entrant_name}:{" "}
-                          <span className="font-medium text-gold-600">{p.player_name}</span>
+                          <span className="font-medium text-gold-400">{p.player_name}</span>
                           {p.stake === 6 ? " ×2" : ""}
                         </span>
-                        <span className="tabular-nums text-pitch-900/40">
+                        <span className="tabular-nums text-foreground/40">
                           {p.goals} goal{p.goals === 1 ? "" : "s"}
                         </span>
                       </li>
@@ -62,7 +62,7 @@ export function GameweekPicksPanel({
         </ul>
       )}
       {picks.length === 0 && fixtures.length > 0 && (
-        <p className="mt-2 text-sm text-pitch-900/50">Nobody has picked yet.</p>
+        <p className="mt-2 text-sm text-foreground/50">Nobody has picked yet.</p>
       )}
     </div>
   );

@@ -23,8 +23,8 @@ export default async function ClaimPage() {
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
       <div className="text-center">
         <p className="text-3xl">⚽</p>
-        <h1 className="mt-2 text-2xl font-extrabold text-pitch-900">Which one are you?</h1>
-        <p className="mt-1 text-sm text-pitch-900/50">Claim your profile to get started.</p>
+        <h1 className="mt-2 text-2xl font-extrabold text-foreground">Which one are you?</h1>
+        <p className="mt-1 text-sm text-foreground/50">Claim your profile to get started.</p>
       </div>
       <ClaimList profiles={profiles} />
     </main>

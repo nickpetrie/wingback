@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       <GameweekCard gameweek={gameweek} ownPick={ownPick} />
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
           <GameweekPicksPanel fixtures={fixtures} picks={picks} />
         </section>
         <NewsCard news={news} />
@@ -80,22 +80,29 @@ function GameweekCard({
 }) {
   if (!gameweek) {
     return (
-      <section className="rounded-2xl border border-dashed border-pitch-900/15 bg-pitch-50 p-6 text-center text-sm text-pitch-900/60">
+      <section className="rounded-3xl border border-dashed border-foreground/15 bg-surface p-6 text-center text-sm text-foreground/60">
         No gameweek data yet — check back once the season data has synced.
       </section>
     );
   }
 
   return (
-    <section className="rounded-2xl bg-gradient-to-br from-pitch-800 to-pitch-600 p-6 text-white shadow-md">
-      <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Gameweek {gameweek.id}</p>
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-pitch-800 via-pitch-700 to-pitch-900 p-6 text-white shadow-lg sm:p-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gold-500/20 blur-3xl"
+      />
+      <p className="relative text-xs font-semibold uppercase tracking-[0.2em] text-gold-400/80">
+        Gameweek {gameweek.id}
+      </p>
 
       {gameweek.state === "open" ? (
         <>
-          <p className="mt-1 text-2xl font-extrabold">
-            Locks in <Countdown lockAt={gameweek.lock_at!} />
+          <p className="relative mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            <Countdown lockAt={gameweek.lock_at!} />
           </p>
-          <div className="mt-4">
+          <p className="relative mt-1 text-sm text-white/50">until picks lock</p>
+          <div className="relative mt-5">
             {ownPick ? (
               <p className="text-sm text-white/80">
                 You&rsquo;ve picked <span className="font-semibold text-gold-400">{ownPick.player_name}</span>{" "}
@@ -105,7 +112,7 @@ function GameweekCard({
             ) : (
               <Link
                 href="/pick"
-                className="inline-block rounded-full bg-gold-500 px-5 py-2 text-sm font-semibold text-pitch-900 shadow-sm hover:bg-gold-400"
+                className="inline-block rounded-full bg-gold-500 px-6 py-2.5 text-sm font-semibold text-pitch-900 shadow-md transition-colors hover:bg-gold-400"
               >
                 Make your pick →
               </Link>
@@ -114,15 +121,15 @@ function GameweekCard({
         </>
       ) : gameweek.state === "locked" ? (
         <>
-          <p className="mt-1 text-2xl font-extrabold">🔒 Locked — live now</p>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="relative mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">🔒 Live now</p>
+          <p className="relative mt-2 text-sm text-white/70">
             {ownPick
               ? `You picked ${ownPick.player_name} (${ownPick.team_short_name})${ownPick.stake === 6 ? " ×2" : ""} — ${ownPick.goals} goal${ownPick.goals === 1 ? "" : "s"} so far.`
               : "You didn't pick for this gameweek."}
           </p>
         </>
       ) : (
-        <p className="mt-1 text-2xl font-extrabold">📅 Not scheduled yet</p>
+        <p className="relative mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">📅 Not scheduled yet</p>
       )}
     </section>
   );
@@ -134,17 +141,17 @@ function NewsCard({
   news: { code: number; web_name: string; status: string; news: string; team_short_name: string }[];
 }) {
   return (
-    <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-pitch-900/40">Injury news</h2>
+    <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Injury news</h2>
       {news.length === 0 ? (
-        <p className="mt-3 text-sm text-pitch-900/50">No injury news at the moment.</p>
+        <p className="mt-3 text-sm text-foreground/50">No injury news at the moment.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {news.map((p) => (
             <li key={p.code} className="text-sm">
-              <span className="font-medium text-pitch-900">{p.web_name}</span>{" "}
-              <span className="text-pitch-900/40">({p.team_short_name})</span>
-              <p className="text-xs text-gold-600">
+              <span className="font-medium text-foreground">{p.web_name}</span>{" "}
+              <span className="text-foreground/40">({p.team_short_name})</span>
+              <p className="text-xs text-gold-400">
                 {STATUS_LABEL[p.status] ?? p.status}: {p.news}
               </p>
             </li>
@@ -169,10 +176,10 @@ function StandingsCard({
   if (rows.length === 0) return null;
 
   return (
-    <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-pitch-900/40">Standings</h2>
-        <Link href="/leaderboard" className="text-xs font-medium text-pitch-600 hover:underline">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Standings</h2>
+        <Link href="/leaderboard" className="text-xs font-medium text-gold-400 hover:underline">
           Full leaderboard →
         </Link>
       </div>
@@ -186,7 +193,7 @@ function StandingsCard({
                 i === ownRank ? "bg-gold-500/15" : ""
               }`}
             >
-              <span className="font-medium text-pitch-900">
+              <span className="font-medium text-foreground">
                 {MEDALS[i] ?? "⚽"} {row.display_name}
                 {stars > 0 && (
                   <span className="ml-1" aria-label={`${stars} title${stars > 1 ? "s" : ""}`}>
@@ -194,7 +201,7 @@ function StandingsCard({
                   </span>
                 )}
               </span>
-              <span className="tabular-nums text-pitch-700">{row.total_points}</span>
+              <span className="tabular-nums text-gold-400">{row.total_points}</span>
             </li>
           );
         })}

@@ -56,16 +56,16 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 text-center shadow-sm">
-        <h2 className="font-semibold text-pitch-900">{displayName}</h2>
+      <section className="rounded-2xl border border-foreground/10 bg-surface p-5 text-center shadow-sm backdrop-blur-sm">
+        <h2 className="font-semibold text-foreground">{displayName}</h2>
         <div className="mt-3 flex justify-center">
           <AvatarUploader entrantId={entrantId} initials={initials} />
         </div>
       </section>
 
-      <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-pitch-900">Mobile number</h2>
-        <p className="mt-1 text-sm text-pitch-900/50">
+      <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
+        <h2 className="font-semibold text-foreground">Mobile number</h2>
+        <p className="mt-1 text-sm text-foreground/50">
           For the T-2h reminder text, if you haven&rsquo;t picked yet.
         </p>
         <form onSubmit={savePhone} className="mt-3 flex flex-col gap-2">
@@ -74,9 +74,9 @@ export function SettingsForm({
             placeholder="+44 7…"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="rounded-full border border-pitch-900/15 px-4 py-2 text-sm focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+            className="rounded-full border border-foreground/15 bg-cream px-4 py-2 text-sm text-pitch-900 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
           />
-          <label className="flex items-center gap-2 text-sm text-pitch-900/70">
+          <label className="flex items-center gap-2 text-sm text-foreground/70">
             <input
               type="checkbox"
               checked={smsOptIn}
@@ -88,25 +88,25 @@ export function SettingsForm({
           <button
             type="submit"
             disabled={phonePending}
-            className="self-start rounded-full bg-pitch-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            className="self-start rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-pitch-900 hover:bg-gold-400 disabled:opacity-40"
           >
             {phonePending ? "Saving…" : "Save"}
           </button>
         </form>
-        {phoneMessage && <p className="mt-2 text-sm text-pitch-900/70">{phoneMessage}</p>}
+        {phoneMessage && <p className="mt-2 text-sm text-foreground/70">{phoneMessage}</p>}
       </section>
 
-      <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-pitch-900">Nominated player</h2>
-        <p className="mt-1 text-sm text-pitch-900/50">
+      <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
+        <h2 className="font-semibold text-foreground">Nominated player</h2>
+        <p className="mt-1 text-sm text-foreground/50">
           Your one player who can be picked twice this season. Meant to be set before gameweek 1 —
           you can still change it, but that&rsquo;s on trust.
         </p>
 
         {nomination && (
           <div className="mt-3 flex items-center justify-between rounded-full bg-gold-500/15 px-4 py-2">
-            <span className="text-sm font-medium text-pitch-900">
-              {nomination.web_name} <span className="text-pitch-900/40">· {nomination.team_short_name}</span>
+            <span className="text-sm font-medium text-foreground">
+              {nomination.web_name} <span className="text-foreground/40">· {nomination.team_short_name}</span>
             </span>
           </div>
         )}
@@ -118,9 +118,9 @@ export function SettingsForm({
             onSelect={saveNomination}
           />
         </div>
-        {nominationPending && <p className="mt-2 text-sm text-pitch-900/50">Saving…</p>}
+        {nominationPending && <p className="mt-2 text-sm text-foreground/50">Saving…</p>}
         {nominationMessage && !nominationPending && (
-          <p className="mt-2 text-sm text-pitch-900/70">{nominationMessage}</p>
+          <p className="mt-2 text-sm text-foreground/70">{nominationMessage}</p>
         )}
       </section>
     </div>

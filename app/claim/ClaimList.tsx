@@ -36,22 +36,22 @@ export function ClaimList({ profiles }: { profiles: Profile[] }) {
           type="button"
           disabled={p.claimed || isPending}
           onClick={() => claim(p.id)}
-          className="flex items-center justify-between rounded-2xl border border-pitch-900/10 bg-white px-5 py-4 text-left shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-pitch-500 enabled:hover:bg-pitch-50"
+          className="flex items-center justify-between rounded-2xl border border-foreground/10 bg-surface px-5 py-4 text-left shadow-sm backdrop-blur-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-pitch-500 enabled:hover:bg-white/5"
         >
           <span className="flex items-center gap-2">
-            <span className="font-semibold text-pitch-900">{p.display_name}</span>
+            <span className="font-semibold text-foreground">{p.display_name}</span>
             {p.stars > 0 && (
               <span aria-label={`${p.stars} title${p.stars > 1 ? "s" : ""}`}>
                 {"⭐".repeat(p.stars)}
               </span>
             )}
           </span>
-          <span className="text-sm text-pitch-900/40">
+          <span className="text-sm text-foreground/40">
             {p.claimed ? "Claimed" : pendingId === p.id && isPending ? "Claiming…" : "This is me"}
           </span>
         </button>
       ))}
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
 }

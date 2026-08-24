@@ -56,8 +56,8 @@ export default async function AlbumPage() {
 
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <h1 className="text-2xl font-extrabold text-pitch-900">Your album</h1>
-      <p className="mt-1 text-sm text-pitch-900/50">38 gameweeks, one sticker each.</p>
+      <h1 className="text-2xl font-extrabold text-foreground">Your album</h1>
+      <p className="mt-1 text-sm text-foreground/50">38 gameweeks, one sticker each.</p>
 
       <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
         {slots.map((slot) => (
@@ -71,7 +71,7 @@ export default async function AlbumPage() {
 function StickerSlot({ slot }: { slot: Slot }) {
   if (slot.state === "empty") {
     return (
-      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl border-2 border-dashed border-pitch-900/15 text-pitch-900/25">
+      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl border-2 border-dashed border-foreground/15 text-foreground/25">
         <span className="text-lg font-bold">{slot.gameweek}</span>
       </div>
     );

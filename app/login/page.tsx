@@ -57,11 +57,11 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-pitch-900 via-pitch-800 to-pitch-700 p-6">
-      <div className="w-full max-w-sm rounded-3xl bg-cream p-8 shadow-xl">
+      <div className="w-full max-w-sm rounded-3xl border border-foreground/10 bg-surface-strong p-8 shadow-xl backdrop-blur-md">
         <div className="mb-6 text-center">
           <p className="text-3xl">⚽</p>
-          <h1 className="mt-2 text-2xl font-extrabold text-pitch-900">Wingback</h1>
-          <p className="mt-1 text-sm text-pitch-900/50">Sign in with your email — no password needed.</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-foreground">Wingback</h1>
+          <p className="mt-1 text-sm text-foreground/50">Sign in with your email — no password needed.</p>
         </div>
 
         {step === "email" ? (
@@ -72,20 +72,20 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-full border border-pitch-900/15 bg-white px-4 py-2.5 text-sm focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+              className="rounded-full border border-foreground/15 bg-cream px-4 py-2.5 text-sm text-pitch-900 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
             />
             <button
               type="submit"
               disabled={status === "working"}
-              className="rounded-full bg-pitch-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pitch-600 disabled:opacity-50"
+              className="rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-pitch-900 shadow-sm transition-colors hover:bg-gold-400 disabled:opacity-50"
             >
               {status === "working" ? "Sending…" : "Send code"}
             </button>
-            {status === "error" && <p className="text-sm text-red-600">{error}</p>}
+            {status === "error" && <p className="text-sm text-red-400">{error}</p>}
           </form>
         ) : (
           <form onSubmit={verifyCode} className="flex flex-col gap-3">
-            <p className="rounded-xl bg-pitch-50 p-3 text-sm text-pitch-900/70">
+            <p className="rounded-xl bg-surface p-3 text-sm text-foreground/70">
               Check your email — enter the 6-digit code it contains below. (You can also click the
               link in that email instead, if you&rsquo;d rather.)
             </p>
@@ -96,20 +96,20 @@ export default function LoginPage() {
               placeholder="123456"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="rounded-full border border-pitch-900/15 bg-white px-4 py-2.5 text-center text-lg tracking-[0.3em] focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+              className="rounded-full border border-foreground/15 bg-cream px-4 py-2.5 text-center text-lg tracking-[0.3em] text-pitch-900 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
             />
             <button
               type="submit"
               disabled={status === "working"}
-              className="rounded-full bg-pitch-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pitch-600 disabled:opacity-50"
+              className="rounded-full bg-gold-500 px-4 py-2.5 text-sm font-semibold text-pitch-900 shadow-sm transition-colors hover:bg-gold-400 disabled:opacity-50"
             >
               {status === "working" ? "Verifying…" : "Verify"}
             </button>
-            {status === "error" && <p className="text-sm text-red-600">{error}</p>}
+            {status === "error" && <p className="text-sm text-red-400">{error}</p>}
             <button
               type="button"
               onClick={() => setStep("email")}
-              className="text-sm text-pitch-900/50 underline"
+              className="text-sm text-foreground/50 underline"
             >
               Use a different email
             </button>

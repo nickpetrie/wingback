@@ -25,8 +25,8 @@ export default async function OnboardingPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
       <div className="text-center">
-        <h1 className="text-2xl font-extrabold text-pitch-900">Hi, {entrant.display_name}!</h1>
-        <p className="mt-1 text-sm text-pitch-900/50">A couple of optional extras.</p>
+        <h1 className="text-2xl font-extrabold text-foreground">Hi, {entrant.display_name}!</h1>
+        <p className="mt-1 text-sm text-foreground/50">A couple of optional extras.</p>
       </div>
       <OnboardingForm entrantId={entrant.id} initials={initials} initialPhone={entrant.phone ?? ""} />
     </main>

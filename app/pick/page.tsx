@@ -46,7 +46,7 @@ export default async function PickPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-extrabold text-pitch-900">Your pick</h1>
+      <h1 className="text-2xl font-extrabold text-foreground">Your pick</h1>
 
       {!gameweek ? (
         <EmptyState>No gameweek data yet — check back once the season data has synced.</EmptyState>
@@ -60,7 +60,7 @@ export default async function PickPage() {
           {gameweek.state === "open" ? (
             <>
               {doubleTeams && doubleTeams.length > 0 && (
-                <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
+                <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-400">
                   ⭐ Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
                 </p>
               )}
@@ -79,7 +79,7 @@ export default async function PickPage() {
               </div>
             </>
           ) : (
-            <p className="mt-3 rounded-full bg-pitch-50 px-4 py-2 text-sm text-pitch-900/70">
+            <p className="mt-3 rounded-full bg-surface px-4 py-2 text-sm text-foreground/70">
               🔒 Gameweek {gameweek.id} has locked — no more picks until next gameweek.
             </p>
           )}
@@ -95,7 +95,7 @@ export default async function PickPage() {
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-4 rounded-2xl border border-dashed border-pitch-900/15 bg-pitch-50 p-6 text-center text-sm text-pitch-900/60">
+    <div className="mt-4 rounded-2xl border border-dashed border-foreground/15 bg-surface p-6 text-center text-sm text-foreground/60">
       {children}
     </div>
   );

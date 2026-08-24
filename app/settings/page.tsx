@@ -24,7 +24,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-extrabold text-pitch-900">Settings</h1>
+      <h1 className="text-2xl font-extrabold text-foreground">Settings</h1>
       <div className="mt-4">
         <SettingsForm
           entrantId={entrant.id}

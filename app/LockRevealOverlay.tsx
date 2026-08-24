@@ -58,12 +58,12 @@ export function LockRevealOverlay({
         {picks.map((p, i) => (
           <div
             key={p.entrant_id}
-            className="reveal-card flex items-center justify-between rounded-2xl bg-white px-4 py-3 opacity-0 shadow-lg"
+            className="reveal-card flex items-center justify-between rounded-2xl bg-surface-strong px-4 py-3 opacity-0 shadow-lg backdrop-blur-sm"
             style={{ animationDelay: `${i * 250}ms` }}
           >
-            <span className="font-semibold text-pitch-900">{p.entrant_name}</span>
-            <span className="text-sm text-pitch-700">
-              {p.player_name} <span className="text-pitch-900/40">({p.team_short_name})</span>
+            <span className="font-semibold text-foreground">{p.entrant_name}</span>
+            <span className="text-sm text-foreground/70">
+              {p.player_name} <span className="text-foreground/40">({p.team_short_name})</span>
               {p.stake === 6 ? " ×2" : ""}
             </span>
           </div>

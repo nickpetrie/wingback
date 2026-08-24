@@ -40,10 +40,10 @@ export function PlayerSearchInput({
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-full border border-pitch-900/15 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+        className="w-full rounded-full border border-foreground/15 bg-surface px-4 py-2.5 text-sm text-foreground shadow-sm placeholder:text-foreground/40 focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
       />
       {matches.length > 0 && (
-        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-pitch-900/10 bg-white shadow-lg">
+        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-foreground/10 bg-pitch-900 shadow-lg">
           {matches.map((p) => (
             <li key={p.code}>
               <button
@@ -52,13 +52,13 @@ export function PlayerSearchInput({
                   onSelect(p);
                   setQuery("");
                 }}
-                className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-pitch-50"
+                className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-foreground hover:bg-white/5"
               >
                 <span>
-                  {p.web_name} <span className="text-pitch-900/40">· {p.team_short_name}</span>
+                  {p.web_name} <span className="text-foreground/40">· {p.team_short_name}</span>
                 </span>
                 {p.status !== "a" && (
-                  <span className="text-xs text-gold-600">{STATUS_LABEL[p.status] ?? p.status}</span>
+                  <span className="text-xs text-gold-400">{STATUS_LABEL[p.status] ?? p.status}</span>
                 )}
               </button>
             </li>
