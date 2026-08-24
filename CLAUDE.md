@@ -77,8 +77,12 @@ reading the project URL and service key from Supabase Vault at call time.
   `00_local_harness.sql` for what it stubs out (`auth.uid()`/`auth.role()`,
   roles) to stand in for the real Supabase platform.
 - `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
-  min live + daily settle), `remind` (every 15 min). All Deno; the only
-  place in the codebase that calls `fantasy.premierleague.com`.
+  min live + daily settle), `remind` (every 15 min), `sheets-backup`
+  (hourly, optional — one-way mirror of standings/picks into a Google
+  Sheet, see DEPLOY.md §3b; `_shared/google.ts` hand-rolls the service-
+  account JWT flow since there's no Deno-friendly googleapis client). All
+  Deno; the only place in the codebase that calls
+  `fantasy.premierleague.com` is `sync-fpl`/`_shared/fpl.ts`.
 - `lib/supabase/` — `server.ts`/`client.ts` (anon key + session, RLS
   always on), `middleware.ts` (session refresh, used by `proxy.ts`),
   `types.ts` (hand-written `Database` type — there's no live project to

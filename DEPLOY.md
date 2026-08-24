@@ -78,6 +78,45 @@ curl -X POST https://<project-ref>.supabase.co/functions/v1/sync-fpl \
   -H "Authorization: Bearer <service-role-key>"
 ```
 
+## 3b. Google Sheets backup (optional)
+
+`sheets-backup` mirrors the live leaderboard and full pick history into a
+Google Sheet once an hour, as a human-readable backup outside Postgres. It
+only ever writes — point it at a fresh sheet you create for this, never at
+the group's own manually-edited tracker, since a conflicting hand-edit and
+an hourly overwrite don't mix.
+
+1. In Google Cloud Console: create a project (or reuse one), enable the
+   **Google Sheets API**, then create a **service account** and generate a
+   JSON key for it (IAM & Admin → Service Accounts → Keys → Add key).
+2. Create a new Google Sheet with two tabs named exactly `Leaderboard` and
+   `Picks` (case-sensitive — the function writes to `Leaderboard!A1` and
+   `Picks!A1`). Share it with the service account's email address (found in
+   the JSON key as `client_email`) as **Editor**.
+3. Deploy the function and set its secrets from the JSON key:
+   ```bash
+   supabase functions deploy sheets-backup
+   supabase secrets set \
+     GOOGLE_SERVICE_ACCOUNT_EMAIL=<client_email from the JSON key> \
+     GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=<private_key from the JSON key, as one line with \n escapes intact> \
+     GOOGLE_SHEETS_BACKUP_ID=<the sheet's ID, from its URL>
+   ```
+   The private key in the JSON file already has `\n` escapes rather than
+   real newlines — paste it exactly as it appears in the JSON (still
+   wrapped in quotes if your shell needs that to treat it as one value);
+   the function converts those back to real newlines itself.
+4. Run `supabase db push` to pick up `20260101000012_sheets_backup_cron.sql`,
+   which schedules it hourly. Trigger it manually once to confirm it works:
+   ```bash
+   curl -X POST https://<project-ref>.supabase.co/functions/v1/sheets-backup \
+     -H "Authorization: Bearer <service-role-key>"
+   ```
+   A `{"ok": false, ...}` response means a secret is missing or the sheet
+   isn't shared with the service account — the error message names which.
+
+Skip this whole section if you don't want it; nothing else in the app
+depends on `sheets-backup` existing.
+
 ## 4. Deploy the app to Vercel
 
 Import the repo, set these env vars (Project Settings → Environment
