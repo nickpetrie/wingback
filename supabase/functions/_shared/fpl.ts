@@ -65,13 +65,20 @@ export interface FplLive {
 // FPL's edge (Incapsula/Cloudflare-ish) blocks requests that don't look
 // like a browser: a bare Deno `fetch()` with no User-Agent gets a flat 403,
 // even on endpoints that otherwise work fine (seen in practice: /fixtures/
-// blocked while /bootstrap-static/ in the same run succeeded). A retry is
-// also worth it here — this call only gets an hourly cron shot at success,
-// so a single transient block shouldn't cost a full hour of staleness.
+// blocked while /bootstrap-static/ in the same run succeeded). A real
+// browser hitting these endpoints does so as an XHR from a page already
+// loaded on fantasy.premierleague.com, so it always carries a same-site
+// Referer/Origin — a header set missing those two is itself a signal this
+// isn't a browser, independent of User-Agent. A retry is also worth it here
+// — this call only gets an hourly cron shot at success, so a single
+// transient block shouldn't cost a full hour of staleness.
 const BROWSER_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   Accept: "application/json",
+  "Accept-Language": "en-GB,en;q=0.9",
+  Referer: "https://fantasy.premierleague.com/",
+  Origin: "https://fantasy.premierleague.com",
 };
 
 async function getJson<T>(path: string, attempt = 1): Promise<T> {
