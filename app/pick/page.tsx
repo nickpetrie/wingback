@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
-import { loadPlayers } from "@/lib/players";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekFixtures } from "@/lib/fixtures";
 import { getGameweekPicks } from "@/lib/picks";
+import { getPickFormContext } from "@/lib/pick-form-context";
 import { GameweekPicksPanel } from "../GameweekPicksPanel";
 import { PickForm } from "./PickForm";
 
@@ -18,29 +17,13 @@ export default async function PickPage() {
   const entrantId = await getCurrentEntrantId(supabase, user.id);
   if (!entrantId) return null; // middleware sends anyone without a claim to /claim first
 
-  const { data: entrant } = await supabase
-    .from("entrants")
-    .select("nomination_player_code")
-    .eq("id", entrantId)
-    .single();
-
   const gameweek = await getCurrentGameweek(supabase);
 
   const { data: doubleTeams } = gameweek
     ? await supabase.from("double_gameweek_teams").select("team").eq("event", gameweek.id)
     : { data: null };
 
-  const { data: history } = await supabase
-    .from("picks")
-    .select("gameweek, player_code, goals, stake")
-    .eq("entrant_id", entrantId);
-
-  const pickHistory: PickHistoryEntry[] = history ?? [];
-  const usedCounts = computeUsedCounts(pickHistory);
-  const currentPick = gameweek
-    ? pickHistory.find((h) => h.gameweek === gameweek.id) ?? null
-    : null;
-
+  const pickForm = gameweek ? await getPickFormContext(supabase, entrantId, gameweek.id) : null;
   const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
   const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
 
@@ -57,7 +40,7 @@ export default async function PickPage() {
         </EmptyState>
       ) : (
         <>
-          {gameweek.state === "open" ? (
+          {gameweek.state === "open" && pickForm ? (
             <>
               {doubleTeams && doubleTeams.length > 0 && (
                 <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-400">
@@ -68,13 +51,11 @@ export default async function PickPage() {
               <div className="mt-4">
                 <PickForm
                   gameweek={gameweek.id}
-                  players={await loadPlayers(supabase)}
-                  usedCounts={usedCounts}
-                  nominationCode={entrant?.nomination_player_code ?? null}
-                  doublesUsedCount={doublesUsed(pickHistory)}
-                  currentPick={
-                    currentPick ? { player_code: currentPick.player_code, stake: currentPick.stake } : null
-                  }
+                  players={pickForm.players}
+                  usedCounts={pickForm.usedCounts}
+                  nominationCode={pickForm.nominationCode}
+                  doublesUsedCount={pickForm.doublesUsedCount}
+                  currentPick={pickForm.currentPick}
                 />
               </div>
             </>
