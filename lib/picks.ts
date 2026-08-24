@@ -4,6 +4,7 @@ import type { Stake } from "@/lib/supabase/types";
 export interface GameweekPick {
   entrant_id: string;
   entrant_name: string;
+  player_code: number;
   player_name: string;
   team_id: number;
   team_short_name: string;
@@ -21,7 +22,9 @@ export async function getGameweekPicks(
 ): Promise<GameweekPick[]> {
   const { data } = await supabase
     .from("picks")
-    .select("entrant_id, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name))")
+    .select(
+      "entrant_id, player_code, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name))",
+    )
     .eq("gameweek", gameweekId);
 
   return (data ?? [])
@@ -29,6 +32,7 @@ export async function getGameweekPicks(
     .map((p) => ({
       entrant_id: p.entrant_id,
       entrant_name: p.entrants!.display_name,
+      player_code: p.player_code,
       player_name: p.players!.web_name,
       team_id: p.players!.team_id,
       team_short_name: p.players!.teams?.short_name ?? "",

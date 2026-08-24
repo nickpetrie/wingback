@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
+import { getGameweekPicks } from "@/lib/picks";
 import { getStarCounts } from "@/lib/winners";
 import { Header } from "./Header";
+import { LockRevealOverlay } from "./LockRevealOverlay";
 
 export async function Nav() {
   const supabase = await createClient();
@@ -25,5 +27,12 @@ export async function Nav() {
     stars: starCounts.get(row.entrant_id) ?? 0,
   }));
 
-  return <Header gameweek={gameweek} entrantId={entrantId} standings={standings} />;
+  const picks = gameweek?.state === "locked" ? await getGameweekPicks(supabase, gameweek.id) : [];
+
+  return (
+    <>
+      <Header gameweek={gameweek} entrantId={entrantId} standings={standings} />
+      {gameweek?.state === "locked" && <LockRevealOverlay gameweekId={gameweek.id} picks={picks} />}
+    </>
+  );
 }
