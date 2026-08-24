@@ -3,10 +3,11 @@
 // touched here directly — it's recomputed by the fixtures_recompute_lock
 // trigger the moment a fixture's kickoff_time changes.
 import { serviceClient } from "../_shared/supabase.ts";
-import { fetchAllFixtures, fetchBootstrap } from "../_shared/fpl.ts";
+import { fetchAllFixtures, fetchBootstrap, startFplBudget } from "../_shared/fpl.ts";
 
 Deno.serve(async () => {
   try {
+    startFplBudget();
     const supabase = serviceClient();
     // Sequential, not Promise.all, for the same reason as score/: a rejected
     // Promise.all abandons the other request mid-retry and leaves its eventual

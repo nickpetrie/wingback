@@ -9,12 +9,13 @@
 //     pick_scores view needs (a per-gameweek total can't tell you which of
 //     two fixtures was the goalless one).
 import { serviceClient } from "../_shared/supabase.ts";
-import { fetchFixturesForEvent, fetchLive } from "../_shared/fpl.ts";
+import { fetchFixturesForEvent, fetchLive, startFplBudget } from "../_shared/fpl.ts";
 
 type ServiceClient = ReturnType<typeof serviceClient>;
 
 Deno.serve(async (req) => {
   try {
+    startFplBudget();
     const supabase = serviceClient();
     // The daily settle run also re-checks recently-finished gameweeks, in
     // case FPL corrects a goal after the match (own goal reassigned, VAR).
