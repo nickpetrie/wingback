@@ -6,6 +6,7 @@ const BASE = "https://fantasy.premierleague.com/api";
 
 export interface FplTeam {
   id: number;
+  code: number; // stable id used by the crest CDN (resources.premierleague.com)
   name: string;
   short_name: string;
 }

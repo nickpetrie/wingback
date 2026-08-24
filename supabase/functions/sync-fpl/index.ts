@@ -18,6 +18,7 @@ Deno.serve(async () => {
       .upsert(
         bootstrap.teams.map((t) => ({
           id: t.id,
+          code: t.code,
           name: t.name,
           short_name: t.short_name,
         })),

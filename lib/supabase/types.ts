@@ -14,9 +14,9 @@ export interface Database {
   public: {
     Tables: {
       teams: {
-        Row: { id: number; name: string; short_name: string };
-        Insert: { id: number; name: string; short_name: string };
-        Update: Partial<{ id: number; name: string; short_name: string }>;
+        Row: { id: number; code: number | null; name: string; short_name: string };
+        Insert: { id: number; code?: number | null; name: string; short_name: string };
+        Update: Partial<{ id: number; code: number | null; name: string; short_name: string }>;
         Relationships: [];
       };
       players: {

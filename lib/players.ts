@@ -8,6 +8,7 @@ export interface PlayerOption {
   web_name: string;
   full_name: string;
   team_short_name: string;
+  team_code: number | null;
   element_type: number;
   status: string;
   news: string;
@@ -18,7 +19,9 @@ export async function loadPlayers(
 ): Promise<PlayerOption[]> {
   const { data: playersRaw } = await supabase
     .from("players")
-    .select("code, web_name, first_name, second_name, team_id, element_type, status, news, teams(short_name)")
+    .select(
+      "code, web_name, first_name, second_name, team_id, element_type, status, news, teams(short_name, code)",
+    )
     .order("web_name");
 
   return (playersRaw ?? []).map((p) => ({
@@ -26,6 +29,7 @@ export async function loadPlayers(
     web_name: p.web_name,
     full_name: `${p.first_name} ${p.second_name}`,
     team_short_name: p.teams?.short_name ?? "",
+    team_code: p.teams?.code ?? null,
     element_type: p.element_type,
     status: p.status,
     news: p.news,
