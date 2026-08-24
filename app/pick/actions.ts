@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentEntrantId } from "@/lib/entrant";
 
 export interface SubmitPickResult {
   ok: boolean;
@@ -20,6 +21,9 @@ export async function submitPick(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not signed in" };
 
+  const entrantId = await getCurrentEntrantId(supabase, user.id);
+  if (!entrantId) return { ok: false, error: "no claimed profile" };
+
   // Deliberately not .upsert(): an upsert's BEFORE INSERT trigger still
   // fires for the candidate row even when it resolves via ON CONFLICT DO
   // UPDATE, which would make picks_guard re-run the once-per-season reuse
@@ -29,7 +33,7 @@ export async function submitPick(
     .from("picks")
     .select("id")
     .eq("gameweek", gameweek)
-    .eq("entrant_id", user.id)
+    .eq("entrant_id", entrantId)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
 
@@ -40,7 +44,7 @@ export async function submitPick(
       .eq("id", existing.id)
     : await supabase
       .from("picks")
-      .insert({ entrant_id: user.id, gameweek, player_code: playerCode, stake });
+      .insert({ entrant_id: entrantId, gameweek, player_code: playerCode, stake });
 
   if (result.error) return { ok: false, error: result.error.message };
 

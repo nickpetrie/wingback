@@ -3,31 +3,45 @@
 import { useState, useTransition } from "react";
 import type { PlayerOption } from "@/lib/players";
 import { PlayerSearchInput } from "../PlayerSearchInput";
-import { updateDisplayName, updateNomination } from "./actions";
+import { AvatarUploader } from "../AvatarUploader";
+import { updateNomination, updatePhone } from "./actions";
 
 export function SettingsForm({
-  initialDisplayName,
+  entrantId,
+  displayName,
+  initialPhone,
+  initialSmsOptIn,
   players,
   initialNomination,
 }: {
-  initialDisplayName: string;
+  entrantId: string;
+  displayName: string;
+  initialPhone: string;
+  initialSmsOptIn: boolean;
   players: PlayerOption[];
   initialNomination: PlayerOption | null;
 }) {
-  const [name, setName] = useState(initialDisplayName);
-  const [nameMessage, setNameMessage] = useState<string | null>(null);
-  const [namePending, startNameTransition] = useTransition();
+  const [phone, setPhone] = useState(initialPhone);
+  const [smsOptIn, setSmsOptIn] = useState(initialSmsOptIn);
+  const [phoneMessage, setPhoneMessage] = useState<string | null>(null);
+  const [phonePending, startPhoneTransition] = useTransition();
 
   const [nomination, setNomination] = useState<PlayerOption | null>(initialNomination);
   const [nominationMessage, setNominationMessage] = useState<string | null>(null);
   const [nominationPending, startNominationTransition] = useTransition();
 
-  function saveName(e: React.FormEvent) {
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  function savePhone(e: React.FormEvent) {
     e.preventDefault();
-    setNameMessage(null);
-    startNameTransition(async () => {
-      const result = await updateDisplayName(name);
-      setNameMessage(result.ok ? "Saved." : `Could not save: ${result.error}`);
+    setPhoneMessage(null);
+    startPhoneTransition(async () => {
+      const result = await updatePhone(phone, smsOptIn);
+      setPhoneMessage(result.ok ? "Saved." : `Could not save: ${result.error}`);
     });
   }
 
@@ -42,27 +56,44 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-8">
+      <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 text-center shadow-sm">
+        <h2 className="font-semibold text-pitch-900">{displayName}</h2>
+        <div className="mt-3 flex justify-center">
+          <AvatarUploader entrantId={entrantId} initials={initials} />
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-pitch-900">Display name</h2>
+        <h2 className="font-semibold text-pitch-900">Mobile number</h2>
         <p className="mt-1 text-sm text-pitch-900/50">
-          What the others see on the leaderboard and revealed picks.
+          For the T-2h reminder text, if you haven&rsquo;t picked yet.
         </p>
-        <form onSubmit={saveName} className="mt-3 flex gap-2">
+        <form onSubmit={savePhone} className="mt-3 flex flex-col gap-2">
           <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="flex-1 rounded-full border border-pitch-900/15 px-4 py-2 text-sm focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
+            type="tel"
+            placeholder="+44 7…"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="rounded-full border border-pitch-900/15 px-4 py-2 text-sm focus:border-pitch-500 focus:outline-none focus:ring-2 focus:ring-pitch-500/20"
           />
+          <label className="flex items-center gap-2 text-sm text-pitch-900/70">
+            <input
+              type="checkbox"
+              checked={smsOptIn}
+              onChange={(e) => setSmsOptIn(e.target.checked)}
+              className="rounded"
+            />
+            Text me reminders
+          </label>
           <button
             type="submit"
-            disabled={namePending}
-            className="rounded-full bg-pitch-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            disabled={phonePending}
+            className="self-start rounded-full bg-pitch-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
           >
-            {namePending ? "Saving…" : "Save"}
+            {phonePending ? "Saving…" : "Save"}
           </button>
         </form>
-        {nameMessage && <p className="mt-2 text-sm text-pitch-900/70">{nameMessage}</p>}
+        {phoneMessage && <p className="mt-2 text-sm text-pitch-900/70">{phoneMessage}</p>}
       </section>
 
       <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">

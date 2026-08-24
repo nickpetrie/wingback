@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
 import { loadPlayers } from "@/lib/players";
 import { getCurrentGameweek } from "@/lib/gameweek";
+import { getCurrentEntrantId } from "@/lib/entrant";
 import { PickForm } from "./PickForm";
 import { LiveGameweek } from "./LiveGameweek";
 
@@ -12,10 +13,13 @@ export default async function PickPage() {
   } = await supabase.auth.getUser();
   if (!user) return null; // middleware already redirects signed-out visitors
 
+  const entrantId = await getCurrentEntrantId(supabase, user.id);
+  if (!entrantId) return null; // middleware sends anyone without a claim to /claim first
+
   const { data: entrant } = await supabase
     .from("entrants")
     .select("nomination_player_code")
-    .eq("id", user.id)
+    .eq("id", entrantId)
     .single();
 
   const gameweek = await getCurrentGameweek(supabase);
@@ -27,7 +31,7 @@ export default async function PickPage() {
   const { data: history } = await supabase
     .from("picks")
     .select("gameweek, player_code, goals, stake")
-    .eq("entrant_id", user.id);
+    .eq("entrant_id", entrantId);
 
   const pickHistory: PickHistoryEntry[] = history ?? [];
   const usedCounts = computeUsedCounts(pickHistory);
@@ -66,7 +70,7 @@ export default async function PickPage() {
         <LiveGameweekSection
           supabase={supabase}
           gameweekId={gameweek.id}
-          userId={user.id}
+          entrantId={entrantId}
           currentPick={currentPick}
         />
       ) : (
@@ -90,12 +94,12 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 async function LiveGameweekSection({
   supabase,
   gameweekId,
-  userId,
+  entrantId,
   currentPick,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>;
   gameweekId: number;
-  userId: string;
+  entrantId: string;
   currentPick: PickHistoryEntry | null;
 }) {
   const { data: fixturesRaw } = await supabase
@@ -116,7 +120,7 @@ async function LiveGameweekSection({
     ? await supabase
       .from("picks")
       .select("stake, goals, players(web_name, teams(short_name))")
-      .eq("entrant_id", userId)
+      .eq("entrant_id", entrantId)
       .eq("gameweek", gameweekId)
       .maybeSingle()
     : { data: null };

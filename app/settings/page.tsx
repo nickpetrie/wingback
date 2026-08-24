@@ -2,44 +2,35 @@ import { createClient } from "@/lib/supabase/server";
 import { loadPlayers } from "@/lib/players";
 import { SettingsForm } from "./SettingsForm";
 
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ welcome?: string }>;
-}) {
+export default async function SettingsPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { welcome } = await searchParams;
-
   const { data: entrant } = await supabase
     .from("entrants")
-    .select("display_name, nomination_player_code")
-    .eq("id", user.id)
+    .select("id, display_name, phone, sms_opt_in, nomination_player_code")
+    .eq("auth_user_id", user.id)
     .single();
 
+  if (!entrant) return null; // middleware sends anyone without a claim to /claim first
+
   const players = await loadPlayers(supabase);
-  const initialNomination = entrant?.nomination_player_code
+  const initialNomination = entrant.nomination_player_code
     ? players.find((p) => p.code === entrant.nomination_player_code) ?? null
     : null;
 
   return (
     <main className="mx-auto max-w-md p-6">
       <h1 className="text-2xl font-extrabold text-pitch-900">Settings</h1>
-
-      {welcome === "1" && (
-        <p className="mt-4 rounded-2xl bg-gold-500/15 px-4 py-3 text-sm text-gold-600">
-          Welcome to Wingback! Pick a display name below — that&rsquo;s what the others will see on
-          the leaderboard and revealed picks. You can also set your nominated player now, or later.
-        </p>
-      )}
-
       <div className="mt-4">
         <SettingsForm
-          initialDisplayName={entrant?.display_name ?? ""}
+          entrantId={entrant.id}
+          displayName={entrant.display_name}
+          initialPhone={entrant.phone ?? ""}
+          initialSmsOptIn={entrant.sms_opt_in}
           players={players}
           initialNomination={initialNomination}
         />

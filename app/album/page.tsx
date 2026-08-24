@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentEntrantId } from "@/lib/entrant";
 
 const TOTAL_GAMEWEEKS = 38;
 
@@ -21,10 +22,13 @@ export default async function AlbumPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const entrantId = await getCurrentEntrantId(supabase, user.id);
+  if (!entrantId) return null; // middleware sends anyone without a claim to /claim first
+
   const { data: picks } = await supabase
     .from("picks")
     .select("gameweek, player_code, stake, goals, players(web_name, teams(short_name))")
-    .eq("entrant_id", user.id);
+    .eq("entrant_id", entrantId);
 
   const { data: gameweeks } = await supabase.from("gameweeks").select("id, finished");
   const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));

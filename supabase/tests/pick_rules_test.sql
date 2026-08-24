@@ -8,13 +8,16 @@
 --   psql -d wingback_test -f supabase/migrations/20260101000001_functions.sql
 --   psql -d wingback_test -f supabase/migrations/20260101000002_views.sql
 --   psql -d wingback_test -f supabase/migrations/20260101000003_rls.sql
+--   psql -d wingback_test -f supabase/migrations/20260101000005_display_name_onboarding.sql
+--   psql -d wingback_test -f supabase/migrations/20260101000006_profile_claiming.sql
+--   psql -d wingback_test -f supabase/migrations/20260101000007_seed_entrants.sql
 --   psql -d wingback_test -f supabase/tests/01_local_grants.sql
 --   psql -d wingback_test -f supabase/tests/pick_rules_test.sql
 --
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(29);
+select plan(32);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -83,20 +86,49 @@ insert into fixtures (id, event, team_h, team_a, kickoff_time, finished) values
   (9001, 90, 1, 2, now() + interval '60 days', false),
   (9002, 90, 2, 1, now() + interval '61 days', false);
 
--- Two entrants. Their `entrants` row is created by the on_auth_user_created
--- trigger, exactly as it would be on a real magic-link sign-in.
+-- Entrants are a fixed, pre-seeded roster now (see 20260101000007), claimed
+-- by an auth user rather than auto-created on sign-in. For the rules-engine
+-- tests below, seed two ad-hoc ones directly, already claimed.
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'alice@example.com'),
   ('22222222-2222-2222-2222-222222222222', 'bob@example.com');
 
+insert into entrants (id, auth_user_id, email, display_name, nomination_player_code) values
+  ('11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'alice@example.com', 'alice', 300),
+  ('22222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', 'bob@example.com', 'bob', null);
+
+-- ---------------------------------------------------------------------
+-- Claiming: an unclaimed profile can be claimed by anyone; a claimed one
+-- can't be claimed again out from under them.
+-- ---------------------------------------------------------------------
+
+insert into auth.users (id, email) values
+  ('33333333-3333-3333-3333-333333333333', 'carol@example.com'),
+  ('44444444-4444-4444-4444-444444444444', 'dave@example.com');
+
+select test_as_entrant('33333333-3333-3333-3333-333333333333'::uuid);
+select lives_ok(
+  $$ update entrants set auth_user_id = '33333333-3333-3333-3333-333333333333'
+     where id = 'a1000000-0000-0000-0000-000000000004' and auth_user_id is null $$,
+  'an unclaimed profile can be claimed'
+);
 select is(
-  (select display_name from entrants where id = '11111111-1111-1111-1111-111111111111'),
-  'alice',
-  'entrant row is created automatically on first sign-in'
+  (select auth_user_id from entrants where id = 'a1000000-0000-0000-0000-000000000004'),
+  '33333333-3333-3333-3333-333333333333'::uuid,
+  'the claim actually took'
 );
 
-update entrants set nomination_player_code = 300
-where id = '11111111-1111-1111-1111-111111111111';
+select test_as_entrant('44444444-4444-4444-4444-444444444444'::uuid);
+select lives_ok(
+  $$ update entrants set auth_user_id = '44444444-4444-4444-4444-444444444444'
+     where id = 'a1000000-0000-0000-0000-000000000004' and auth_user_id is null $$,
+  'claiming an already-claimed profile is a no-op, not an error'
+);
+select is(
+  (select auth_user_id from entrants where id = 'a1000000-0000-0000-0000-000000000004'),
+  '33333333-3333-3333-3333-333333333333'::uuid,
+  'the earlier claim is undisturbed'
+);
 
 -- ---------------------------------------------------------------------
 -- Scoring function: the acceptance-criteria arithmetic, direct.

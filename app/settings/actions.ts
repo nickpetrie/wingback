@@ -8,23 +8,21 @@ export interface SettingsResult {
   error?: string;
 }
 
-export async function updateDisplayName(displayName: string): Promise<SettingsResult> {
-  const trimmed = displayName.trim();
-  if (trimmed.length === 0) return { ok: false, error: "Name can't be empty" };
-
+export async function updatePhone(phone: string, smsOptIn: boolean): Promise<SettingsResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not signed in" };
 
+  const trimmed = phone.trim();
   const { error } = await supabase
     .from("entrants")
-    .update({ display_name: trimmed, display_name_set: true })
-    .eq("id", user.id);
+    .update({ phone: trimmed.length > 0 ? trimmed : null, sms_opt_in: trimmed.length > 0 && smsOptIn })
+    .eq("auth_user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
-  revalidatePath("/", "layout");
+  revalidatePath("/settings");
   return { ok: true };
 }
 
@@ -38,7 +36,7 @@ export async function updateNomination(playerCode: number): Promise<SettingsResu
   const { error } = await supabase
     .from("entrants")
     .update({ nomination_player_code: playerCode })
-    .eq("id", user.id);
+    .eq("auth_user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/settings");

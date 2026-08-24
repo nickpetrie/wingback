@@ -42,20 +42,21 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // First login: send them to settings to actually choose a display name,
-  // rather than silently keeping the auto-generated email-prefix default.
-  const isSettingsRoute = request.nextUrl.pathname.startsWith("/settings");
-  if (user && !isAuthRoute && !isSettingsRoute) {
+  // First login: nobody has an account yet, they have a profile to claim.
+  // /onboarding is exempt too — it's the very next (optional) step right
+  // after claiming, not something to bounce back out of.
+  const isClaimRoute = request.nextUrl.pathname.startsWith("/claim");
+  const isOnboardingRoute = request.nextUrl.pathname.startsWith("/onboarding");
+  if (user && !isAuthRoute && !isClaimRoute && !isOnboardingRoute) {
     const { data: entrant } = await supabase
       .from("entrants")
-      .select("display_name_set")
-      .eq("id", user.id)
+      .select("id")
+      .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    if (entrant && !entrant.display_name_set) {
+    if (!entrant) {
       const url = request.nextUrl.clone();
-      url.pathname = "/settings";
-      url.searchParams.set("welcome", "1");
+      url.pathname = "/claim";
       return NextResponse.redirect(url);
     }
   }

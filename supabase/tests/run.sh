@@ -15,15 +15,18 @@ run -c "drop database if exists ${DB};"
 run -c "create database ${DB};"
 run -d "$DB" -c "create extension if not exists pgtap; create extension if not exists pgcrypto;"
 
-# 20260101000004_cron.sql is deliberately excluded: it needs pg_cron/pg_net
-# and the Vault, which exist only on an actual Supabase project, not in a
-# plain local Postgres. It has nothing to do with the rules engine anyway.
+# 20260101000004_cron.sql and 20260101000008_avatars_storage.sql are
+# deliberately excluded: they need pg_cron/pg_net/Vault and Supabase's
+# storage schema respectively, none of which exist in a plain local
+# Postgres. Neither has anything to do with the rules engine anyway.
 for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000000_schema.sql \
          supabase/migrations/20260101000001_functions.sql \
          supabase/migrations/20260101000002_views.sql \
          supabase/migrations/20260101000003_rls.sql \
          supabase/migrations/20260101000005_display_name_onboarding.sql \
+         supabase/migrations/20260101000006_profile_claiming.sql \
+         supabase/migrations/20260101000007_seed_entrants.sql \
          supabase/tests/01_local_grants.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done

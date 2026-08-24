@@ -82,15 +82,15 @@ export interface Database {
       entrants: {
         Row: {
           id: string;
-          email: string;
+          auth_user_id: string | null;
+          email: string | null;
           display_name: string;
           phone: string | null;
           sms_opt_in: boolean;
           nomination_player_code: number | null;
-          display_name_set: boolean;
           created_at: string;
         };
-        Insert: Partial<Database["public"]["Tables"]["entrants"]["Row"]> & { id: string; email: string; display_name: string };
+        Insert: Partial<Database["public"]["Tables"]["entrants"]["Row"]> & { display_name: string };
         Update: Partial<Database["public"]["Tables"]["entrants"]["Row"]>;
         Relationships: [];
       };
@@ -145,6 +145,20 @@ export interface Database {
         Insert: { fixture_id: number; player_code: number; goals?: number };
         Update: Partial<{ goals: number }>;
         Relationships: [];
+      };
+      season_winners: {
+        Row: { season_label: string; entrant_id: string; points: number | null };
+        Insert: { season_label: string; entrant_id: string; points?: number | null };
+        Update: Partial<{ points: number | null }>;
+        Relationships: [
+          {
+            foreignKeyName: "season_winners_entrant_id_fkey";
+            columns: ["entrant_id"];
+            isOneToOne: false;
+            referencedRelation: "entrants";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       reminders_sent: {
         Row: {
