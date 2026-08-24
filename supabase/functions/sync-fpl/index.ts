@@ -8,10 +8,10 @@ import { fetchAllFixtures, fetchBootstrap } from "../_shared/fpl.ts";
 Deno.serve(async () => {
   try {
     const supabase = serviceClient();
-    const [bootstrap, fixtures] = await Promise.all([
-      fetchBootstrap(),
-      fetchAllFixtures(),
-    ]);
+    // Sequential, not Promise.all, for the same reason as score/: a rejected
+    // Promise.all abandons the other request mid-retry and leaves its eventual
+    // rejection unhandled.
+    const bootstrap = await fetchBootstrap();
 
     const { error: teamsError } = await supabase
       .from("teams")
@@ -85,26 +85,40 @@ Deno.serve(async () => {
     );
     if (playersError) throw playersError;
 
-    // Fixtures without a kickoff yet still need an `event` so a gameweek's
-    // fixture *count* is right; a null kickoff just won't move lock_at.
-    const { error: fixturesError } = await supabase.from("fixtures").upsert(
-      fixtures.map((f) => ({
-        id: f.id,
-        event: f.event,
-        team_h: f.team_h,
-        team_a: f.team_a,
-        kickoff_time: f.kickoff_time,
-        finished: f.finished,
-      })),
-    );
-    if (fixturesError) throw fixturesError;
+    // Fetched after the bootstrap writes, and allowed to fail on its own: FPL
+    // refusing this one call used to discard a successful 5MB bootstrap along
+    // with it, leaving squads and injury news an hour stale for no reason.
+    // Teams must already be in place before this runs (fixtures FK them).
+    let fixtureCount: number | null = null;
+    let fixturesFailed: string | null = null;
+    try {
+      const fixtures = await fetchAllFixtures();
+      // Fixtures without a kickoff yet still need an `event` so a gameweek's
+      // fixture *count* is right; a null kickoff just won't move lock_at.
+      const { error: fixturesError } = await supabase.from("fixtures").upsert(
+        fixtures.map((f) => ({
+          id: f.id,
+          event: f.event,
+          team_h: f.team_h,
+          team_a: f.team_a,
+          kickoff_time: f.kickoff_time,
+          finished: f.finished,
+        })),
+      );
+      if (fixturesError) throw fixturesError;
+      fixtureCount = fixtures.length;
+    } catch (err) {
+      fixturesFailed = err instanceof Error ? err.message : String(err);
+      console.error("sync-fpl: fixtures leg failed, bootstrap leg kept", err);
+    }
 
     return Response.json({
-      ok: true,
+      ok: fixturesFailed === null,
       teams: bootstrap.teams.length,
       players: bootstrap.elements.length,
       gameweeks: bootstrap.events.length,
-      fixtures: fixtures.length,
+      fixtures: fixtureCount,
+      fixturesFailed,
       statusChanges: historyRows.length,
     });
   } catch (err) {

@@ -34,12 +34,26 @@ Deno.serve(async (req) => {
     if (gwError) throw gwError;
 
     const results: Record<number, unknown> = {};
+    const failures: Record<number, string> = {};
 
     for (const gw of liveGameweeks ?? []) {
-      results[gw.id] = await syncGameweek(supabase, gw.id);
+      try {
+        results[gw.id] = await syncGameweek(supabase, gw.id);
+      } catch (err) {
+        // FPL refusing one gameweek shouldn't cost the others their update:
+        // this used to abort the whole loop, and the settle run walks three
+        // days of gameweeks at once. The next tick retries this one anyway.
+        failures[gw.id] = err instanceof Error ? err.message : String(err);
+        console.error(`score failed for gameweek ${gw.id}`, err);
+      }
     }
 
-    return Response.json({ ok: true, gameweeks: results });
+    const failed = Object.keys(failures).length;
+    return Response.json(
+      { ok: failed === 0, gameweeks: results, failures },
+      // Only a run that salvaged nothing is a failed run.
+      { status: failed > 0 && Object.keys(results).length === 0 ? 500 : 200 },
+    );
   } catch (err) {
     console.error("score failed", err);
     return Response.json(
@@ -50,10 +64,11 @@ Deno.serve(async (req) => {
 });
 
 async function syncGameweek(supabase: ServiceClient, gwId: number) {
-  const [fixtures, live] = await Promise.all([
-    fetchFixturesForEvent(gwId),
-    fetchLive(gwId),
-  ]);
+  // Sequential, not Promise.all: Promise.all rejects the moment the first
+  // request gives up, while the second is still working through its retries,
+  // so its later rejection has nobody left to catch it.
+  const fixtures = await fetchFixturesForEvent(gwId);
+  const live = await fetchLive(gwId);
 
   const { data: players, error: playersError } = await supabase
     .from("players")
