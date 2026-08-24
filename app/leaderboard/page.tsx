@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getStarCounts } from "@/lib/winners";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -6,6 +7,8 @@ export default async function LeaderboardPage() {
   const { data: leaderboard } = await supabase
     .from("leaderboard")
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
+
+  const starCounts = await getStarCounts(supabase);
 
   // Picks for the most recently locked gameweek. RLS does the actual work
   // here: a still-open gameweek's rows for other entrants simply won't come
@@ -45,6 +48,14 @@ export default async function LeaderboardPage() {
                 <td className="px-4 py-3 font-medium text-pitch-900">
                   {i === 0 && "🏆 "}
                   {row.display_name}
+                  {(starCounts.get(row.entrant_id) ?? 0) > 0 && (
+                    <span
+                      className="ml-1"
+                      aria-label={`${starCounts.get(row.entrant_id)} title${starCounts.get(row.entrant_id)! > 1 ? "s" : ""}`}
+                    >
+                      {"⭐".repeat(starCounts.get(row.entrant_id)!)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold text-pitch-700">
                   {row.total_points}

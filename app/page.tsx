@@ -2,29 +2,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
+import { getGameweekFixtures } from "@/lib/fixtures";
+import { getGameweekPicks, type GameweekPick } from "@/lib/picks";
+import { getStarCounts } from "@/lib/winners";
+import { GameweekPicksPanel } from "./GameweekPicksPanel";
+import { LockRevealOverlay } from "./LockRevealOverlay";
 import { STATUS_LABEL } from "./PlayerSearchInput";
 import { Countdown } from "./pick/Countdown";
-import type { Stake } from "@/lib/supabase/types";
-
-interface Fixture {
-  id: number;
-  kickoff_time: string | null;
-  finished: boolean;
-  team_h: number;
-  team_a: number;
-  home: string;
-  away: string;
-}
-
-interface RevealedPick {
-  entrant_id: string;
-  entrant_name: string;
-  player_name: string;
-  team_id: number;
-  team_short_name: string;
-  stake: Stake;
-  goals: number;
-}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,93 +21,9 @@ export default async function DashboardPage() {
   if (!entrantId) return null; // middleware sends anyone without a claim to /claim first
 
   const gameweek = await getCurrentGameweek(supabase);
-
-  const { data: fixturesRaw } = gameweek
-    ? await supabase
-      .from("fixtures")
-      .select(
-        "id, kickoff_time, finished, team_h, team_a, home:teams!fixtures_team_h_fkey(short_name), away:teams!fixtures_team_a_fkey(short_name)",
-      )
-      .eq("event", gameweek.id)
-      .order("kickoff_time", { ascending: true })
-    : { data: null };
-
-  const fixtures: Fixture[] = (fixturesRaw ?? []).map((f) => ({
-    id: f.id,
-    kickoff_time: f.kickoff_time,
-    finished: f.finished,
-    team_h: f.team_h,
-    team_a: f.team_a,
-    home: f.home?.short_name ?? "?",
-    away: f.away?.short_name ?? "?",
-  }));
-
-  // "Everyone's picks" only ever shows a locked gameweek's picks — RLS hides
-  // an open gameweek's other-entrant rows entirely, which is the whole point.
-  // Prefer the current gameweek if it's the one that just locked, otherwise
-  // fall back to the last one that did, so there's always something to show.
-  let revealGameweek: number | null = null;
-  if (gameweek?.state === "locked") {
-    revealGameweek = gameweek.id;
-  } else {
-    const { data: latestLocked } = await supabase
-      .from("gameweeks")
-      .select("id")
-      .not("lock_at", "is", null)
-      .lte("lock_at", new Date().toISOString())
-      .order("id", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    revealGameweek = latestLocked?.id ?? null;
-  }
-
-  const { data: revealedRaw } = revealGameweek
-    ? await supabase
-      .from("picks")
-      .select("entrant_id, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name))")
-      .eq("gameweek", revealGameweek)
-    : { data: null };
-
-  const revealedPicks: RevealedPick[] = (revealedRaw ?? [])
-    .filter((p) => p.entrants && p.players)
-    .map((p) => ({
-      entrant_id: p.entrant_id,
-      entrant_name: p.entrants!.display_name,
-      player_name: p.players!.web_name,
-      team_id: p.players!.team_id,
-      team_short_name: p.players!.teams?.short_name ?? "",
-      stake: p.stake,
-      goals: p.goals,
-    }));
-
-  const picksByTeam = new Map<number, RevealedPick[]>();
-  for (const p of revealedPicks) {
-    picksByTeam.set(p.team_id, [...(picksByTeam.get(p.team_id) ?? []), p]);
-  }
-  const showPicksOnFixtures = revealGameweek !== null && revealGameweek === gameweek?.id;
-
-  let ownPick: { player_name: string; team_short_name: string; stake: Stake; goals: number } | null = null;
-  if (gameweek && showPicksOnFixtures) {
-    const mine = revealedPicks.find((p) => p.entrant_id === entrantId);
-    ownPick = mine
-      ? { player_name: mine.player_name, team_short_name: mine.team_short_name, stake: mine.stake, goals: mine.goals }
-      : null;
-  } else if (gameweek) {
-    const { data: ownPickRaw } = await supabase
-      .from("picks")
-      .select("stake, goals, players(web_name, teams(short_name))")
-      .eq("entrant_id", entrantId)
-      .eq("gameweek", gameweek.id)
-      .maybeSingle();
-    ownPick = ownPickRaw?.players
-      ? {
-        player_name: ownPickRaw.players.web_name,
-        team_short_name: ownPickRaw.players.teams?.short_name ?? "",
-        stake: ownPickRaw.stake,
-        goals: ownPickRaw.goals,
-      }
-      : null;
-  }
+  const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
+  const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
+  const ownPick = picks.find((p) => p.entrant_id === entrantId) ?? null;
 
   const playingTeamIds = new Set(fixtures.flatMap((f) => [f.team_h, f.team_a]));
   const { data: newsRaw } = await supabase
@@ -149,21 +49,24 @@ export default async function DashboardPage() {
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
   const rows = leaderboard ?? [];
   const ownRank = rows.findIndex((r) => r.entrant_id === entrantId);
+  const starCounts = await getStarCounts(supabase);
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+      {gameweek?.state === "locked" && (
+        <LockRevealOverlay gameweekId={gameweek.id} picks={picks} />
+      )}
+
       <GameweekCard gameweek={gameweek} ownPick={ownPick} />
 
       <div className="grid gap-6 md:grid-cols-2">
-        <FixturesCard fixtures={fixtures} picksByTeam={showPicksOnFixtures ? picksByTeam : new Map()} />
+        <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
+          <GameweekPicksPanel fixtures={fixtures} picks={picks} />
+        </section>
         <NewsCard news={news} />
       </div>
 
-      {!showPicksOnFixtures && revealedPicks.length > 0 && (
-        <RevealCard gameweek={revealGameweek!} picks={revealedPicks} />
-      )}
-
-      <StandingsCard rows={rows} ownRank={ownRank} />
+      <StandingsCard rows={rows} ownRank={ownRank} starCounts={starCounts} />
     </main>
   );
 }
@@ -173,7 +76,7 @@ function GameweekCard({
   ownPick,
 }: {
   gameweek: Awaited<ReturnType<typeof getCurrentGameweek>>;
-  ownPick: { player_name: string; team_short_name: string; stake: Stake; goals: number } | null;
+  ownPick: GameweekPick | null;
 }) {
   if (!gameweek) {
     return (
@@ -225,54 +128,6 @@ function GameweekCard({
   );
 }
 
-function FixturesCard({
-  fixtures,
-  picksByTeam,
-}: {
-  fixtures: Fixture[];
-  picksByTeam: Map<number, RevealedPick[]>;
-}) {
-  return (
-    <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-pitch-900/40">Fixtures</h2>
-      {fixtures.length === 0 ? (
-        <p className="mt-3 text-sm text-pitch-900/50">No fixtures confirmed yet.</p>
-      ) : (
-        <ul className="mt-3 flex flex-col gap-2">
-          {fixtures.map((f) => {
-            const picks = [...(picksByTeam.get(f.team_h) ?? []), ...(picksByTeam.get(f.team_a) ?? [])];
-            return (
-              <li key={f.id} className="rounded-xl bg-pitch-50 px-3 py-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-pitch-900">
-                    {f.home} v {f.away}
-                  </span>
-                  <span className="text-xs text-pitch-900/40">
-                    {f.finished
-                      ? "Finished"
-                      : f.kickoff_time
-                        ? new Date(f.kickoff_time).toLocaleString(undefined, {
-                          weekday: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                        : "TBC"}
-                  </span>
-                </div>
-                {picks.length > 0 && (
-                  <p className="mt-1 text-xs text-gold-600">
-                    {picks.map((p) => `${p.entrant_name}: ${p.player_name}`).join(" · ")}
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function NewsCard({
   news,
 }: {
@@ -300,38 +155,16 @@ function NewsCard({
   );
 }
 
-function RevealCard({ gameweek, picks }: { gameweek: number; picks: RevealedPick[] }) {
-  return (
-    <section className="rounded-2xl border border-pitch-900/10 bg-white p-5 shadow-sm">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-pitch-900/40">
-        Gameweek {gameweek} reveal
-      </h2>
-      <ul className="mt-3 divide-y divide-pitch-900/5">
-        {picks.map((p, i) => (
-          <li key={i} className="flex items-center justify-between py-2 text-sm">
-            <span className="font-medium text-pitch-900">{p.entrant_name}</span>
-            <span>
-              {p.player_name} <span className="text-pitch-900/40">({p.team_short_name})</span>
-              {p.stake === 6 ? " ×2" : ""}
-            </span>
-            <span className="tabular-nums text-pitch-900/50">
-              {p.goals} goal{p.goals === 1 ? "" : "s"}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function StandingsCard({
   rows,
   ownRank,
+  starCounts,
 }: {
   rows: { entrant_id: string; display_name: string; total_points: number; scoring_gameweeks: number }[];
   ownRank: number;
+  starCounts: Map<string, number>;
 }) {
   if (rows.length === 0) return null;
 
@@ -344,19 +177,27 @@ function StandingsCard({
         </Link>
       </div>
       <ul className="mt-3 flex flex-col gap-1.5">
-        {rows.map((row, i) => (
-          <li
-            key={row.entrant_id}
-            className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm ${
-              i === ownRank ? "bg-gold-500/15" : ""
-            }`}
-          >
-            <span className="font-medium text-pitch-900">
-              {MEDALS[i] ?? "⚽"} {row.display_name}
-            </span>
-            <span className="tabular-nums text-pitch-700">{row.total_points}</span>
-          </li>
-        ))}
+        {rows.map((row, i) => {
+          const stars = starCounts.get(row.entrant_id) ?? 0;
+          return (
+            <li
+              key={row.entrant_id}
+              className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm ${
+                i === ownRank ? "bg-gold-500/15" : ""
+              }`}
+            >
+              <span className="font-medium text-pitch-900">
+                {MEDALS[i] ?? "⚽"} {row.display_name}
+                {stars > 0 && (
+                  <span className="ml-1" aria-label={`${stars} title${stars > 1 ? "s" : ""}`}>
+                    {"⭐".repeat(stars)}
+                  </span>
+                )}
+              </span>
+              <span className="tabular-nums text-pitch-700">{row.total_points}</span>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

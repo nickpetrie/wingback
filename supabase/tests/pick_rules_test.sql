@@ -327,7 +327,7 @@ select lives_ok(
 );
 
 -- ---------------------------------------------------------------------
--- RLS: picks are hidden until lock, visible to their owner, then everyone
+-- RLS: picks are visible to every entrant as soon as they're made
 -- ---------------------------------------------------------------------
 
 select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
@@ -348,8 +348,8 @@ select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
 
 select is(
   (select count(*)::int from picks where gameweek = 20 and entrant_id = '22222222-2222-2222-2222-222222222222'),
-  0,
-  'entrant A cannot see entrant B''s pick before the lock'
+  1,
+  'entrant A can see entrant B''s pick even before the lock'
 );
 select is(
   (select count(*)::int from picks where gameweek = 20 and entrant_id = '11111111-1111-1111-1111-111111111111'),
@@ -358,11 +358,13 @@ select is(
 );
 
 -- pick_scores is a view over picks, not the table itself: without
--- security_invoker it would run as the view owner and quietly bypass RLS.
+-- security_invoker it would run as the view owner and bypass the picks
+-- table's `to authenticated` restriction, letting even an anon request
+-- read through the view.
 select is(
   (select count(*)::int from pick_scores where gameweek = 20 and entrant_id = '22222222-2222-2222-2222-222222222222'),
-  0,
-  'the pick_scores view also hides a rival''s secret pick before the lock'
+  1,
+  'the pick_scores view also shows a rival''s pick before the lock'
 );
 
 select test_as_admin();
@@ -372,7 +374,7 @@ select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
 select is(
   (select count(*)::int from picks where gameweek = 20 and entrant_id = '22222222-2222-2222-2222-222222222222'),
   1,
-  'after the lock, everyone''s picks are visible'
+  'picks remain visible after the lock too'
 );
 
 select * from finish();

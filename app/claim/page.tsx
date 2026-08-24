@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getStarCounts } from "@/lib/winners";
 import { ClaimList } from "./ClaimList";
 
 export default async function ClaimPage() {
@@ -9,11 +10,7 @@ export default async function ClaimPage() {
     .select("id, display_name, auth_user_id")
     .order("created_at", { ascending: true });
 
-  const { data: winners } = await supabase.from("season_winners").select("entrant_id");
-  const starCounts = new Map<string, number>();
-  for (const w of winners ?? []) {
-    starCounts.set(w.entrant_id, (starCounts.get(w.entrant_id) ?? 0) + 1);
-  }
+  const starCounts = await getStarCounts(supabase);
 
   const profiles = (entrants ?? []).map((e) => ({
     id: e.id,

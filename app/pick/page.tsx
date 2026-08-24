@@ -3,8 +3,10 @@ import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rul
 import { loadPlayers } from "@/lib/players";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
+import { getGameweekFixtures } from "@/lib/fixtures";
+import { getGameweekPicks } from "@/lib/picks";
+import { GameweekPicksPanel } from "../GameweekPicksPanel";
 import { PickForm } from "./PickForm";
-import { LiveGameweek } from "./LiveGameweek";
 
 export default async function PickPage() {
   const supabase = await createClient();
@@ -39,45 +41,53 @@ export default async function PickPage() {
     ? pickHistory.find((h) => h.gameweek === gameweek.id) ?? null
     : null;
 
+  const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
+  const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
+
   return (
     <main className="mx-auto max-w-md p-6">
       <h1 className="text-2xl font-extrabold text-pitch-900">Your pick</h1>
 
       {!gameweek ? (
         <EmptyState>No gameweek data yet — check back once the season data has synced.</EmptyState>
-      ) : gameweek.state === "open" ? (
-        <>
-          {doubleTeams && doubleTeams.length > 0 && (
-            <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
-              ⭐ Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
-            </p>
-          )}
-
-          <div className="mt-4">
-            <PickForm
-              gameweek={gameweek.id}
-              players={await loadPlayers(supabase)}
-              usedCounts={usedCounts}
-              nominationCode={entrant?.nomination_player_code ?? null}
-              doublesUsedCount={doublesUsed(pickHistory)}
-              currentPick={
-                currentPick ? { player_code: currentPick.player_code, stake: currentPick.stake } : null
-              }
-            />
-          </div>
-        </>
-      ) : gameweek.state === "locked" ? (
-        <LiveGameweekSection
-          supabase={supabase}
-          gameweekId={gameweek.id}
-          entrantId={entrantId}
-          currentPick={currentPick}
-        />
-      ) : (
+      ) : gameweek.state === "unscheduled" ? (
         <EmptyState>
           Gameweek {gameweek.id} isn&rsquo;t scheduled yet — could be an international break, could just
           be early. Check back once fixtures are confirmed.
         </EmptyState>
+      ) : (
+        <>
+          {gameweek.state === "open" ? (
+            <>
+              {doubleTeams && doubleTeams.length > 0 && (
+                <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
+                  ⭐ Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
+                </p>
+              )}
+
+              <div className="mt-4">
+                <PickForm
+                  gameweek={gameweek.id}
+                  players={await loadPlayers(supabase)}
+                  usedCounts={usedCounts}
+                  nominationCode={entrant?.nomination_player_code ?? null}
+                  doublesUsedCount={doublesUsed(pickHistory)}
+                  currentPick={
+                    currentPick ? { player_code: currentPick.player_code, stake: currentPick.stake } : null
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 rounded-full bg-pitch-50 px-4 py-2 text-sm text-pitch-900/70">
+              🔒 Gameweek {gameweek.id} has locked — no more picks until next gameweek.
+            </p>
+          )}
+
+          <div className="mt-6">
+            <GameweekPicksPanel fixtures={fixtures} picks={picks} />
+          </div>
+        </>
       )}
     </main>
   );
@@ -88,73 +98,5 @@ function EmptyState({ children }: { children: React.ReactNode }) {
     <div className="mt-4 rounded-2xl border border-dashed border-pitch-900/15 bg-pitch-50 p-6 text-center text-sm text-pitch-900/60">
       {children}
     </div>
-  );
-}
-
-async function LiveGameweekSection({
-  supabase,
-  gameweekId,
-  entrantId,
-  currentPick,
-}: {
-  supabase: Awaited<ReturnType<typeof createClient>>;
-  gameweekId: number;
-  entrantId: string;
-  currentPick: PickHistoryEntry | null;
-}) {
-  const { data: fixturesRaw } = await supabase
-    .from("fixtures")
-    .select("id, kickoff_time, finished, home:teams!fixtures_team_h_fkey(short_name), away:teams!fixtures_team_a_fkey(short_name)")
-    .eq("event", gameweekId)
-    .order("kickoff_time", { ascending: true });
-
-  const fixtures = (fixturesRaw ?? []).map((f) => ({
-    id: f.id,
-    kickoff_time: f.kickoff_time,
-    finished: f.finished,
-    home: f.home?.short_name ?? "?",
-    away: f.away?.short_name ?? "?",
-  }));
-
-  const { data: ownPickRaw } = currentPick
-    ? await supabase
-      .from("picks")
-      .select("stake, goals, players(web_name, teams(short_name))")
-      .eq("entrant_id", entrantId)
-      .eq("gameweek", gameweekId)
-      .maybeSingle()
-    : { data: null };
-
-  const ownPick = ownPickRaw?.players
-    ? {
-      player_name: ownPickRaw.players.web_name,
-      team_short_name: ownPickRaw.players.teams?.short_name ?? "",
-      stake: ownPickRaw.stake,
-      goals: ownPickRaw.goals,
-    }
-    : null;
-
-  const { data: revealedRaw } = await supabase
-    .from("picks")
-    .select("stake, goals, entrants(display_name), players(web_name, teams(short_name))")
-    .eq("gameweek", gameweekId);
-
-  const revealedPicks = (revealedRaw ?? [])
-    .filter((p) => p.entrants && p.players)
-    .map((p) => ({
-      entrant_name: p.entrants!.display_name,
-      player_name: p.players!.web_name,
-      team_short_name: p.players!.teams?.short_name ?? "",
-      stake: p.stake,
-      goals: p.goals,
-    }));
-
-  return (
-    <LiveGameweek
-      gameweekId={gameweekId}
-      fixtures={fixtures}
-      ownPick={ownPick}
-      revealedPicks={revealedPicks}
-    />
   );
 }

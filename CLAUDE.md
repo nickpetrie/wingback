@@ -7,18 +7,23 @@ future sessions, and `DEPLOY.md` covers setup/deployment specifically.
 
 ## What this is
 
-Each gameweek every entrant secretly picks one PL player they think will
-score, at a £3 or £6 (doubled points) stake. Points accrue over 38
-gameweeks. The three problems this replaces a Google Sheet for: people
-forgetting to pick (→ reminders), goals miscounted by hand (→ synced from
-the FPL API and derived in SQL), and picks not actually being secret (→
-enforced with Postgres RLS, not app logic).
+Each gameweek every entrant picks one PL player they think will score, at
+a £3 or £6 (doubled points) stake. Points accrue over 38 gameweeks. The
+two problems this replaces a Google Sheet for: people forgetting to pick
+(→ reminders) and goals miscounted by hand (→ synced from the FPL API and
+derived in SQL). Picks are visible to everyone as soon as they're made —
+matching the old sheet, and a deliberate choice, not an oversight — but
+the *lock* is still enforced in the database: `picks_guard` refuses any
+insert/update on a picks row once its gameweek has locked, regardless of
+what the app tries to send.
 
 ## Architecture, in one paragraph
 
 Next.js App Router (Vercel) talks to Postgres only through the Supabase
 anon key + the viewer's session, so every query runs under RLS — that's
-what makes "picks are secret until lock" actually hold. The FPL API has no
+what makes the *write*-side rules (who can submit or change a pick, and
+that nobody can once its gameweek has locked) actually hold, regardless of
+what the app's own code does or doesn't check. The FPL API has no
 CORS headers and can't be called from the browser, and its bootstrap
 payload is ~5MB, so all FPL access lives in Supabase Edge Functions
 (`supabase/functions/`), which use the service-role key (never present in
@@ -34,9 +39,15 @@ reading the project URL and service key from Supabase Vault at call time.
   don't — that's exactly the "spreadsheet miscounts goals" problem again.
 - **`pick_scores` and `leaderboard` are `security_invoker` views.**
   Without that, they run as the view owner and silently bypass the picks
-  RLS policy, leaking a rival's secret player_code/stake before lock. This
-  is covered by a pgTAP test — if you add a new view over `picks`, give it
-  the same treatment and a test to match.
+  table's `to authenticated` restriction — an anon request could read
+  every pick straight through the view even though the table itself
+  denies it outright. This is covered by a pgTAP test — if you add a new
+  view over `picks`, give it the same treatment and a test to match.
+- **Picks are visible to everyone the moment they're made** (see
+  `20260101000009_public_picks.sql`) — there's no lock-based secrecy to
+  preserve here. Don't reintroduce a "hide until lock" SELECT policy
+  without it being an explicit, discussed decision; it was deliberately
+  removed once already.
 - **`players.code` is the join key, not `id`.** `code` is stable across
   seasons; `id`/`fpl_id` only means anything within the current season and
   is only used to hit `/event/{gw}/live/`.
