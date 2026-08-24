@@ -4,11 +4,13 @@ import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekFixtures } from "@/lib/fixtures";
 import { getGameweekPicks, type GameweekPick } from "@/lib/picks";
+import { getPickFormContext } from "@/lib/pick-form-context";
 import { getStarCounts } from "@/lib/winners";
 import { GameweekPicksPanel } from "./GameweekPicksPanel";
 import { LockRevealOverlay } from "./LockRevealOverlay";
 import { STATUS_LABEL } from "./PlayerSearchInput";
 import { Countdown } from "./pick/Countdown";
+import { PickForm } from "./pick/PickForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -24,6 +26,8 @@ export default async function DashboardPage() {
   const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
   const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
   const ownPick = picks.find((p) => p.entrant_id === entrantId) ?? null;
+  const pickForm =
+    gameweek?.state === "open" ? await getPickFormContext(supabase, entrantId, gameweek.id) : null;
 
   const playingTeamIds = new Set(fixtures.flatMap((f) => [f.team_h, f.team_a]));
   const { data: newsRaw } = await supabase
@@ -58,6 +62,24 @@ export default async function DashboardPage() {
       )}
 
       <GameweekCard gameweek={gameweek} ownPick={ownPick} />
+
+      {gameweek?.state === "open" && pickForm && (
+        <section className="rounded-3xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm sm:p-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">
+            {pickForm.currentPick ? "Your pick" : "Make your pick"}
+          </h2>
+          <div className="mt-3">
+            <PickForm
+              gameweek={gameweek.id}
+              players={pickForm.players}
+              usedCounts={pickForm.usedCounts}
+              nominationCode={pickForm.nominationCode}
+              doublesUsedCount={pickForm.doublesUsedCount}
+              currentPick={pickForm.currentPick}
+            />
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="rounded-2xl border border-foreground/10 bg-surface p-5 shadow-sm backdrop-blur-sm">
@@ -98,26 +120,12 @@ function GameweekCard({
 
       {gameweek.state === "open" ? (
         <>
-          <p className="relative mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <p className="relative mt-3 text-6xl font-extrabold tracking-tight tabular-nums sm:text-7xl">
             <Countdown lockAt={gameweek.lock_at!} />
           </p>
-          <p className="relative mt-1 text-sm text-white/50">until picks lock</p>
-          <div className="relative mt-5">
-            {ownPick ? (
-              <p className="text-sm text-white/80">
-                You&rsquo;ve picked <span className="font-semibold text-gold-400">{ownPick.player_name}</span>{" "}
-                <span className="text-white/50">· {ownPick.team_short_name}</span>
-                {ownPick.stake === 6 ? " ×2" : ""}
-              </p>
-            ) : (
-              <Link
-                href="/pick"
-                className="inline-block rounded-full bg-gold-500 px-6 py-2.5 text-sm font-semibold text-pitch-900 shadow-md transition-colors hover:bg-gold-400"
-              >
-                Make your pick →
-              </Link>
-            )}
-          </div>
+          <p className="relative mt-2 text-sm font-medium uppercase tracking-wide text-white/50">
+            until picks lock
+          </p>
         </>
       ) : gameweek.state === "locked" ? (
         <>

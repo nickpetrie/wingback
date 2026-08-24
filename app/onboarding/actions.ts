@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export interface OnboardingResult {
@@ -8,7 +7,7 @@ export interface OnboardingResult {
   error?: string;
 }
 
-export async function finishOnboarding(phone: string, smsOptIn: boolean): Promise<OnboardingResult> {
+export async function savePhoneStep(phone: string, smsOptIn: boolean): Promise<OnboardingResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,9 +21,5 @@ export async function finishOnboarding(phone: string, smsOptIn: boolean): Promis
     .eq("auth_user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
-  redirect("/pick");
-}
-
-export async function skipOnboarding() {
-  redirect("/pick");
+  return { ok: true };
 }

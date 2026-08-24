@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  /* Sticker-album palette, dark-first: a near-black pitch canvas with
-     frosted glass cards, foil gold accents. Distinct from --color-pitch-900
-     (the mid-dark green used inside gradients/badges) so the two can be
-     composed without one swallowing the other. */
-  --background: #071c11;
+  /* Sticker-album palette, dark-first: a near-neutral black canvas so the
+     pitch-green gradients and gold accents read as distinct colours rather
+     than one wash of green. Distinct from --color-pitch-900 (the mid-dark
+     green used inside gradients/badges) so the two can be composed without
+     one swallowing the other. */
+  --background: #0a0b0a;
   --foreground: #f5f8f4;
 
   --color-pitch-50: #eef7f1;

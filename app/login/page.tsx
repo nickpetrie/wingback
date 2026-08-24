@@ -56,8 +56,16 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-pitch-900 via-pitch-800 to-pitch-700 p-6">
-      <div className="w-full max-w-sm rounded-3xl border border-foreground/10 bg-surface-strong p-8 shadow-xl backdrop-blur-md">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-6">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-pitch-600/25 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-gold-500/10 blur-3xl"
+      />
+      <div className="relative w-full max-w-sm rounded-3xl border border-foreground/10 bg-surface-strong p-8 shadow-xl backdrop-blur-md">
         <div className="mb-6 text-center">
           <p className="text-3xl">⚽</p>
           <h1 className="mt-2 text-2xl font-extrabold text-foreground">Wingback</h1>
