@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentGameweek } from "@/lib/gameweek";
 import { signOut } from "./actions";
 import { LeaderboardStrip } from "./LeaderboardStrip";
+import { GameweekStatusBar } from "./GameweekStatusBar";
 
 const LINKS = [
   { href: "/pick", label: "Pick", icon: "⚽" },
@@ -21,8 +23,11 @@ export async function Nav() {
     .from("leaderboard")
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
 
+  const gameweek = await getCurrentGameweek(supabase);
+
   return (
     <header className="sticky top-0 z-10">
+      <GameweekStatusBar gameweek={gameweek} />
       <div className="bg-gradient-to-r from-pitch-900 via-pitch-800 to-pitch-700 px-4 py-3">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div className="flex items-center gap-1 overflow-x-auto">

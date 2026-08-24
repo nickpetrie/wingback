@@ -23,6 +23,7 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000001_functions.sql \
          supabase/migrations/20260101000002_views.sql \
          supabase/migrations/20260101000003_rls.sql \
+         supabase/migrations/20260101000005_display_name_onboarding.sql \
          supabase/tests/01_local_grants.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done

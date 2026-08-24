@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
 import { loadPlayers } from "@/lib/players";
-import { Countdown } from "./Countdown";
+import { getCurrentGameweek } from "@/lib/gameweek";
 import { PickForm } from "./PickForm";
 import { LiveGameweek } from "./LiveGameweek";
 
@@ -18,38 +18,7 @@ export default async function PickPage() {
     .eq("id", user.id)
     .single();
 
-  // The next gameweek that hasn't locked yet, if there is one.
-  const { data: openGameweek } = await supabase
-    .from("gameweeks")
-    .select("id, lock_at")
-    .eq("finished", false)
-    .not("lock_at", "is", null)
-    .gt("lock_at", new Date().toISOString())
-    .order("id", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  // Otherwise, whichever not-yet-finished gameweek is earliest is the
-  // current one — worth showing even though there's no pick form for it.
-  // Two different reasons it can land here: it's genuinely locked/live
-  // (fixtures kicked off), or FPL just hasn't confirmed its fixture times
-  // yet (international breaks, early-season gaps) — lock_at is null either
-  // way that happens, so distinguish on that rather than assuming "locked".
-  const { data: fallbackGameweek } = openGameweek
-    ? { data: null }
-    : await supabase
-      .from("gameweeks")
-      .select("id, lock_at")
-      .eq("finished", false)
-      .order("id", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-  const gameweek = openGameweek ?? fallbackGameweek;
-  const isLocked =
-    !openGameweek &&
-    !!fallbackGameweek?.lock_at &&
-    new Date(fallbackGameweek.lock_at) <= new Date();
+  const gameweek = await getCurrentGameweek(supabase);
 
   const { data: doubleTeams } = gameweek
     ? await supabase.from("double_gameweek_teams").select("team").eq("event", gameweek.id)
@@ -72,16 +41,10 @@ export default async function PickPage() {
 
       {!gameweek ? (
         <EmptyState>No gameweek data yet — check back once the season data has synced.</EmptyState>
-      ) : openGameweek ? (
+      ) : gameweek.state === "open" ? (
         <>
-          <p className="mt-1 text-sm text-pitch-900/60">
-            Gameweek {gameweek.id} locks in{" "}
-            <span className="font-semibold text-pitch-700">
-              <Countdown lockAt={gameweek.lock_at!} />
-            </span>
-          </p>
           {doubleTeams && doubleTeams.length > 0 && (
-            <p className="mt-2 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
+            <p className="mt-3 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
               ⭐ Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
             </p>
           )}
@@ -99,7 +62,7 @@ export default async function PickPage() {
             />
           </div>
         </>
-      ) : isLocked ? (
+      ) : gameweek.state === "locked" ? (
         <LiveGameweekSection
           supabase={supabase}
           gameweekId={gameweek.id}

@@ -87,6 +87,7 @@ export interface Database {
           phone: string | null;
           sms_opt_in: boolean;
           nomination_player_code: number | null;
+          display_name_set: boolean;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["entrants"]["Row"]> & { id: string; email: string; display_name: string };

@@ -20,7 +20,7 @@ export async function updateDisplayName(displayName: string): Promise<SettingsRe
 
   const { error } = await supabase
     .from("entrants")
-    .update({ display_name: trimmed })
+    .update({ display_name: trimmed, display_name_set: true })
     .eq("id", user.id);
 
   if (error) return { ok: false, error: error.message };

@@ -42,5 +42,23 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // First login: send them to settings to actually choose a display name,
+  // rather than silently keeping the auto-generated email-prefix default.
+  const isSettingsRoute = request.nextUrl.pathname.startsWith("/settings");
+  if (user && !isAuthRoute && !isSettingsRoute) {
+    const { data: entrant } = await supabase
+      .from("entrants")
+      .select("display_name_set")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (entrant && !entrant.display_name_set) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/settings";
+      url.searchParams.set("welcome", "1");
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
