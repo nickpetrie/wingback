@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
-import type { PlayerOption } from "@/lib/players";
+import { loadPlayers } from "@/lib/players";
 import { Countdown } from "./Countdown";
 import { PickForm } from "./PickForm";
 import { LiveGameweek } from "./LiveGameweek";
@@ -29,10 +29,13 @@ export default async function PickPage() {
     .limit(1)
     .maybeSingle();
 
-  // Otherwise, whichever not-yet-finished gameweek is earliest is the one
-  // currently being played — locked, but still worth showing (fixtures,
-  // your own pick, everyone else's revealed picks), not a blank page.
-  const { data: liveGameweek } = openGameweek
+  // Otherwise, whichever not-yet-finished gameweek is earliest is the
+  // current one — worth showing even though there's no pick form for it.
+  // Two different reasons it can land here: it's genuinely locked/live
+  // (fixtures kicked off), or FPL just hasn't confirmed its fixture times
+  // yet (international breaks, early-season gaps) — lock_at is null either
+  // way that happens, so distinguish on that rather than assuming "locked".
+  const { data: fallbackGameweek } = openGameweek
     ? { data: null }
     : await supabase
       .from("gameweeks")
@@ -42,7 +45,11 @@ export default async function PickPage() {
       .limit(1)
       .maybeSingle();
 
-  const gameweek = openGameweek ?? liveGameweek;
+  const gameweek = openGameweek ?? fallbackGameweek;
+  const isLocked =
+    !openGameweek &&
+    !!fallbackGameweek?.lock_at &&
+    new Date(fallbackGameweek.lock_at) <= new Date();
 
   const { data: doubleTeams } = gameweek
     ? await supabase.from("double_gameweek_teams").select("team").eq("event", gameweek.id)
@@ -61,20 +68,21 @@ export default async function PickPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-xl font-bold">Your pick</h1>
+      <h1 className="text-2xl font-extrabold text-pitch-900">Your pick</h1>
 
       {!gameweek ? (
-        <p className="mt-4 text-sm text-neutral-500">
-          No gameweek data yet — check back once the season data has synced.
-        </p>
+        <EmptyState>No gameweek data yet — check back once the season data has synced.</EmptyState>
       ) : openGameweek ? (
         <>
-          <p className="mt-1 text-sm text-neutral-500">
-            Gameweek {gameweek.id} locks in <Countdown lockAt={gameweek.lock_at!} />
+          <p className="mt-1 text-sm text-pitch-900/60">
+            Gameweek {gameweek.id} locks in{" "}
+            <span className="font-semibold text-pitch-700">
+              <Countdown lockAt={gameweek.lock_at!} />
+            </span>
           </p>
           {doubleTeams && doubleTeams.length > 0 && (
-            <p className="mt-2 rounded-md bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
-              Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
+            <p className="mt-2 rounded-full bg-gold-500/15 px-4 py-2 text-sm font-medium text-gold-600">
+              ⭐ Double gameweek — {doubleTeams.length} team{doubleTeams.length > 1 ? "s" : ""} play twice.
             </p>
           )}
 
@@ -91,33 +99,29 @@ export default async function PickPage() {
             />
           </div>
         </>
-      ) : (
+      ) : isLocked ? (
         <LiveGameweekSection
           supabase={supabase}
           gameweekId={gameweek.id}
           userId={user.id}
           currentPick={currentPick}
         />
+      ) : (
+        <EmptyState>
+          Gameweek {gameweek.id} isn&rsquo;t scheduled yet — could be an international break, could just
+          be early. Check back once fixtures are confirmed.
+        </EmptyState>
       )}
     </main>
   );
 }
 
-async function loadPlayers(supabase: Awaited<ReturnType<typeof createClient>>): Promise<PlayerOption[]> {
-  const { data: playersRaw } = await supabase
-    .from("players")
-    .select("code, web_name, first_name, second_name, team_id, element_type, status, news, teams(short_name)")
-    .order("web_name");
-
-  return (playersRaw ?? []).map((p) => ({
-    code: p.code,
-    web_name: p.web_name,
-    full_name: `${p.first_name} ${p.second_name}`,
-    team_short_name: p.teams?.short_name ?? "",
-    element_type: p.element_type,
-    status: p.status,
-    news: p.news,
-  }));
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-4 rounded-2xl border border-dashed border-pitch-900/15 bg-pitch-50 p-6 text-center text-sm text-pitch-900/60">
+      {children}
+    </div>
+  );
 }
 
 async function LiveGameweekSection({

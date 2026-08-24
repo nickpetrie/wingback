@@ -52,8 +52,8 @@ export default async function AlbumPage() {
 
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <h1 className="text-xl font-bold">Your album</h1>
-      <p className="mt-1 text-sm text-neutral-500">38 gameweeks, one sticker each.</p>
+      <h1 className="text-2xl font-extrabold text-pitch-900">Your album</h1>
+      <p className="mt-1 text-sm text-pitch-900/50">38 gameweeks, one sticker each.</p>
 
       <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
         {slots.map((slot) => (
@@ -67,7 +67,7 @@ export default async function AlbumPage() {
 function StickerSlot({ slot }: { slot: Slot }) {
   if (slot.state === "empty") {
     return (
-      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-200 text-neutral-300">
+      <div className="flex aspect-[3/4] flex-col items-center justify-center rounded-xl border-2 border-dashed border-pitch-900/15 text-pitch-900/25">
         <span className="text-lg font-bold">{slot.gameweek}</span>
       </div>
     );
@@ -75,20 +75,24 @@ function StickerSlot({ slot }: { slot: Slot }) {
 
   const badge =
     slot.state === "scored" ? (
-      <span className="rounded bg-green-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+      <span className="rounded-full bg-pitch-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
         +{slot.goals * (slot.stake === 6 ? 2 : 1)}
       </span>
     ) : slot.state === "blanked" ? (
-      <span className="rounded bg-neutral-400 px-1.5 py-0.5 text-[10px] font-bold text-white">blank</span>
+      <span className="rounded-full bg-pitch-900/30 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+        blank
+      </span>
     ) : (
-      <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white">GW{slot.gameweek}</span>
+      <span className="rounded-full bg-gold-500 px-2 py-0.5 text-[10px] font-bold text-pitch-900 shadow-sm">
+        GW{slot.gameweek}
+      </span>
     );
 
   return (
     <div
-      className={`relative flex aspect-[3/4] flex-col overflow-hidden rounded-lg border ${
-        slot.state === "pending" ? "border-amber-300" : "border-neutral-200"
-      } bg-white shadow-sm`}
+      className={`relative flex aspect-[3/4] flex-col overflow-hidden rounded-xl border-2 ${
+        slot.state === "pending" ? "border-gold-400" : "border-transparent"
+      } bg-white shadow-md transition-transform hover:-translate-y-0.5`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- posterised server-processed image, not eligible for next/image optimization */}
       <img
@@ -96,13 +100,13 @@ function StickerSlot({ slot }: { slot: Slot }) {
         alt={slot.webName}
         className="h-3/4 w-full object-cover"
       />
-      <div className="flex flex-1 flex-col items-center justify-center px-1 text-center">
-        <p className="truncate text-xs font-semibold">{slot.webName}</p>
-        <p className="text-[10px] text-neutral-400">{slot.teamShortName}</p>
+      <div className="flex flex-1 flex-col items-center justify-center bg-pitch-50 px-1 text-center">
+        <p className="truncate text-xs font-semibold text-pitch-900">{slot.webName}</p>
+        <p className="text-[10px] text-pitch-900/40">{slot.teamShortName}</p>
       </div>
       <div className="absolute right-1 top-1">{badge}</div>
       {slot.stake === 6 && (
-        <div className="absolute left-1 top-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+        <div className="absolute left-1 top-1 rounded-full bg-pitch-900 px-2 py-0.5 text-[10px] font-bold text-gold-400 shadow-sm">
           x2
         </div>
       )}

@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f4;
+  --foreground: #0f2417;
+
+  /* Sticker-album palette: pitch green + foil gold. */
+  --color-pitch-50: #eef7f1;
+  --color-pitch-100: #dcefe3;
+  --color-pitch-900: #062818;
+  --color-pitch-800: #0b3a22;
+  --color-pitch-700: #0f5132;
+  --color-pitch-600: #146b41;
+  --color-pitch-500: #1b8a52;
+  --color-gold-600: #d99a12;
+  --color-gold-500: #f0b429;
+  --color-gold-400: #f6cc63;
+  --color-cream: #fffdf7;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-pitch-50: var(--color-pitch-50);
+  --color-pitch-100: var(--color-pitch-100);
+  --color-pitch-900: var(--color-pitch-900);
+  --color-pitch-800: var(--color-pitch-800);
+  --color-pitch-700: var(--color-pitch-700);
+  --color-pitch-600: var(--color-pitch-600);
+  --color-pitch-500: var(--color-pitch-500);
+  --color-gold-600: var(--color-gold-600);
+  --color-gold-500: var(--color-gold-500);
+  --color-gold-400: var(--color-gold-400);
+  --color-cream: var(--color-cream);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
