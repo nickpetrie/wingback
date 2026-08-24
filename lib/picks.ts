@@ -8,6 +8,7 @@ export interface GameweekPick {
   player_name: string;
   team_id: number;
   team_short_name: string;
+  team_code: number | null;
   stake: Stake;
   goals: number;
 }
@@ -23,7 +24,7 @@ export async function getGameweekPicks(
   const { data } = await supabase
     .from("picks")
     .select(
-      "entrant_id, player_code, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name))",
+      "entrant_id, player_code, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name, code))",
     )
     .eq("gameweek", gameweekId);
 
@@ -36,6 +37,7 @@ export async function getGameweekPicks(
       player_name: p.players!.web_name,
       team_id: p.players!.team_id,
       team_short_name: p.players!.teams?.short_name ?? "",
+      team_code: p.players!.teams?.code ?? null,
       stake: p.stake,
       goals: p.goals,
     }));

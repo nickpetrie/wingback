@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { PlayerOption } from "@/lib/players";
 import { foldDiacritics } from "@/lib/rules";
+import { TeamBadge } from "./TeamBadge";
 
 export const STATUS_LABEL: Record<string, string> = {
   a: "Available",
@@ -82,10 +83,17 @@ export function PlayerSearchInput({
                   cursor: "pointer",
                 }}
               >
-                <span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {p.web_name}{" "}
-                  <span style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                    · {p.team_short_name}
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                    }}
+                  >
+                    · <TeamBadge code={p.team_code} size={14} /> {p.team_short_name}
                   </span>
                 </span>
                 {p.status !== "a" && (

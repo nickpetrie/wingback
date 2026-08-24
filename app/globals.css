@@ -367,6 +367,39 @@ img {
   box-shadow: var(--shadow-lg);
 }
 
+/* — PickForm's two-column layout, made embeddable — a container query
+   (not a viewport media query) so it stacks correctly whether it's on the
+   full-width /pick page or squeezed into Home's narrower "Your pick"
+   column. — */
+.wb-pickform {
+  container-type: inline-size;
+}
+.wb-pickform-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+.wb-pickform-col-left {
+  border-right: 2px solid var(--color-divider);
+  padding: 24px 24px 24px 0;
+}
+.wb-pickform-col-right {
+  padding: 24px 0 24px 24px;
+}
+@container (max-width: 720px) {
+  .wb-pickform-grid {
+    grid-template-columns: 1fr;
+  }
+  .wb-pickform-col-left {
+    border-right: none;
+    border-bottom: 2px solid var(--color-divider);
+    padding: 0 0 24px;
+  }
+  .wb-pickform-col-right {
+    padding: 24px 0 0;
+  }
+}
+
 /* — app-specific animation, not part of the shipped Modernist system — */
 @keyframes wb-in {
   from {

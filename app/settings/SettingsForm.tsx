@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { PlayerOption } from "@/lib/players";
 import { teamColor } from "@/lib/teamColors";
 import { PlayerSearchInput } from "../PlayerSearchInput";
+import { TeamBadge } from "../TeamBadge";
 import { AvatarUploader } from "../AvatarUploader";
 import { updateNomination, updatePhone } from "./actions";
 
@@ -114,7 +115,8 @@ export function SettingsForm({
             }}
           >
             <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 18 }}>{nomination.web_name}</span>
-            <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              <TeamBadge code={nomination.team_code} size={14} />
               {nomination.team_short_name}
             </span>
             <button

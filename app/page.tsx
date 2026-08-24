@@ -1,12 +1,15 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekFixtures, type GameweekFixture } from "@/lib/fixtures";
 import { getGameweekPicks } from "@/lib/picks";
+import { getPickFormContext } from "@/lib/pick-form-context";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
 import { teamColor } from "@/lib/teamColors";
 import { STATUS_LABEL } from "./PlayerSearchInput";
+import { TeamBadge } from "./TeamBadge";
+import { Countdown } from "./pick/Countdown";
+import { PickForm } from "./pick/PickForm";
 
 function kickoffLabel(iso: string | null): string {
   if (!iso) return "TBC";
@@ -33,6 +36,8 @@ export default async function DashboardPage() {
   const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
   const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
   const myPick = picks.find((p) => p.entrant_id === entrantId) ?? null;
+  const pickForm =
+    gameweek?.state === "open" ? await getPickFormContext(supabase, entrantId, gameweek.id) : null;
 
   const { data: otherEntrants } = await supabase
     .from("entrants")
@@ -108,14 +113,36 @@ export default async function DashboardPage() {
           alignItems: "flex-end",
           justifyContent: "space-between",
           gap: 16,
+          flexWrap: "wrap",
           borderBottom: "2px solid var(--color-divider)",
           paddingBottom: 10,
         }}
       >
-        <h1 style={{ margin: 0 }}>This gameweek</h1>
-        <p style={{ margin: 0, fontSize: 13, maxWidth: 340, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-          {gameweek ? homeLine : "No gameweek data yet — check back once the season data has synced."}
-        </p>
+        <h1 style={{ margin: 0 }}>{gameweek ? `Current Gameweek: ${gameweek.id}` : "Current Gameweek"}</h1>
+        {gameweek?.state === "open" ? (
+          <div style={{ textAlign: "right" }}>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-heading)",
+                fontWeight: 800,
+                fontSize: 40,
+                lineHeight: 1,
+                fontVariantNumeric: "tabular-nums",
+                color: "var(--color-accent)",
+              }}
+            >
+              <Countdown lockAt={gameweek.lock_at!} />
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              until picks lock
+            </p>
+          </div>
+        ) : (
+          <p style={{ margin: 0, fontSize: 13, maxWidth: 340, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            {gameweek ? homeLine : "No gameweek data yet — check back once the season data has synced."}
+          </p>
+        )}
       </div>
 
       {gameweek && (
@@ -130,7 +157,17 @@ export default async function DashboardPage() {
           >
             <section style={{ borderRight: "2px solid var(--color-divider)", padding: "24px 24px 24px 0" }}>
               <h6 style={{ margin: "0 0 12px" }}>Your pick</h6>
-              {myPick ? (
+              {gameweek.state === "open" && pickForm ? (
+                <PickForm
+                  gameweek={gameweek.id}
+                  players={pickForm.players}
+                  fixtures={fixtures}
+                  usedCounts={pickForm.usedCounts}
+                  nominationCode={pickForm.nominationCode}
+                  doublesUsedCount={pickForm.doublesUsedCount}
+                  currentPick={pickForm.currentPick}
+                />
+              ) : myPick ? (
                 <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
                   <div style={{ position: "relative", width: 132, height: 172, flex: "none" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card, not eligible for next/image */}
@@ -150,8 +187,12 @@ export default async function DashboardPage() {
                         letterSpacing: ".1em",
                         textTransform: "uppercase",
                         padding: "3px 6px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                     >
+                      <TeamBadge code={myPick.team_code} size={12} />
                       {myPick.team_short_name}
                     </span>
                   </div>
@@ -193,23 +234,8 @@ export default async function DashboardPage() {
                           points
                         </p>
                       </div>
-                      {gameweek.state === "open" && (
-                        <Link href="/pick" className="btn btn-secondary wb-tap" style={{ marginLeft: "auto" }}>
-                          Change pick
-                        </Link>
-                      )}
                     </div>
                   </div>
-                </div>
-              ) : gameweek.state === "open" ? (
-                <div style={{ border: "2px dashed var(--color-divider)", padding: "32px 24px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
-                  <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 26, lineHeight: 1.1 }}>No pick in yet.</p>
-                  <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-                    {pickedCount} of the other four have picked.
-                  </p>
-                  <Link href="/pick" className="btn btn-primary wb-tap">
-                    Make your pick
-                  </Link>
                 </div>
               ) : (
                 <div style={{ border: "2px dashed var(--color-divider)", padding: "32px 24px" }}>
@@ -240,7 +266,8 @@ export default async function DashboardPage() {
                           <p style={{ margin: "1px 0 0", fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 17, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {o.pick.player_name}
                           </p>
-                          <p style={{ margin: "2px 0 0", fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                          <p style={{ margin: "2px 0 0", display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                            <TeamBadge code={o.pick.team_code} size={12} />
                             {o.pick.team_short_name}
                             {o.pick.stake === 6 ? " · ×2" : ""}
                           </p>
@@ -268,7 +295,7 @@ export default async function DashboardPage() {
                         <p style={{ margin: 0, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
                           {o.entrant}
                         </p>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>No pick yet.</p>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>No Pick Made</p>
                       </div>
                     )}
                   </div>
@@ -303,8 +330,8 @@ export default async function DashboardPage() {
                       borderBottom: "1px solid var(--color-divider)",
                     }}
                   >
-                    <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>
-                      {f.home} v {f.away}
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>
+                      <TeamBadge code={f.home_code} /> {f.home} v {f.away} <TeamBadge code={f.away_code} />
                     </span>
                     <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                       {f.finished ? "Finished" : kickoffLabel(f.kickoff_time)}

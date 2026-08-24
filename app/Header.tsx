@@ -86,7 +86,8 @@ export function Header({
                     style={{
                       fontFamily: "var(--font-heading)",
                       fontWeight: 800,
-                      color: "var(--color-text)",
+                      fontSize: 18,
+                      color: "var(--color-accent)",
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >

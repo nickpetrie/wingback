@@ -6,6 +6,7 @@ import { foldDiacritics, isPlayerAvailable } from "@/lib/rules";
 import type { GameweekFixture } from "@/lib/fixtures";
 import type { Stake } from "@/lib/supabase/types";
 import { STATUS_LABEL } from "../PlayerSearchInput";
+import { TeamBadge } from "../TeamBadge";
 import { submitPick } from "./actions";
 
 function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
@@ -82,8 +83,9 @@ export function PickForm({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 0 }}>
-      <section style={{ borderRight: "2px solid var(--color-divider)", padding: "24px 24px 24px 0" }}>
+    <div className="wb-pickform">
+      <div className="wb-pickform-grid">
+      <section className="wb-pickform-col-left">
         <div className="field" style={{ maxWidth: 420 }}>
           <label htmlFor="wb-q">Search 600-odd players — accents optional</label>
           <input
@@ -124,14 +126,11 @@ export function PickForm({
                   opacity: reason ? 0.45 : 1,
                 }}
               >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    flex: "none",
-                    background: `var(--color-neutral-500)`,
-                  }}
-                />
+                {r.team_code ? (
+                  <TeamBadge code={r.team_code} />
+                ) : (
+                  <span style={{ width: 10, height: 10, flex: "none", background: "var(--color-neutral-500)" }} />
+                )}
                 <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15 }}>{r.web_name}</span>
                 <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                   {r.team_short_name}
@@ -161,7 +160,7 @@ export function PickForm({
         </div>
       </section>
 
-      <section style={{ padding: "24px 0 24px 24px" }}>
+      <section className="wb-pickform-col-right">
         {selected ? (
           <div>
             <div style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
@@ -177,7 +176,17 @@ export function PickForm({
                 <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 34, lineHeight: 1.05, letterSpacing: "-.02em" }}>
                   {selected.web_name}
                 </p>
-                <p style={{ margin: "2px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                <p
+                  style={{
+                    margin: "2px 0 0",
+                    fontSize: 13,
+                    color: "color-mix(in srgb, var(--color-text) 60%, transparent)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <TeamBadge code={selected.team_code} />
                   {selected.team_short_name}
                   {fixture ? ` · ${fixture.match} · ${fixture.when}` : " · no fixture this week"}
                 </p>
@@ -284,6 +293,7 @@ export function PickForm({
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
