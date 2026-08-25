@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { CurrentGameweek } from "@/lib/gameweek";
+import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
 import { signOut } from "./actions";
@@ -175,8 +176,8 @@ export function Header({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: "10px 18px 10px 0",
+                  gap: 8,
+                  padding: "8px 18px 8px 0",
                   marginRight: 18,
                   background: "none",
                   border: 0,
@@ -199,6 +200,7 @@ export function Header({
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
+                <Avatar entrantId={row.entrant_id} name={row.display_name} size={24} />
                 <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {row.display_name.split(" ")[0]}

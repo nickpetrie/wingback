@@ -5,6 +5,7 @@ import type { PlayerOption } from "@/lib/players";
 import { teamColor } from "@/lib/teamColors";
 import { PlayerSearchInput } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
+import { initialsFor } from "@/lib/avatar";
 import { AvatarUploader } from "../AvatarUploader";
 import { updateNomination, updatePhone } from "./actions";
 
@@ -33,11 +34,6 @@ export function SettingsForm({
   const [nominationMessage, setNominationMessage] = useState<string | null>(null);
   const [nominationPending, startNominationTransition] = useTransition();
 
-  const initials = displayName
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
 
   function savePhone(e: React.FormEvent) {
     e.preventDefault();
@@ -61,11 +57,11 @@ export function SettingsForm({
   return (
     <div>
       <section style={{ padding: "24px 0", borderBottom: "1px solid var(--color-divider)", display: "flex", gap: 20, alignItems: "center" }}>
-        <AvatarUploader entrantId={entrantId} initials={initials} />
+        <AvatarUploader entrantId={entrantId} initials={initialsFor(displayName)} />
         <div>
           <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 22 }}>{displayName}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            Shows up next to your picks.
+            Shows up in the standings strip, next to your name.
           </p>
         </div>
       </section>
