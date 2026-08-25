@@ -474,19 +474,85 @@ img {
     padding: 24px 0 0;
   }
 }
-.wb-fixture-row {
-  display: grid;
-  grid-template-columns: 180px 92px 1fr;
-  gap: 16px;
+.wb-fixtures {
+  padding: 18px 0;
+}
+.wb-fixtures > summary,
+.wb-fixture-day > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
   align-items: center;
-  padding: 11px 0;
+  gap: 8px;
+}
+.wb-fixtures > summary::-webkit-details-marker,
+.wb-fixture-day > summary::-webkit-details-marker {
+  display: none;
+}
+.wb-fixtures-head {
+  border-bottom: 2px solid var(--color-divider);
+  padding-bottom: 8px;
+}
+.wb-fixtures-note {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-chev {
+  font-size: 8px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  transition: transform 0.15s ease;
+}
+details[open] > summary .wb-chev {
+  transform: rotate(90deg);
+}
+.wb-fixture-day-head {
+  padding: 8px 0 6px;
   border-bottom: 1px solid var(--color-divider);
 }
-@media (max-width: 560px) {
+.wb-fixture-day-label {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wb-fixture-row {
+  display: grid;
+  grid-template-columns: 46px 190px minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.wb-fixture-match {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.wb-fixture-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.wb-fixture-chips:empty {
+  display: none;
+}
+@media (max-width: 640px) {
+  .wb-fixtures-note {
+    display: none;
+  }
+  /* Chips drop under the match rather than squeezing it — still one row per
+     fixture when nobody has picked it, which is most of them. */
   .wb-fixture-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-    padding: 10px 0;
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+  .wb-fixture-chips {
+    grid-column: 2;
   }
 }
 

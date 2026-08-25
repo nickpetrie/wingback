@@ -1,20 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
-import { getGameweekFixtures, type GameweekFixture } from "@/lib/fixtures";
+import { getGameweekFixtures, kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
 import { getGameweekPicks } from "@/lib/picks";
 import { getPickFormContext } from "@/lib/pick-form-context";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
-import { teamColor } from "@/lib/teamColors";
+import { FixtureDayList } from "./FixtureDayList";
 import { STATUS_LABEL } from "./PlayerSearchInput";
 import { TeamBadge } from "./TeamBadge";
-import { Countdown } from "./pick/Countdown";
 import { PickForm } from "./pick/PickForm";
-
-function kickoffLabel(iso: string | null): string {
-  if (!iso) return "TBC";
-  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
-}
 
 function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
   const f = fixtures.find((fx) => fx.team_h === teamId || fx.team_a === teamId);
@@ -106,43 +100,26 @@ export default async function DashboardPage() {
   const myPoints = myPick ? myPick.goals * (myPick.stake === 6 ? 2 : 1) : 0;
 
   return (
-    <main className="wb-in" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 64px" }}>
+    <main className="wb-in" style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 64px" }}>
+      {/* The countdown lives in the sticky header on every page — repeating it
+          here just cost a screenful of phone. */}
       <div
         style={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "baseline",
           justifyContent: "space-between",
-          gap: 16,
+          gap: 12,
           flexWrap: "wrap",
           borderBottom: "2px solid var(--color-divider)",
-          paddingBottom: 10,
+          paddingBottom: 8,
         }}
       >
-        <h1 style={{ margin: 0 }}>{gameweek ? `Current Gameweek: ${gameweek.id}` : "Current Gameweek"}</h1>
-        {gameweek?.state === "open" ? (
-          <div style={{ textAlign: "right" }}>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--font-heading)",
-                fontWeight: 800,
-                fontSize: 40,
-                lineHeight: 1,
-                fontVariantNumeric: "tabular-nums",
-                color: "var(--color-accent)",
-              }}
-            >
-              <Countdown lockAt={gameweek.lock_at!} />
-            </p>
-            <p style={{ margin: "2px 0 0", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              until picks lock
-            </p>
-          </div>
-        ) : (
-          <p style={{ margin: 0, fontSize: 13, maxWidth: 340, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-            {gameweek ? homeLine : "No gameweek data yet — check back once the season data has synced."}
-          </p>
-        )}
+        <h1 style={{ margin: 0, fontSize: 22 }}>
+          {gameweek ? `Gameweek ${gameweek.id}` : "Current gameweek"}
+        </h1>
+        <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+          {gameweek ? homeLine : "No gameweek data yet — check back once the season data has synced."}
+        </p>
       </div>
 
       {gameweek && (
@@ -297,52 +274,25 @@ export default async function DashboardPage() {
             </section>
           </div>
 
-          <section style={{ padding: "24px 0" }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: "2px solid var(--color-divider)", paddingBottom: 8 }}>
-              <h6 style={{ margin: 0 }}>Gameweek {gameweek.id} fixtures</h6>
-              <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                Picks are public the moment they&rsquo;re made
+          <details className="wb-fixtures" open>
+            <summary className="wb-fixtures-head">
+              <span className="wb-chev" aria-hidden="true">
+                ▶
               </span>
-            </div>
+              <h6 style={{ margin: 0 }}>Gameweek {gameweek.id} fixtures</h6>
+              <span className="wb-fixtures-note">Picks are public the moment they&rsquo;re made</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+                {fixtures.length > 0 ? `${fixtures.length} matches` : "none yet"}
+              </span>
+            </summary>
             {fixtures.length === 0 ? (
               <p style={{ margin: "12px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                 No fixtures confirmed yet.
               </p>
             ) : (
-              fixtures.map((f) => {
-                const chips = picks.filter((p) => p.team_id === f.team_h || p.team_id === f.team_a);
-                return (
-                  <div key={f.id} className="wb-fixture-row">
-                    <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15, letterSpacing: "-.01em" }}>
-                      <TeamBadge code={f.home_code} /> {f.home} v {f.away} <TeamBadge code={f.away_code} />
-                    </span>
-                    <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      {f.played ? "Finished" : kickoffLabel(f.kickoff_time)}
-                    </span>
-                    <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {chips.map((p, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            fontSize: 11,
-                            padding: "3px 8px",
-                            background: teamColor(p.team_short_name),
-                            color: "#fff",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {p.entrant_name.split(" ")[0]} · {p.player_name}
-                          {p.stake === 6 ? " ×2" : ""}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
-                );
-              })
+              <FixtureDayList fixtures={fixtures} picks={picks} />
             )}
-          </section>
+          </details>
 
           <section style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: "var(--color-divider)", border: "1px solid var(--color-divider)" }}>
             <div style={{ background: "var(--color-surface)", padding: "16px 18px" }}>

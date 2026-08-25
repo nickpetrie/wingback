@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import type { PlayerOption } from "@/lib/players";
 import { foldDiacritics, isPlayerAvailable } from "@/lib/rules";
-import type { GameweekFixture } from "@/lib/fixtures";
+import { kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
 import type { Stake } from "@/lib/supabase/types";
 import { STATUS_LABEL } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
@@ -12,12 +12,7 @@ import { submitPick } from "./actions";
 function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
   const f = fixtures.find((fx) => fx.team_h === teamId || fx.team_a === teamId);
   if (!f) return null;
-  return {
-    match: `${f.home} v ${f.away}`,
-    when: f.kickoff_time
-      ? new Date(f.kickoff_time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })
-      : "TBC",
-  };
+  return { match: `${f.home} v ${f.away}`, when: kickoffLabel(f.kickoff_time) };
 }
 
 function usedReason(code: number, usedCounts: Map<number, number>, nominationCode: number | null): string | null {
