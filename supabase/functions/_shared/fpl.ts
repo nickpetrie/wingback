@@ -101,6 +101,7 @@ const MAX_ATTEMPTS = 7;
 const MAX_BACKOFF_MS = 40_000;
 
 let deadline = 0;
+let loggedConfig = false;
 
 // Call once at the top of a handler, before any FPL fetch. Isolates are reused
 // between invocations, so without this the second run would inherit the first
@@ -144,6 +145,10 @@ function sourcesFor(path: string): Source[] {
 
 async function getJson<T>(path: string): Promise<T> {
   if (deadline === 0) startFplBudget();
+  if (!loggedConfig) {
+    loggedConfig = true;
+    console.log(`FPL sources: ${sourcesFor(path).map((s) => s.name).join(" then ")}`);
+  }
   let lastError = new Error(`FPL API ${path} was never attempted`);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -171,6 +176,10 @@ async function getJson<T>(path: string): Promise<T> {
         // wearing different clothes; it used to end the run without a retry.
         lastError = err instanceof Error ? err : new Error(String(err));
       }
+      // Per source, because lastError is overwritten by whichever source is
+      // tried last: without this a proxy failure is invisible in the logs and
+      // "via fpl" can't be told apart from "proxy never configured".
+      console.warn(`FPL ${path} attempt ${attempt}: ${source.name} — ${lastError.message}`);
       if (!retryable) break;
     }
 
