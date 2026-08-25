@@ -104,6 +104,9 @@ Deno.serve(async () => {
           team_a: f.team_a,
           kickoff_time: f.kickoff_time,
           finished: f.finished,
+          finished_provisional: f.finished_provisional,
+          started: f.started,
+          minutes: f.minutes,
         })),
       );
       if (fixturesError) throw fixturesError;

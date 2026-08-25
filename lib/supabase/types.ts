@@ -59,9 +59,14 @@ export interface Database {
           team_a: number;
           kickoff_time: string | null;
           finished: boolean;
+          finished_provisional: boolean;
+          started: boolean;
+          minutes: number;
+          played: boolean;
         };
-        Insert: Database["public"]["Tables"]["fixtures"]["Row"];
-        Update: Partial<Database["public"]["Tables"]["fixtures"]["Row"]>;
+        // `played` is a generated column, so it is never written.
+        Insert: Omit<Database["public"]["Tables"]["fixtures"]["Row"], "played">;
+        Update: Partial<Omit<Database["public"]["Tables"]["fixtures"]["Row"], "played">>;
         Relationships: [
           {
             foreignKeyName: "fixtures_team_h_fkey";

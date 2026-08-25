@@ -17,7 +17,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(32);
+select plan(33);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -293,6 +293,22 @@ select is(
   -2,
   'third double that blanks costs -2 (one goalless fixture)'
 );
+
+-- Regression for the stuck-flag bug: FPL leaves `finished` false long after
+-- full time and sets `finished_provisional` instead (measured: all ten GW1
+-- fixtures still false three days on). pick_scores keys off `played` so the
+-- penalty still fires; before that it read `finished` alone and this was 0,
+-- meaning the rule could never apply in production at all.
+select test_as_admin();
+update fixtures set finished = false, finished_provisional = true where id = 1013;
+
+select is(
+  (select points from pick_scores where entrant_id = '11111111-1111-1111-1111-111111111111' and gameweek = 13),
+  -2,
+  'a provisionally-finished fixture still counts as a goalless fixture'
+);
+
+update fixtures set finished = true, finished_provisional = false where id = 1013;
 
 -- A genuine double gameweek: two goalless fixtures for the same pick means
 -- -2 for each, i.e. -4 overall, once the free doubles are used up.

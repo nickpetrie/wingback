@@ -50,6 +50,11 @@ export interface FplFixture {
   team_a: number;
   kickoff_time: string | null;
   finished: boolean;
+  // FPL flips this at full time; `finished` waits for bonus points to be
+  // confirmed and in practice may never flip at all. See 000015.
+  finished_provisional: boolean;
+  started: boolean;
+  minutes: number;
   stats: FplFixtureStat[];
 }
 

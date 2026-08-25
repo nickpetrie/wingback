@@ -317,7 +317,7 @@ export default async function DashboardPage() {
                       <TeamBadge code={f.home_code} /> {f.home} v {f.away} <TeamBadge code={f.away_code} />
                     </span>
                     <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      {f.finished ? "Finished" : kickoffLabel(f.kickoff_time)}
+                      {f.played ? "Finished" : kickoffLabel(f.kickoff_time)}
                     </span>
                     <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {chips.map((p, i) => (

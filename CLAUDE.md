@@ -62,6 +62,14 @@ reading the project URL and service key from Supabase Vault at call time.
   CONFLICT DO UPDATE, which re-runs the once-per-season reuse check as if
   it were a fresh usage. `app/pick/actions.ts` checks for an existing row
   and does an explicit insert or update instead.
+- **A fixture is "played" when `played` is true, never `finished` alone.**
+  FPL does not flip `finished` at full time — measured here, all ten GW1
+  fixtures still read `finished: false` three days after kickoff while the
+  same payload carried `finished_provisional: true` and `minutes: 90`.
+  `played` is a generated column (`finished or finished_provisional`) so
+  there's one answer and no caller can forget half the condition. Reading
+  `finished` alone is what silently stopped the double-gameweek penalty
+  ever firing; there's a pgTAP test pinning this.
 - **`lock_at` is a plain column, kept in sync by a trigger on `fixtures`**
   (`recompute_gameweek_lock_at`), not a generated column — `timestamptz`
   aggregate arithmetic is `stable`, not `immutable`, so Postgres rejects a

@@ -27,8 +27,12 @@ Deno.serve(async (req) => {
       .select("id, lock_at, finished")
       .not("lock_at", "is", null)
       .lte("lock_at", new Date().toISOString());
+    // Settle re-checks anything still unmarked (however old) plus the last
+    // three days for post-match corrections. The "however old" half matters:
+    // a gameweek that never got marked finished used to fall out of the
+    // window after three days and stay wrong forever.
     query = settle
-      ? query.gte("lock_at", new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
+      ? query.or(`finished.eq.false,lock_at.gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}`)
       : query.eq("finished", false);
 
     const { data: liveGameweeks, error: gwError } = await query;
@@ -107,6 +111,9 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
       team_a: f.team_a,
       kickoff_time: f.kickoff_time,
       finished: f.finished,
+      finished_provisional: f.finished_provisional,
+      started: f.started,
+      minutes: f.minutes,
     })),
   );
   if (fixturesError) throw fixturesError;
@@ -130,7 +137,10 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
     if (error) throw error;
   }
 
-  const allFinished = fixtures.length > 0 && fixtures.every((f) => f.finished);
+  // FPL leaves `finished` false long after full time, so a gameweek would
+  // never be marked done if we waited for it (see 000015).
+  const allFinished =
+    fixtures.length > 0 && fixtures.every((f) => f.finished || f.finished_provisional);
   if (allFinished) {
     const { error } = await supabase.from("gameweeks").update({ finished: true }).eq("id", gwId);
     if (error) throw error;
