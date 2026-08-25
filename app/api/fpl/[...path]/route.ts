@@ -16,12 +16,16 @@ export const maxDuration = 60;
 // Anything else is a 404 whether or not the caller knows the secret.
 const ALLOWED = [/^bootstrap-static$/, /^fixtures$/, /^event\/\d{1,2}\/live$/];
 
+// Both sides are trimmed because these get pasted into web forms, and a
+// trailing newline picked up from a dashboard field is invisible in the UI
+// but makes the comparison fail with nothing to show for it.
 function secretMatches(sent: string | null): boolean {
-  const expected = process.env.FPL_PROXY_SECRET;
-  if (!expected || !sent) return false;
+  const expected = process.env.FPL_PROXY_SECRET?.trim();
+  const given = sent?.trim();
+  if (!expected || !given) return false;
   // Hash first so the compared buffers are always the same length —
   // timingSafeEqual throws on a length mismatch, which is itself a leak.
-  const a = createHash("sha256").update(sent).digest();
+  const a = createHash("sha256").update(given).digest();
   const b = createHash("sha256").update(expected).digest();
   return timingSafeEqual(a, b);
 }
@@ -33,8 +37,19 @@ export async function GET(
   if (!process.env.FPL_PROXY_SECRET) {
     return Response.json({ error: "proxy not configured" }, { status: 503 });
   }
-  if (!secretMatches(request.headers.get("x-wingback-proxy-key"))) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
+  const sentKey = request.headers.get("x-wingback-proxy-key");
+  if (!secretMatches(sentKey)) {
+    // Lengths only. Equal lengths mean the two sides hold genuinely different
+    // strings; different lengths mean one was truncated or carries whitespace.
+    // Neither reveals anything about the secret itself.
+    return Response.json(
+      {
+        error: "unauthorized",
+        sentLength: sentKey?.trim().length ?? 0,
+        expectedLength: process.env.FPL_PROXY_SECRET?.trim().length ?? 0,
+      },
+      { status: 401 },
+    );
   }
 
   const { path } = await params;
