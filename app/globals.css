@@ -371,33 +371,49 @@ img {
    (not a viewport media query) so it stacks correctly whether it's on the
    full-width /pick page or squeezed into Home's narrower "Your pick"
    column. — */
+/* — The pick form is one column that shows one thing at a time: the search
+   while you're choosing, the pick once you've chosen. Nothing is drawn for a
+   state you're not in, which is what kept leaving empty rules on screen. — */
 .wb-pickform {
-  container-type: inline-size;
+  max-width: 560px;
 }
-.wb-pickform-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0;
+.wb-result-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 8px 11px 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--color-text);
 }
-.wb-pickform-col-left {
-  border-right: 2px solid var(--color-divider);
-  padding: 24px 24px 24px 0;
+.wb-result-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }
-.wb-pickform-col-right {
-  padding: 24px 0 24px 24px;
+.wb-pick-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
-@container (max-width: 720px) {
-  .wb-pickform-grid {
-    grid-template-columns: 1fr;
-  }
-  .wb-pickform-col-left {
-    border-right: none;
-    border-bottom: 2px solid var(--color-divider);
-    padding: 0 0 24px;
-  }
-  .wb-pickform-col-right {
-    padding: 24px 0 0;
-  }
+.wb-stake-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+.wb-stake-btn {
+  padding: 8px 18px;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 13px;
 }
 
 /* — Login: a split-screen hero (flat colour block + a line-drawing pitch
