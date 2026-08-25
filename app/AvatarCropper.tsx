@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { detectFocalPoint, type FocalPoint } from "@/lib/focalPoint";
 
 const OUTPUT_PX = 512;
 
@@ -19,7 +20,10 @@ export function AvatarCropper({
 }) {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [failed, setFailed] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [focal, setFocal] = useState<FocalPoint | null>(null);
+  const [detecting, setDetecting] = useState(true);
+  // null until the slider is touched, so a detected face can suggest the zoom.
+  const [rawZoom, setRawZoom] = useState<number | null>(null);
   // null until dragged: the resting position is "centred", which can't be
   // computed before the image and the frame have both been measured.
   const [rawOffset, setRawOffset] = useState<{ x: number; y: number } | null>(null);
@@ -28,12 +32,30 @@ export function AvatarCropper({
   const drag = useRef<{ id: number; startX: number; startY: number; ox: number; oy: number } | null>(null);
 
   useEffect(() => {
+    let live = true;
     const url = URL.createObjectURL(file);
     const image = new Image();
-    image.onload = () => setImg(image);
-    image.onerror = () => setFailed(true);
+    image.onload = () => {
+      if (!live) return;
+      detectFocalPoint(image)
+        .catch(() => null)
+        .then((point) => {
+          if (!live) return;
+          setFocal(point);
+          setImg(image);
+          setDetecting(false);
+        });
+    };
+    image.onerror = () => {
+      if (!live) return;
+      setFailed(true);
+      setDetecting(false);
+    };
     image.src = url;
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      live = false;
+      URL.revokeObjectURL(url);
+    };
   }, [file]);
 
   useEffect(() => {
@@ -44,6 +66,11 @@ export function AvatarCropper({
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
+
+  // A detected face fills a bit over a third of the frame at zoom 1 if it's
+  // small in the original — zoom in so it fills ~55% of the ring instead.
+  const suggestedZoom = focal?.size ? Math.min(3, Math.max(1, 0.55 / focal.size)) : 1;
+  const zoom = rawZoom ?? suggestedZoom;
 
   // Scale that makes the image just cover the crop square, whichever way it's
   // shaped; zoom multiplies it, so zoom=1 is always "as far out as allowed".
@@ -59,10 +86,17 @@ export function AvatarCropper({
     };
   }
 
+  // Put the focal point in the middle of the ring, falling back to the middle
+  // of the image. Derived rather than stored, so it survives a zoom — the face
+  // stays centred as you scale instead of drifting off.
+  const suggested = focal
+    ? { x: viewport / 2 - focal.x * drawnW, y: viewport / 2 - focal.y * drawnH }
+    : { x: (viewport - drawnW) / 2, y: (viewport - drawnH) / 2 };
+
   // Clamped on the way out rather than stored clamped, so zooming can never
   // leave a gap at the edge of the frame and zooming back in restores where you
   // had dragged to.
-  const offset = clamp(rawOffset ?? { x: (viewport - drawnW) / 2, y: (viewport - drawnH) / 2 });
+  const offset = clamp(rawOffset ?? suggested);
 
   function onPointerDown(e: React.PointerEvent) {
     drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
@@ -159,6 +193,10 @@ export function AvatarCropper({
               />
             </div>
 
+            <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              {detecting ? "Looking for a face…" : focal ? "Centred on the face — drag to adjust." : "Drag to position."}
+            </p>
+
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
               <span style={{ letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                 Zoom
@@ -169,7 +207,7 @@ export function AvatarCropper({
                 max={3}
                 step={0.01}
                 value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
+                onChange={(e) => setRawZoom(Number(e.target.value))}
                 style={{ flex: 1, accentColor: "var(--color-accent)" }}
               />
             </label>
