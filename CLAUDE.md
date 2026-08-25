@@ -70,6 +70,13 @@ reading the project URL and service key from Supabase Vault at call time.
   there's one answer and no caller can forget half the condition. Reading
   `finished` alone is what silently stopped the double-gameweek penalty
   ever firing; there's a pgTAP test pinning this.
+- **FPL blocks are about the IP, not the request.** Fastly refuses
+  Supabase's edge-function egress in bursts — every path including the
+  homepage, 403 in 1-4ms with `server: Varnish`. Nine header shapes were
+  measured as identical inside a burst and all fine ninety seconds later.
+  Don't spend another round making requests look more browser-like: the
+  levers that work are the Vercel proxy (`app/api/fpl/[...path]`) and the
+  per-invocation retry budget in `_shared/fpl.ts`.
 - **`lock_at` is a plain column, kept in sync by a trigger on `fixtures`**
   (`recompute_gameweek_lock_at`), not a generated column — `timestamptz`
   aggregate arithmetic is `stable`, not `immutable`, so Postgres rejects a

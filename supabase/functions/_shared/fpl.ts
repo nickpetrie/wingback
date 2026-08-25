@@ -114,29 +114,64 @@ function backoffMs(attempt: number): number {
   return Math.round(base * (0.5 + Math.random() * 0.5));
 }
 
+// The Vercel deployment can reach FPL from an address Fastly is not refusing,
+// so when it's configured we go through it and only fall back to hitting FPL
+// from here if the proxy itself is unreachable. Unset both vars and the
+// behaviour is exactly what it was: straight to FPL.
+const PROXY_URL = Deno.env.get("FPL_PROXY_URL")?.replace(/\/$/, "");
+const PROXY_SECRET = Deno.env.get("FPL_PROXY_SECRET");
+
+interface Source {
+  name: string;
+  url: string;
+  headers: Record<string, string>;
+}
+
+function sourcesFor(path: string): Source[] {
+  const direct: Source = { name: "fpl", url: `${BASE}${path}`, headers: BROWSER_HEADERS };
+  if (!PROXY_URL || !PROXY_SECRET) return [direct];
+  // The proxy route has no trailing slash on its segments, so /fixtures/?event=2
+  // becomes /fixtures?event=2 — otherwise Next redirects and we pay an extra hop.
+  return [
+    {
+      name: "proxy",
+      url: `${PROXY_URL}${path.replace(/\/(?=\?|$)/, "")}`,
+      headers: { "x-wingback-proxy-key": PROXY_SECRET, Accept: "application/json" },
+    },
+    direct,
+  ];
+}
+
 async function getJson<T>(path: string): Promise<T> {
   if (deadline === 0) startFplBudget();
   let lastError = new Error(`FPL API ${path} was never attempted`);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     let retryable = true;
-    try {
-      const res = await fetch(`${BASE}${path}`, { headers: BROWSER_HEADERS });
-      if (res.ok) return (await res.json()) as T;
-      // Nothing reads a non-ok body, and leaving it undrained holds the
-      // connection open for the rest of the isolate's life. `server` is worth
-      // keeping: "Varnish" means the Fastly edge refused us and the origin
-      // never saw the request, which is the burst described above.
-      await res.body?.cancel();
-      retryable = res.status === 403 || res.status === 429 || res.status >= 500;
-      const server = res.headers.get("server");
-      lastError = new Error(
-        `FPL API ${path} responded ${res.status}${server ? ` (server: ${server})` : ""}`,
-      );
-    } catch (err) {
-      // A connection reset or TLS failure is the same transient refusal
-      // wearing different clothes; it used to end the run without a retry.
-      lastError = err instanceof Error ? err : new Error(String(err));
+
+    // Each source is tried once per attempt before backing off, so a proxy
+    // that is merely down costs one wasted request rather than the whole run.
+    for (const source of sourcesFor(path)) {
+      try {
+        const res = await fetch(source.url, { headers: source.headers });
+        if (res.ok) return (await res.json()) as T;
+        // Nothing reads a non-ok body, and leaving it undrained holds the
+        // connection open for the rest of the isolate's life. `server` is worth
+        // keeping: "Varnish" means the Fastly edge refused us and the origin
+        // never saw the request, which is the burst described above.
+        await res.body?.cancel();
+        retryable = res.status === 403 || res.status === 429 || res.status >= 500;
+        const server = res.headers.get("x-fpl-upstream-server") ?? res.headers.get("server");
+        lastError = new Error(
+          `FPL API ${path} via ${source.name} responded ${res.status}` +
+            (server ? ` (server: ${server})` : ""),
+        );
+      } catch (err) {
+        // A connection reset or TLS failure is the same transient refusal
+        // wearing different clothes; it used to end the run without a retry.
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+      if (!retryable) break;
     }
 
     const remaining = deadline - Date.now();

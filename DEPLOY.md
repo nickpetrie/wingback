@@ -125,7 +125,11 @@ Variables):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+FPL_PROXY_SECRET=<a long random string you generate>
 ```
+
+`FPL_PROXY_SECRET` is the shared secret for the FPL proxy in §4b. It has no
+`NEXT_PUBLIC_` prefix on purpose — it must stay server-side.
 
 That's it — **the service-role key never goes here**. If a future change
 seems to need it in the app tier, that's a sign the change belongs in an
@@ -136,6 +140,38 @@ Do not use Vercel's own Cron feature for anything here: Hobby-tier cron
 runs once a day, which is useless for a T-2h reminder, and pg_cron
 already covers it from inside Postgres — which also happens to be what
 keeps the free Supabase project from pausing after a week of no traffic.
+
+## 4b. The FPL proxy — why the app has a route that just forwards
+
+`app/api/fpl/[...path]/route.ts` proxies three FPL URLs from Vercel's
+egress. It exists because FPL sits behind Fastly, and Fastly refuses
+Supabase's shared edge-function IP in bursts: during one, *every* request
+from that address gets a 403 in a couple of milliseconds — the plain
+homepage included, so nothing about the request itself is the problem.
+Measured from the edge runtime, nine different request shapes (bare,
+browser-like, honest-bot User-Agent, with and without Origin and cookies)
+were all refused inside one burst and all fine ninety seconds later. It is
+the IP being refused, so the fix is to ask from a different one.
+
+To turn it on, set both of these as **Supabase function secrets** (not
+Vercel):
+
+```
+supabase secrets set FPL_PROXY_URL=https://<your-app>.vercel.app/api/fpl
+supabase secrets set FPL_PROXY_SECRET=<the same string you put in Vercel>
+```
+
+Then redeploy `sync-fpl` and `score` so they pick the secrets up.
+
+Leave either unset and nothing breaks — `_shared/fpl.ts` simply calls FPL
+directly, exactly as before. When both are set it tries the proxy first and
+still falls back to a direct call if the proxy itself is unreachable, so a
+Vercel outage can't take the sync down on its own.
+
+The route is deliberately boring: it allowlists the three paths the edge
+functions use (`bootstrap-static`, `fixtures`, `event/{n}/live`), forwards
+only an integer `event` query param, and requires the shared secret. Without
+the allowlist it would be an open proxy for anyone who learned the secret.
 
 ## 5. Five sign-ins
 
