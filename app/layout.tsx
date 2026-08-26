@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { InstallPrompt } from "./InstallPrompt";
 import { Nav } from "./Nav";
 import "./globals.css";
 
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://wingbacksweepstake.website"),
   title: "Wingback",
   description: "Season-long Premier League goalscorer sweepstake",
+  appleWebApp: { capable: true, title: "Wingback", statusBarStyle: "black-translucent" },
+  icons: { apple: "/apple-touch-icon.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <Nav />
         {children}
+        <InstallPrompt />
         <Analytics />
       </body>
     </html>

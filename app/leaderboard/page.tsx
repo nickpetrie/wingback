@@ -92,18 +92,10 @@ export default async function LeaderboardPage() {
 
   return (
     <main className="wb-in" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 64px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          borderBottom: "2px solid var(--color-divider)",
-          paddingBottom: 10,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>The table</h1>
-        <p style={{ margin: 0, fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          Click a name for their season record
+      <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22 }}>The table</h1>
+        <p style={{ margin: "2px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          Tap a name for their season record
         </p>
       </div>
 

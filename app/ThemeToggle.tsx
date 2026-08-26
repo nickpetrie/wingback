@@ -70,17 +70,7 @@ export function ThemeToggle() {
   }, [choice]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px" }}>
-      <span
-        style={{
-          fontSize: 11,
-          letterSpacing: ".08em",
-          textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-        }}
-      >
-        Theme
-      </span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ display: "flex", border: "1px solid var(--color-divider)" }}>
         {OPTIONS.map((o) => {
           const active = choice === o.value;

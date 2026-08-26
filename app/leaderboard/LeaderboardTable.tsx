@@ -38,71 +38,22 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
       {rows.map((row) => (
         <div key={row.entrant_id}>
           <div
-            className="wb-row"
+            className="wb-row wb-board-row"
             onClick={() => setOpenId((id) => (id === row.entrant_id ? null : row.entrant_id))}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "44px minmax(0,1fr) 90px 90px 24px",
-              gap: 16,
-              alignItems: "center",
-              padding: "16px 0",
-              borderBottom: "1px solid var(--color-divider)",
-            }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontWeight: 800,
-                fontSize: 26,
-                lineHeight: 1,
-                fontVariantNumeric: "tabular-nums",
-                color: "color-mix(in srgb, var(--color-text) 35%, transparent)",
-              }}
-            >
-              {row.rank}
+            <span className="wb-board-rank">{row.rank}</span>
+            <Avatar entrantId={row.entrant_id} name={row.name} updatedAt={row.avatar_updated_at} size={32} />
+            <span className="wb-board-name">
+              {row.name}
+              {row.stars > 0 && <span style={{ fontSize: 12, marginLeft: 6 }}>{"\u2605".repeat(row.stars)}</span>}
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-              <Avatar
-                entrantId={row.entrant_id}
-                name={row.name}
-                updatedAt={row.avatar_updated_at}
-                size={32}
-              />
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 22, letterSpacing: "-.01em" }}>
-                {row.name}
-              </span>
-              {row.stars > 0 && <span style={{ fontSize: 12 }}>{"★".repeat(row.stars)}</span>}
-              {row.note && (
-                <span style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                  {row.note}
-                </span>
-              )}
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontWeight: 800,
-                fontSize: 30,
-                lineHeight: 1,
-                fontVariantNumeric: "tabular-nums",
-                textAlign: "right",
-                color: "var(--color-accent)",
-              }}
-            >
-              {row.points}
-            </span>
-            <span
-              style={{
-                fontSize: 12,
-                textAlign: "right",
-                fontVariantNumeric: "tabular-nums",
-                color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
-              }}
-            >
-              {row.scoring} GWs
-            </span>
+            <span className="wb-board-points">{row.points}</span>
             <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
-              {openId === row.entrant_id ? "▲" : "▼"}
+              {openId === row.entrant_id ? "\u25b2" : "\u25bc"}
+            </span>
+            <span className="wb-board-meta">
+              {row.scoring} {row.scoring === 1 ? "scoring GW" : "scoring GWs"}
+              {row.note ? ` \u00b7 ${row.note}` : ""}
             </span>
           </div>
 

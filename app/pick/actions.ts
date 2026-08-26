@@ -49,7 +49,6 @@ export async function submitPick(
   if (result.error) return { ok: false, error: result.error.message };
 
   revalidatePath("/");
-  revalidatePath("/pick");
   revalidatePath("/leaderboard");
   return { ok: true };
 }
@@ -67,6 +66,5 @@ export async function submitSubstitution(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/");
-  revalidatePath("/pick");
   return { ok: true };
 }

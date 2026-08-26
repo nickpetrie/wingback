@@ -7,7 +7,7 @@ import type { CurrentGameweek } from "@/lib/gameweek";
 import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
-import { ThemeToggle } from "./ThemeToggle";
+import { usePresence } from "./usePresence";
 import { signOut } from "./actions";
 
 export interface StandingRow {
@@ -18,9 +18,10 @@ export interface StandingRow {
   avatar_updated_at: string | null;
 }
 
+// No "Pick" entry: picking is inline on the home page, so a route that renders
+// the same form again is just a second door into one room.
 const MENU = [
   { href: "/", label: "Home" },
-  { href: "/pick", label: "Pick" },
   { href: "/leaderboard", label: "The table" },
   { href: "/settings", label: "Settings" },
 ];
@@ -38,6 +39,7 @@ export function Header({
   const pathname = usePathname();
   const router = useRouter();
 
+  const online = usePresence(entrantId);
   const sorted = [...standings].sort((a, b) => b.total_points - a.total_points);
 
   return (
@@ -58,24 +60,18 @@ export function Header({
             WINGBACK
           </Link>
 
-          <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-            <button
-              type="button"
-              className="btn btn-ghost wb-tap"
-              style={{ fontSize: 12 }}
-              onClick={() => signOut()}
-            >
-              Sign out
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary wb-tap"
-              style={{ fontSize: 13 }}
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              {menuOpen ? "Close" : "Menu"}
-            </button>
-          </span>
+          <button
+            type="button"
+            className="btn btn-secondary wb-tap"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            style={{ flex: "none", padding: "8px 10px" }}
+            onClick={() => setMenuOpen(true)}
+          >
+            <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" fill="none">
+              <path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </button>
         </div>
 
         {gameweek && (
@@ -120,46 +116,61 @@ export function Header({
       </div>
 
       {menuOpen && (
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 12px" }}>
-          <div
-            style={{
-              border: "1px solid var(--color-divider)",
-              background: "var(--color-surface)",
-            }}
-          >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 0 }}>
-            {MENU.map((m) => {
-              const active = pathname === m.href;
-              return (
-                <button
-                  key={m.href}
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    router.push(m.href);
-                  }}
-                  style={{
-                    padding: "11px 18px",
-                    background: active ? "var(--color-accent)" : "none",
-                    color: active ? "var(--color-bg)" : "var(--color-text)",
-                    border: 0,
-                    borderRight: "1px solid var(--color-divider)",
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 800,
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  {m.label}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ borderTop: "1px solid var(--color-divider)" }}>
-            <ThemeToggle />
-          </div>
-          </div>
-        </div>
+        <>
+          <div className="wb-scrim" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+          <nav className="wb-drawer" aria-label="Main menu">
+            <div className="wb-drawer-head">
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Menu
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost wb-tap"
+                aria-label="Close menu"
+                style={{ padding: "4px 8px" }}
+                onClick={() => setMenuOpen(false)}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none">
+                  <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {MENU.map((m) => {
+                const active = pathname === m.href;
+                return (
+                  <button
+                    key={m.href}
+                    type="button"
+                    className="wb-drawer-item"
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push(m.href);
+                    }}
+                    style={{
+                      background: active ? "var(--color-accent)" : "none",
+                      color: active ? "var(--color-bg)" : "var(--color-text)",
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sign out lives at the bottom, away from the things you actually
+                came here to tap. */}
+            <button
+              type="button"
+              className="wb-drawer-item wb-drawer-signout"
+              onClick={() => signOut()}
+            >
+              Sign out
+            </button>
+          </nav>
+        </>
       )}
 
       <div
@@ -204,7 +215,13 @@ export function Header({
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <Avatar entrantId={row.entrant_id} name={row.display_name} updatedAt={row.avatar_updated_at} size={24} />
+                <Avatar
+                  entrantId={row.entrant_id}
+                  name={row.display_name}
+                  updatedAt={row.avatar_updated_at}
+                  size={24}
+                  online={online.has(row.entrant_id)}
+                />
                 <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {row.display_name.split(" ")[0]}

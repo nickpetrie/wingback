@@ -40,6 +40,5 @@ export async function updateNomination(playerCode: number): Promise<SettingsResu
 
   if (error) return { ok: false, error: error.message };
   revalidatePath("/settings");
-  revalidatePath("/pick");
   return { ok: true };
 }

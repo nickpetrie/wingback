@@ -90,18 +90,26 @@ export function PickForm({
     setSearching(false);
   }
 
-  function save() {
-    if (!selected || burned) return;
-    setError(null);
-    startTransition(async () => {
-      const result = await submitPick(gameweek, selected.code, stake);
-      if (!result.ok) {
-        setError(result.error ?? "Could not save.");
-        return;
-      }
-      setSavedPick({ player_code: selected.code, stake });
-    });
-  }
+  // Autosave. A pick is one row with two fields and a hard deadline — making
+  // someone tap Save to commit it is a way to lose a gameweek to a forgotten
+  // tap. The debounce is for the stake toggle: tapping £3/£6 a few times in a
+  // row shouldn't fire a write per tap.
+  useEffect(() => {
+    if (!selected || burned || !dirty) return;
+    const code = selected.code;
+    const timer = setTimeout(() => {
+      setError(null);
+      startTransition(async () => {
+        const result = await submitPick(gameweek, code, stake);
+        if (!result.ok) {
+          setError(result.error ?? "Could not save.");
+          return;
+        }
+        setSavedPick({ player_code: code, stake });
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [selected, burned, dirty, gameweek, stake]);
 
   return (
     <div className="wb-pickform">
@@ -255,18 +263,35 @@ export function PickForm({
             )}
           </div>
 
-          <div style={{ marginTop: 18 }}>
-            <button type="button" className="btn btn-primary wb-tap" onClick={save} disabled={isPending || !!burned || !dirty}>
-              {isPending ? "Saving…" : burned ? "Not allowed" : !dirty ? "Saved" : savedPick ? "Update pick" : "Save pick"}
-            </button>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: error ? "var(--color-accent-700)" : MUTED }}>
-              {error
-                ? error
-                : dirty
-                  ? "Editable until the deadline, then the database stops listening."
-                  : "Everyone can see it already. That's the deal."}
-            </p>
-          </div>
+          {/* Status line in place of a button: it says what already happened
+              rather than asking for permission to do it. */}
+          <p
+            style={{
+              margin: "14px 0 0",
+              fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              color: error ? "var(--color-accent-700)" : MUTED,
+            }}
+            aria-live="polite"
+          >
+            {error ? (
+              error
+            ) : burned ? (
+              "Not saved — the database will refuse this one."
+            ) : isPending || dirty ? (
+              "Saving\u2026"
+            ) : (
+              <>
+                <span aria-hidden="true" style={{ color: "var(--color-accent)", fontSize: 13 }}>
+                  &#10003;
+                </span>
+                Saved. Editable until the deadline.
+              </>
+            )}
+          </p>
+
         </>
       )}
     </div>

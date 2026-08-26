@@ -11,11 +11,13 @@ export function Avatar({
   name,
   updatedAt,
   size = 24,
+  online = false,
 }: {
   entrantId: string;
   name: string;
   updatedAt: string | null;
   size?: number;
+  online?: boolean;
 }) {
   const [broken, setBroken] = useState(false);
   const url = avatarUrl(entrantId, updatedAt);
@@ -28,8 +30,8 @@ export function Avatar({
     display: "block" as const,
   };
 
-  if (!url || broken) {
-    return (
+  const face =
+    !url || broken ? (
       <span
         aria-hidden="true"
         style={{
@@ -46,16 +48,36 @@ export function Avatar({
       >
         {initialsFor(name)}
       </span>
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element -- user-uploaded, served straight from Supabase Storage
+      <img
+        src={url}
+        alt=""
+        style={{ ...shared, objectFit: "cover" }}
+        onError={() => setBroken(true)}
+      />
     );
-  }
+
+  if (!online) return face;
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- user-uploaded, served straight from Supabase Storage
-    <img
-      src={url}
-      alt=""
-      style={{ ...shared, objectFit: "cover" }}
-      onError={() => setBroken(true)}
-    />
+    <span style={{ position: "relative", display: "block", flex: "none", width: size, height: size }}>
+      {face}
+      <span
+        title="Online now"
+        style={{
+          position: "absolute",
+          right: -1,
+          bottom: -1,
+          width: Math.max(7, Math.round(size * 0.3)),
+          height: Math.max(7, Math.round(size * 0.3)),
+          borderRadius: "50%",
+          background: "var(--color-accent)",
+          // Ring in the page colour so the dot reads as separate from the face
+          // rather than a smudge on it.
+          boxShadow: "0 0 0 2px var(--color-bg)",
+        }}
+      />
+    </span>
   );
 }

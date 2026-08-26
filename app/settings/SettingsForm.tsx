@@ -7,6 +7,7 @@ import { PlayerSearchInput } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
 import { initialsFor } from "@/lib/avatar";
 import { AvatarUploader } from "../AvatarUploader";
+import { ThemeToggle } from "../ThemeToggle";
 import { updateNomination, updatePhone } from "./actions";
 
 export function SettingsForm({
@@ -133,6 +134,14 @@ export function SettingsForm({
         {nominationMessage && !nominationPending && (
           <p style={{ marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{nominationMessage}</p>
         )}
+      </section>
+
+      <section style={{ padding: "24px 0", borderTop: "1px solid var(--color-divider)" }}>
+        <h6 style={{ margin: "0 0 4px" }}>Appearance</h6>
+        <p style={{ margin: "0 0 12px", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          Auto follows your phone&rsquo;s setting.
+        </p>
+        <ThemeToggle />
       </section>
     </div>
   );
