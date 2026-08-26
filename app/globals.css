@@ -466,7 +466,7 @@ img {
 }
 .wb-pick-photo {
   flex: none;
-  width: 104px;
+  width: 116px;
   align-self: stretch;
   background: var(--color-neutral-200);
   overflow: hidden;
@@ -485,6 +485,9 @@ img {
 }
 .wb-pick-name {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 26px;
@@ -495,13 +498,13 @@ img {
   white-space: nowrap;
 }
 .wb-pick-fixture {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   font-size: 13px;
   color: color-mix(in srgb, var(--color-text) 58%, transparent);
-  display: flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Label / control pairs on a shared grid, so "Change" and the stake segments
@@ -523,7 +526,7 @@ img {
 }
 .wb-control {
   height: 32px;
-  padding: 0 12px;
+  padding: 0 11px;
   border: 1px solid var(--color-divider);
   background: transparent;
   color: var(--color-text);
@@ -552,6 +555,99 @@ img {
   align-items: center;
   gap: 5px;
   font-size: 11px;
+}
+
+.wb-login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+.wb-login-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px;
+}
+.wb-login-hero-pitch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.wb-login-form-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 32px;
+}
+@media (max-width: 760px) {
+  .wb-login-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .wb-login-hero {
+    padding: 40px 24px;
+  }
+  .wb-login-form-panel {
+    padding: 32px 24px;
+  }
+}
+
+/* — Home's "Your pick" / "The other four" split, and each fixture row —
+   viewport-bound (unlike PickForm, which is embedded at different widths
+   depending on the page, these sit directly on Home), so a plain media
+   query is enough; no container-query indirection needed. — */
+.wb-home-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 0;
+  border-bottom: 2px solid var(--color-divider);
+}
+.wb-home-split-left {
+  border-right: 2px solid var(--color-divider);
+  padding: 24px 24px 24px 0;
+}
+.wb-home-split-right {
+  padding: 24px 0 24px 24px;
+}
+@media (max-width: 720px) {
+  .wb-home-split {
+    grid-template-columns: 1fr;
+  }
+  .wb-home-split-left {
+    border-right: none;
+    border-bottom: 2px solid var(--color-divider);
+    padding: 20px 0 24px;
+  }
+  .wb-home-split-right {
+    padding: 24px 0 0;
+  }
+}
+.wb-install {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-divider);
+  box-shadow: var(--shadow-lg);
+}
+@media (min-width: 560px) {
+  .wb-install {
+    left: auto;
+    right: 24px;
+    width: 380px;
+  }
 }
 
 .wb-standings {

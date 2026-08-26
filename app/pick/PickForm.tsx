@@ -189,12 +189,14 @@ export function PickForm({
           </div>
 
           <div className="wb-pick-detail">
-            <p className="wb-pick-name">{selected.web_name}</p>
-            <p className="wb-pick-fixture">
-              <TeamBadge code={selected.team_code} />
+            <p className="wb-pick-name">
+              <TeamBadge code={selected.team_code} size={20} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {fixture ? `${fixture.match} · ${fixture.when}` : `${selected.team_short_name} · no fixture this week`}
+                {selected.web_name}
               </span>
+            </p>
+            <p className="wb-pick-fixture">
+              {fixture ? `${fixture.match} · ${fixture.when}` : `${selected.team_short_name} · no fixture this week`}
             </p>
 
             <div className="wb-pick-controls">
