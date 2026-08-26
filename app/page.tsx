@@ -4,6 +4,7 @@ import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekFixtures, kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
 import { getGameweekPicks } from "@/lib/picks";
 import { getPickFormContext } from "@/lib/pick-form-context";
+import { relativeTime } from "@/lib/relativeTime";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
 import { FixtureDayList } from "./FixtureDayList";
 import { STATUS_LABEL } from "./PlayerSearchInput";
@@ -70,6 +71,13 @@ export default async function DashboardPage() {
       .maybeSingle();
     nominationName = nomPlayer?.web_name ?? "None yet";
   }
+
+  const { data: syncRow } = await supabase
+    .from("sync_state")
+    .select("synced_at")
+    .eq("source", "players")
+    .maybeSingle();
+  const newsSyncedAt = syncRow?.synced_at ?? null;
 
   const playingTeamIds = new Set(fixtures.flatMap((f) => [f.team_h, f.team_a]));
   const { data: newsRaw } = await supabase
@@ -329,8 +337,25 @@ export default async function DashboardPage() {
           </section>
 
           <section style={{ padding: "24px 0" }}>
-            <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: 12,
+                borderBottom: "2px solid var(--color-divider)",
+                paddingBottom: 8,
+              }}
+            >
               <h6 style={{ margin: 0 }}>Injury news</h6>
+              {newsSyncedAt && (
+                <span
+                  title={new Date(newsSyncedAt).toLocaleString("en-GB", { timeZone: "Europe/London" })}
+                  style={{ fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}
+                >
+                  Synced {relativeTime(newsSyncedAt)}
+                </span>
+              )}
             </div>
             {news.length === 0 ? (
               <p style={{ margin: "12px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

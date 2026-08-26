@@ -100,6 +100,15 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["entrants"]["Row"]>;
         Relationships: [];
       };
+      sync_state: {
+        Row: {
+          source: string;
+          synced_at: string;
+        };
+        Insert: { source: string; synced_at?: string };
+        Update: Partial<{ source: string; synced_at: string }>;
+        Relationships: [];
+      };
       picks: {
         Row: {
           id: number;
