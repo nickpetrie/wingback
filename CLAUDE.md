@@ -92,7 +92,8 @@ reading the project URL and service key from Supabase Vault at call time.
   `00_local_harness.sql` for what it stubs out (`auth.uid()`/`auth.role()`,
   roles) to stand in for the real Supabase platform.
 - `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
-  min live + daily settle), `remind` (every 15 min), `sheets-backup`
+  min live + daily settle), `remind` (every 15 min), `push-test` (on demand
+  from Settings), `sheets-backup`
   (hourly, optional — one-way mirror of standings/picks into a Google
   Sheet, see DEPLOY.md §3b; `_shared/google.ts` hand-rolls the service-
   account JWT flow since there's no Deno-friendly googleapis client). All
@@ -115,6 +116,17 @@ reading the project URL and service key from Supabase Vault at call time.
   `Nav`'s old nav-only role). `app/GoalToasts.tsx` mounts inside it, gated
   on the gameweek being locked, and subscribes to Supabase Realtime on
   `picks` UPDATEs to fire a toast when someone's `goals` increases.
+- **Web push is hand-rolled in `_shared/webpush.ts`** (VAPID per RFC 8292,
+  aes128gcm per RFC 8291) because the npm libraries want node's crypto/https.
+  Getting it wrong is *silent* — a push that fails to decrypt is dropped by
+  the browser with no error surfaced anywhere — so the implementation is
+  pinned to the worked example in RFC 8291 §5 and reproduces it byte for
+  byte. If you touch the key derivation, re-run that vector; the order of the
+  two HKDF rounds (auth secret first, then the message salt) is the easiest
+  thing to get backwards and it fails invisibly.
+- **iOS only allows push for an installed PWA.** That's why the home-screen
+  prompt came first, and why `PushToggle` distinguishes "not supported" from
+  "add to home screen first" rather than showing one dead button.
 - **Theming lives entirely in the 22 colour tokens** on `:root` in
   `globals.css`; `:root[data-theme="dark"]` restates them and nothing else
   changes, because every component reads them through `var()`. The dark

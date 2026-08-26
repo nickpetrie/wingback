@@ -100,6 +100,24 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["entrants"]["Row"]>;
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          endpoint: string;
+          entrant_id: string;
+          p256dh: string;
+          auth: string;
+          created_at: string;
+        };
+        Insert: {
+          endpoint: string;
+          entrant_id: string;
+          p256dh: string;
+          auth: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Row"]>;
+        Relationships: [];
+      };
       sync_state: {
         Row: {
           source: string;
