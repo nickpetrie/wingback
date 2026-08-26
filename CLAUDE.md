@@ -115,6 +115,16 @@ reading the project URL and service key from Supabase Vault at call time.
   `Nav`'s old nav-only role). `app/GoalToasts.tsx` mounts inside it, gated
   on the gameweek being locked, and subscribes to Supabase Realtime on
   `picks` UPDATEs to fire a toast when someone's `goals` increases.
+- **Theming lives entirely in the 22 colour tokens** on `:root` in
+  `globals.css`; `:root[data-theme="dark"]` restates them and nothing else
+  changes, because every component reads them through `var()`. The dark
+  neutral ramp is the light one *inverted* rather than re-picked — components
+  use low numbers as backgrounds and high numbers as text, so flipping the
+  values keeps those roles right way up. A scrim can't come from that ramp
+  (it must darken in both themes), hence `--color-scrim`. `data-theme` is
+  always stamped explicitly, including for "system", by the blocking script
+  in `layout.tsx` — that's what stops a white flash before hydration, and
+  it's why the stylesheet needs no `prefers-color-scheme` block.
 - `app/api/player-image/[code]/route.ts` — fetches the official headshot
   server-side, posterises it onto the club colour with `sharp`, falls back
   to a procedural monogram card (never an AI-generated likeness) when

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { Nav } from "./Nav";
 import "./globals.css";
 
@@ -18,7 +19,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} h-full antialiased`}>
+    // suppressHydrationWarning: the inline script below sets data-theme on this
+    // element before React hydrates, so the server's markup deliberately differs.
+    <html lang="en" className={`${archivo.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Nav />
         {children}

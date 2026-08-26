@@ -7,6 +7,7 @@ import type { CurrentGameweek } from "@/lib/gameweek";
 import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
+import { ThemeToggle } from "./ThemeToggle";
 import { signOut } from "./actions";
 
 export interface StandingRow {
@@ -122,13 +123,11 @@ export function Header({
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 12px" }}>
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 0,
               border: "1px solid var(--color-divider)",
               background: "var(--color-surface)",
             }}
           >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 0 }}>
             {MENU.map((m) => {
               const active = pathname === m.href;
               return (
@@ -155,6 +154,10 @@ export function Header({
                 </button>
               );
             })}
+          </div>
+          <div style={{ borderTop: "1px solid var(--color-divider)" }}>
+            <ThemeToggle />
+          </div>
           </div>
         </div>
       )}

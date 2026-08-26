@@ -52,6 +52,67 @@
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
   --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
   --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+
+  /* Not from the neutral ramp: a scrim always darkens, but the ramp inverts
+     between themes, so reading a "dark" value off it gives a white wash in
+     dark mode. */
+  --color-scrim: color-mix(in srgb, #2d2b2b 50%, transparent);
+}
+
+/* — Dark theme. Only the 22 colour tokens change; every component reads them
+   through var(), so nothing else needs touching. The neutral ramp is inverted
+   rather than re-picked: components use low numbers as backgrounds and high
+   numbers as text, so flipping the values keeps those roles right way up.
+
+   `data-theme` is always stamped explicitly by the script in layout.tsx —
+   including for "system", which it resolves before first paint — so this one
+   selector covers every case and there's no second copy under a
+   prefers-color-scheme media query to keep in sync. — */
+:root[data-theme="dark"] {
+  /* Keep in sync with THEME_BG in lib/theme.ts (browser chrome colour). */
+  --color-bg: #141413;
+  --color-surface: #1e1d1b;
+  --color-text: #f0eeeb;
+  /* Lifted off the light theme's #1b8a52, which goes muddy on a dark ground. */
+  --color-accent: #2fae6a;
+  --color-accent-2: #2fae6a;
+  --color-divider: color-mix(in srgb, #f0eeeb 32%, transparent);
+
+  --color-neutral-100: #201f1e;
+  --color-neutral-200: #292827;
+  --color-neutral-300: #383635;
+  --color-neutral-400: #4c4948;
+  --color-neutral-500: #6b6866;
+  --color-neutral-600: #8a8683;
+  --color-neutral-700: #a8a4a0;
+  --color-neutral-800: #cdc9c5;
+  --color-neutral-900: #e8e4e0;
+
+  /* Tinted panel backgrounds go dark; the two used as *text* on them go light,
+     or the injury banner and the error copy become unreadable. */
+  --color-accent-100: #10301f;
+  --color-accent-200: #17452c;
+  --color-accent-600: #45c684;
+  --color-accent-700: #7fdfaa;
+  --color-accent-800: #b3ecce;
+
+  --color-accent-2-100: #10301f;
+  --color-accent-2-800: #b3ecce;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #000000 40%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #000000 46%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #000000 55%, transparent);
+
+  --color-scrim: color-mix(in srgb, #000000 68%, transparent);
+}
+
+/* Form controls and scrollbars follow the theme without being styled one by
+   one. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 *,
@@ -354,7 +415,7 @@ img {
   display: grid;
   place-items: center;
   padding: var(--space-4);
-  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  background: var(--color-scrim);
 }
 .dialog {
   width: min(440px, 100%);
