@@ -454,131 +454,104 @@ img {
 .wb-result-row:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }
+/* — The pick card. The photo stretches to whatever height the detail column
+   needs, so it's as large as the block allows rather than a fixed stamp, and
+   the two columns end level. Name and fixture sit at the top of that column,
+   controls at the bottom (margin-top:auto), which is what makes the right side
+   read as one stack instead of three loose pieces. — */
 .wb-pick-card {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 14px;
+  align-items: stretch;
 }
-.wb-stake-row {
+.wb-pick-photo {
+  flex: none;
+  width: 104px;
+  align-self: stretch;
+  background: var(--color-neutral-200);
+  overflow: hidden;
+}
+.wb-pick-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.wb-pick-detail {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 10px 12px;
-  flex-wrap: wrap;
-  margin-top: 16px;
+  flex-direction: column;
 }
-/* Autosave status rides along at the end of the stake row rather than taking a
-   line of its own — it's a confirmation, not a paragraph. */
-.wb-pick-status {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
+.wb-pick-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.wb-stake-btn {
-  padding: 8px 18px;
-  border: 0;
-  cursor: pointer;
+.wb-pick-fixture {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Label / control pairs on a shared grid, so "Change" and the stake segments
+   line up on the same left edge and read as the same kind of thing — the
+   difference between them is then the label, not the geometry. */
+.wb-pick-controls {
+  margin-top: auto;
+  padding-top: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: center;
+}
+.wb-pick-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-control {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text);
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 13px;
-}
-
-/* — Login: a split-screen hero (flat colour block + a line-drawing pitch
-   motif, no photography — stays inside the Modernist system's rules)
-   next to the actual form, stacking on narrow viewports. — */
-.wb-login-page {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-}
-.wb-login-hero {
-  position: relative;
-  overflow: hidden;
-  background: var(--color-accent);
-  color: var(--color-bg);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 64px;
-}
-.wb-login-hero-pitch {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-.wb-login-form-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 48px 32px;
-}
-@media (max-width: 760px) {
-  .wb-login-page {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-  }
-  .wb-login-hero {
-    padding: 40px 24px;
-  }
-  .wb-login-form-panel {
-    padding: 32px 24px;
-  }
-}
-
-/* — Home's "Your pick" / "The other four" split, and each fixture row —
-   viewport-bound (unlike PickForm, which is embedded at different widths
-   depending on the page, these sit directly on Home), so a plain media
-   query is enough; no container-query indirection needed. — */
-.wb-home-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 0;
-  border-bottom: 2px solid var(--color-divider);
-}
-.wb-home-split-left {
-  border-right: 2px solid var(--color-divider);
-  padding: 24px 24px 24px 0;
-}
-.wb-home-split-right {
-  padding: 24px 0 24px 24px;
-}
-@media (max-width: 720px) {
-  .wb-home-split {
-    grid-template-columns: 1fr;
-  }
-  .wb-home-split-left {
-    border-right: none;
-    border-bottom: 2px solid var(--color-divider);
-    padding: 20px 0 24px;
-  }
-  .wb-home-split-right {
-    padding: 24px 0 0;
-  }
-}
-.wb-install {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 35;
-  display: flex;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--color-surface);
-  border: 2px solid var(--color-divider);
-  box-shadow: var(--shadow-lg);
+  justify-content: center;
+  white-space: nowrap;
 }
-@media (min-width: 560px) {
-  .wb-install {
-    left: auto;
-    right: 24px;
-    width: 380px;
-  }
+.wb-control:hover:not([aria-pressed="true"]) {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.wb-control-group {
+  display: inline-flex;
+}
+/* Overlap rather than doubling up the shared edge. */
+.wb-control-group .wb-control + .wb-control {
+  margin-left: -1px;
+}
+.wb-pick-status {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
 }
 
 .wb-standings {

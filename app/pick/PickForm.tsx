@@ -183,25 +183,86 @@ export function PickForm({
 
       {selected && !searching && (
         <div className="wb-pick-card">
-          <div style={{ width: 84, height: 110, flex: "none" }}>
+          <div className="wb-pick-photo">
             {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
-            <img
-              src={`/api/player-image/${selected.code}`}
-              alt={selected.web_name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+            <img src={`/api/player-image/${selected.code}`} alt={selected.web_name} />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 30, lineHeight: 1.05, letterSpacing: "-.02em" }}>
-              {selected.web_name}
-            </p>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED, display: "flex", alignItems: "center", gap: 6 }}>
+
+          <div className="wb-pick-detail">
+            <p className="wb-pick-name">{selected.web_name}</p>
+            <p className="wb-pick-fixture">
               <TeamBadge code={selected.team_code} />
-              {fixture ? `${fixture.match} · ${fixture.when}` : `${selected.team_short_name} · no fixture this week`}
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {fixture ? `${fixture.match} · ${fixture.when}` : `${selected.team_short_name} · no fixture this week`}
+              </span>
             </p>
-            <button type="button" className="btn btn-secondary wb-tap" style={{ marginTop: 10, fontSize: 12, padding: "6px 12px" }} onClick={openSearch}>
-              Change player
-            </button>
+
+            <div className="wb-pick-controls">
+              <span className="wb-pick-label">Player</span>
+              <span>
+                <button type="button" className="wb-control wb-tap" onClick={openSearch}>
+                  Change
+                </button>
+              </span>
+
+              <span className="wb-pick-label">Stake</span>
+              <span className="wb-control-group" role="group" aria-label="Stake">
+                <button
+                  type="button"
+                  className="wb-control wb-tap"
+                  aria-pressed={stake === 3}
+                  onClick={() => setStake(3)}
+                  style={{
+                    background: stake === 3 ? "var(--color-text)" : "transparent",
+                    color: stake === 3 ? "var(--color-bg)" : "var(--color-text)",
+                  }}
+                >
+                  £3
+                </button>
+                <button
+                  type="button"
+                  className="wb-control wb-tap"
+                  aria-pressed={stake === 6}
+                  onClick={() => setStake(6)}
+                  style={{
+                    background: stake === 6 ? "var(--color-accent)" : "transparent",
+                    color: stake === 6 ? "var(--color-bg)" : "var(--color-text)",
+                  }}
+                >
+                  £6 · double
+                </button>
+              </span>
+
+              <span
+                className="wb-pick-status"
+                aria-live="polite"
+                style={{ color: error ? "var(--color-accent-700)" : MUTED }}
+              >
+                {error ? (
+                  error
+                ) : burned ? (
+                  "Not saved"
+                ) : isPending || dirty ? (
+                  "Saving\u2026"
+                ) : (
+                  <>
+                    <span aria-hidden="true" style={{ color: "var(--color-accent)", fontSize: 13 }}>
+                      &#10003;
+                    </span>
+                    Saved
+                  </>
+                )}
+                {/* £3 is the default and needs no explaining — only the double
+                    has a consequence worth mentioning. */}
+                {!error && stake === 6 && (
+                  <span style={{ color: freeDoubles === 0 ? "var(--color-accent-700)" : "inherit" }}>
+                    {freeDoubles === 0
+                      ? "· both doubles spent, a blank costs −2"
+                      : `· ${freeDoubles} free double${freeDoubles === 1 ? "" : "s"} left`}
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -223,66 +284,6 @@ export function PickForm({
         </p>
       )}
 
-      {selected && !searching && (
-        <div className="wb-stake-row">
-          <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED }}>Stake</span>
-          <div style={{ display: "flex", border: "1px solid var(--color-divider)" }}>
-            <button
-              type="button"
-              onClick={() => setStake(3)}
-              className="wb-stake-btn"
-              style={{
-                background: stake === 3 ? "var(--color-text)" : "transparent",
-                color: stake === 3 ? "var(--color-bg)" : "var(--color-text)",
-              }}
-            >
-              £3
-            </button>
-            <button
-              type="button"
-              onClick={() => setStake(6)}
-              className="wb-stake-btn"
-              style={{
-                borderLeft: "1px solid var(--color-divider)",
-                background: stake === 6 ? "var(--color-accent)" : "transparent",
-                color: stake === 6 ? "var(--color-bg)" : "var(--color-text)",
-              }}
-            >
-              £6 · double
-            </button>
-          </div>
-          {/* £3 is the default and needs no explaining — only the double has
-              a consequence worth a line. */}
-          {stake === 6 && (
-            <span style={{ fontSize: 12, color: freeDoubles === 0 ? "var(--color-accent-700)" : MUTED }}>
-              {freeDoubles === 0
-                ? "Both free doubles spent — a blank costs you −2."
-                : `${freeDoubles} free double${freeDoubles === 1 ? "" : "s"} left this season.`}
-            </span>
-          )}
-
-          <span
-            className="wb-pick-status"
-            aria-live="polite"
-            style={{ color: error ? "var(--color-accent-700)" : MUTED }}
-          >
-            {error ? (
-              error
-            ) : burned ? (
-              "Not saved"
-            ) : isPending || dirty ? (
-              "Saving\u2026"
-            ) : (
-              <>
-                <span aria-hidden="true" style={{ color: "var(--color-accent)", fontSize: 13 }}>
-                  &#10003;
-                </span>
-                Saved
-              </>
-            )}
-          </span>
-        </div>
-      )}
     </div>
   );
 }
