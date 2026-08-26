@@ -150,7 +150,7 @@ export function OnboardingForm({
               Shows up next to your picks. Optional.
             </p>
           </div>
-          <AvatarUploader entrantId={entrantId} initials={initials} />
+          <AvatarUploader entrantId={entrantId} initials={initials} updatedAt={null} />
           <button type="button" className="btn btn-primary wb-tap" style={{ width: "100%" }} onClick={() => router.push("/")}>
             Done — take me in
           </button>

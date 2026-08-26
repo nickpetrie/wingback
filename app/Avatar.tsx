@@ -3,21 +3,22 @@
 import { useState } from "react";
 import { avatarUrl, initialsFor } from "@/lib/avatar";
 
-/** Circular profile picture, falling back to initials. The bucket has no
- * "does this object exist" column — the URL is always derivable — so a missing
- * photo is discovered by the <img> failing to load, not asked about up front. */
+/** Circular profile picture, or initials when there's no photo. Which of the
+ * two is known before rendering (see lib/avatar.ts), so there's no failed
+ * request and no flash of the wrong one. */
 export function Avatar({
   entrantId,
   name,
+  updatedAt,
   size = 24,
-  version,
 }: {
   entrantId: string;
   name: string;
+  updatedAt: string | null;
   size?: number;
-  version?: number;
 }) {
   const [broken, setBroken] = useState(false);
+  const url = avatarUrl(entrantId, updatedAt);
 
   const shared = {
     width: size,
@@ -27,7 +28,7 @@ export function Avatar({
     display: "block" as const,
   };
 
-  if (broken) {
+  if (!url || broken) {
     return (
       <span
         aria-hidden="true"
@@ -51,7 +52,7 @@ export function Avatar({
   return (
     // eslint-disable-next-line @next/next/no-img-element -- user-uploaded, served straight from Supabase Storage
     <img
-      src={version === undefined ? avatarUrl(entrantId) : `${avatarUrl(entrantId)}?v=${version}`}
+      src={url}
       alt=""
       style={{ ...shared, objectFit: "cover" }}
       onError={() => setBroken(true)}

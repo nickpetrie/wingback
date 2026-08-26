@@ -11,7 +11,7 @@ export default async function SettingsPage() {
 
   const { data: entrant } = await supabase
     .from("entrants")
-    .select("id, display_name, phone, sms_opt_in, nomination_player_code")
+    .select("id, display_name, phone, sms_opt_in, nomination_player_code, avatar_updated_at")
     .eq("auth_user_id", user.id)
     .single();
 
@@ -29,6 +29,7 @@ export default async function SettingsPage() {
       </div>
       <SettingsForm
         entrantId={entrant.id}
+        avatarUpdatedAt={entrant.avatar_updated_at}
         displayName={entrant.display_name}
         initialPhone={entrant.phone ?? ""}
         initialSmsOptIn={entrant.sms_opt_in}

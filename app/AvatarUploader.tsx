@@ -3,14 +3,26 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { avatarUrl, initialsFor } from "@/lib/avatar";
+import { avatarPreviewUrl, avatarUrl } from "@/lib/avatar";
+import { markAvatarUploaded } from "./actions";
 import { AvatarCropper } from "./AvatarCropper";
 
-export function AvatarUploader({ entrantId, initials }: { entrantId: string; initials: string }) {
+export function AvatarUploader({
+  entrantId,
+  initials,
+  updatedAt,
+}: {
+  entrantId: string;
+  initials: string;
+  updatedAt: string | null;
+}) {
   // Cache-bust with a version counter so a re-upload actually shows the new
   // image instead of the browser's cached copy of the old one at the same URL.
   const [version, setVersion] = useState(0);
   const [broken, setBroken] = useState(false);
+  // Before any upload in this session, whether there's a photo is known from
+  // the server rather than discovered by a failing request.
+  const src = version === 0 ? avatarUrl(entrantId, updatedAt) : avatarPreviewUrl(entrantId, version);
   const [pending, setPending] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +56,18 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
       setError(error.message);
       return;
     }
+    const marked = await markAvatarUploaded();
+    if (!marked.ok) {
+      setStatus("error");
+      setError(marked.error ?? "Uploaded, but couldn't record it.");
+      return;
+    }
+
     setStatus("idle");
     setBroken(false);
     setVersion((v) => v + 1);
-    // The standings strip in the header renders on the server — refresh so the
-    // new photo shows up there too, not just in this preview.
+    // The standings strip renders on the server — refresh so the new photo
+    // shows up there too, not just in this preview.
     router.refresh();
   }
 
@@ -69,12 +88,12 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
           color: "var(--color-neutral-700)",
         }}
       >
-        {broken ? (
-          initials || initialsFor("")
+        {!src || broken ? (
+          initials
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- user-uploaded, served straight from Supabase Storage
           <img
-            src={`${avatarUrl(entrantId)}?v=${version}`}
+            src={src}
             alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={() => setBroken(true)}
@@ -88,7 +107,7 @@ export function AvatarUploader({ entrantId, initials }: { entrantId: string; ini
         onClick={() => inputRef.current?.click()}
         disabled={status === "uploading"}
       >
-        {status === "uploading" ? "Uploading…" : broken ? "Add a photo" : "Change photo"}
+        {status === "uploading" ? "Uploading…" : !src || broken ? "Add a photo" : "Change photo"}
       </button>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={chooseFile} />
 

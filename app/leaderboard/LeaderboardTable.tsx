@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Avatar } from "../Avatar";
 
 export type SeasonCell =
   | { state: "empty"; gw: number }
@@ -18,6 +19,7 @@ export type SeasonCell =
 
 export interface BoardRow {
   entrant_id: string;
+  avatar_updated_at: string | null;
   rank: number;
   name: string;
   stars: number;
@@ -59,7 +61,13 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
             >
               {row.rank}
             </span>
-            <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <Avatar
+                entrantId={row.entrant_id}
+                name={row.name}
+                updatedAt={row.avatar_updated_at}
+                size={32}
+              />
               <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 22, letterSpacing: "-.01em" }}>
                 {row.name}
               </span>

@@ -14,6 +14,7 @@ export interface StandingRow {
   display_name: string;
   total_points: number;
   stars: number;
+  avatar_updated_at: string | null;
 }
 
 const MENU = [
@@ -200,7 +201,7 @@ export function Header({
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <Avatar entrantId={row.entrant_id} name={row.display_name} size={24} />
+                <Avatar entrantId={row.entrant_id} name={row.display_name} updatedAt={row.avatar_updated_at} size={24} />
                 <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {row.display_name.split(" ")[0]}

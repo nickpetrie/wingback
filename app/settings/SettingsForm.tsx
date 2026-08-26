@@ -11,6 +11,7 @@ import { updateNomination, updatePhone } from "./actions";
 
 export function SettingsForm({
   entrantId,
+  avatarUpdatedAt,
   displayName,
   initialPhone,
   initialSmsOptIn,
@@ -18,6 +19,7 @@ export function SettingsForm({
   initialNomination,
 }: {
   entrantId: string;
+  avatarUpdatedAt: string | null;
   displayName: string;
   initialPhone: string;
   initialSmsOptIn: boolean;
@@ -57,7 +59,7 @@ export function SettingsForm({
   return (
     <div>
       <section style={{ padding: "24px 0", borderBottom: "1px solid var(--color-divider)", display: "flex", gap: 20, alignItems: "center" }}>
-        <AvatarUploader entrantId={entrantId} initials={initialsFor(displayName)} />
+        <AvatarUploader entrantId={entrantId} initials={initialsFor(displayName)} updatedAt={avatarUpdatedAt} />
         <div>
           <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 22 }}>{displayName}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

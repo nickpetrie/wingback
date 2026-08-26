@@ -11,6 +11,9 @@ export default async function LeaderboardPage() {
   const { data: leaderboard } = await supabase
     .from("leaderboard")
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
+
+  const { data: avatars } = await supabase.from("entrants").select("id, avatar_updated_at");
+  const avatarAt = new Map((avatars ?? []).map((a) => [a.id, a.avatar_updated_at]));
   const starCounts = await getStarCounts(supabase);
 
   const { data: gameweeks } = await supabase.from("gameweeks").select("id, finished");
@@ -73,6 +76,7 @@ export default async function LeaderboardPage() {
 
       return {
         entrant_id: entrant.entrant_id,
+        avatar_updated_at: avatarAt.get(entrant.entrant_id) ?? null,
         rank: i + 1,
         name: entrant.display_name,
         stars,

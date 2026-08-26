@@ -4,6 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { detectFocalPoint, type FocalPoint } from "@/lib/focalPoint";
 
 const OUTPUT_PX = 512;
+const MAX_ZOOM = 4;
+
+type Point = { x: number; y: number };
+
+type Gesture =
+  | { kind: "pan"; id: number; from: Point; offset: Point }
+  | { kind: "pinch"; startDist: number; startZoom: number; startMid: Point; offset: Point }
+  | null;
+
+function midpoint(a: Point, b: Point): Point {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+function distance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
 
 /** Square crop with a circular guide, so what you drag into the ring is exactly
  * what the little leaderboard circles will show. Also the reason uploads are a
@@ -22,14 +37,15 @@ export function AvatarCropper({
   const [failed, setFailed] = useState(false);
   const [focal, setFocal] = useState<FocalPoint | null>(null);
   const [detecting, setDetecting] = useState(true);
-  // null until the slider is touched, so a detected face can suggest the zoom.
+  // Both null until touched, so a detected face can suggest them and the
+  // suggestion survives a resize.
   const [rawZoom, setRawZoom] = useState<number | null>(null);
-  // null until dragged: the resting position is "centred", which can't be
-  // computed before the image and the frame have both been measured.
-  const [rawOffset, setRawOffset] = useState<{ x: number; y: number } | null>(null);
-  const [viewport, setViewport] = useState(280);
+  const [rawOffset, setRawOffset] = useState<Point | null>(null);
+  const [viewport, setViewport] = useState(300);
 
-  const drag = useRef<{ id: number; startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const pointers = useRef(new Map<number, Point>());
+  const gesture = useRef<Gesture>(null);
 
   useEffect(() => {
     let live = true;
@@ -60,7 +76,7 @@ export function AvatarCropper({
 
   useEffect(() => {
     function measure() {
-      setViewport(Math.max(200, Math.min(320, window.innerWidth - 96)));
+      setViewport(Math.max(240, Math.min(360, window.innerWidth - 64)));
     }
     measure();
     window.addEventListener("resize", measure);
@@ -69,20 +85,23 @@ export function AvatarCropper({
 
   // A detected face fills a bit over a third of the frame at zoom 1 if it's
   // small in the original — zoom in so it fills ~55% of the ring instead.
-  const suggestedZoom = focal?.size ? Math.min(3, Math.max(1, 0.55 / focal.size)) : 1;
+  const suggestedZoom = focal?.size ? Math.min(MAX_ZOOM, Math.max(1, 0.55 / focal.size)) : 1;
   const zoom = rawZoom ?? suggestedZoom;
 
   // Scale that makes the image just cover the crop square, whichever way it's
   // shaped; zoom multiplies it, so zoom=1 is always "as far out as allowed".
   const baseScale = img ? viewport / Math.min(img.naturalWidth, img.naturalHeight) : 1;
-  const scale = baseScale * zoom;
-  const drawnW = img ? img.naturalWidth * scale : 0;
-  const drawnH = img ? img.naturalHeight * scale : 0;
+  const sizeAt = (z: number) => ({
+    w: img ? img.naturalWidth * baseScale * z : 0,
+    h: img ? img.naturalHeight * baseScale * z : 0,
+  });
+  const { w: drawnW, h: drawnH } = sizeAt(zoom);
 
-  function clamp(next: { x: number; y: number }) {
+  function clampAt(z: number, next: Point): Point {
+    const { w, h } = sizeAt(z);
     return {
-      x: Math.min(0, Math.max(viewport - drawnW, next.x)),
-      y: Math.min(0, Math.max(viewport - drawnH, next.y)),
+      x: Math.min(0, Math.max(viewport - w, next.x)),
+      y: Math.min(0, Math.max(viewport - h, next.y)),
     };
   }
 
@@ -93,24 +112,98 @@ export function AvatarCropper({
     ? { x: viewport / 2 - focal.x * drawnW, y: viewport / 2 - focal.y * drawnH }
     : { x: (viewport - drawnW) / 2, y: (viewport - drawnH) / 2 };
 
-  // Clamped on the way out rather than stored clamped, so zooming can never
-  // leave a gap at the edge of the frame and zooming back in restores where you
-  // had dragged to.
-  const offset = clamp(rawOffset ?? suggested);
+  const offset = clampAt(zoom, rawOffset ?? suggested);
+
+  /** Zoom about a fixed point, so whatever is under your fingers (or under the
+   * middle of the ring) stays there. Without this the image scales from its
+   * top-left corner and the face you just lined up slides out of the frame —
+   * which is what made this fiddly. */
+  function zoomAbout(nextZoom: number, anchor: Point, from = { zoom, offset }) {
+    const z = Math.min(MAX_ZOOM, Math.max(1, nextZoom));
+    const k = z / from.zoom;
+    setRawZoom(z);
+    setRawOffset(
+      clampAt(z, {
+        x: anchor.x - (anchor.x - from.offset.x) * k,
+        y: anchor.y - (anchor.y - from.offset.y) * k,
+      }),
+    );
+  }
+
+  function localPoint(e: { clientX: number; clientY: number }): Point {
+    const rect = frameRef.current?.getBoundingClientRect();
+    return { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
+  }
 
   function onPointerDown(e: React.PointerEvent) {
-    drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
-    (e.target as Element).setPointerCapture(e.pointerId);
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, localPoint(e));
+    const active = [...pointers.current.values()];
+
+    if (active.length === 1) {
+      gesture.current = { kind: "pan", id: e.pointerId, from: active[0], offset };
+    } else if (active.length === 2) {
+      gesture.current = {
+        kind: "pinch",
+        startDist: distance(active[0], active[1]),
+        startZoom: zoom,
+        startMid: midpoint(active[0], active[1]),
+        offset,
+      };
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    setRawOffset(clamp({ x: d.ox + (e.clientX - d.startX), y: d.oy + (e.clientY - d.startY) }));
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, localPoint(e));
+    const g = gesture.current;
+    if (!g) return;
+
+    if (g.kind === "pan" && g.id === e.pointerId) {
+      const now = pointers.current.get(e.pointerId)!;
+      setRawOffset(
+        clampAt(zoom, {
+          x: g.offset.x + (now.x - g.from.x),
+          y: g.offset.y + (now.y - g.from.y),
+        }),
+      );
+      return;
+    }
+
+    if (g.kind === "pinch") {
+      const active = [...pointers.current.values()];
+      if (active.length < 2) return;
+      const dist = distance(active[0], active[1]);
+      if (g.startDist === 0) return;
+      // The pinch pans as well as zooms: anchor on where the fingers are now,
+      // measured from where they started.
+      const mid = midpoint(active[0], active[1]);
+      const z = Math.min(MAX_ZOOM, Math.max(1, g.startZoom * (dist / g.startDist)));
+      const k = z / g.startZoom;
+      setRawZoom(z);
+      setRawOffset(
+        clampAt(z, {
+          x: mid.x - (g.startMid.x - g.offset.x) * k,
+          y: mid.y - (g.startMid.y - g.offset.y) * k,
+        }),
+      );
+    }
   }
 
-  function onPointerUp(e: React.PointerEvent) {
-    if (drag.current?.id === e.pointerId) drag.current = null;
+  function endPointer(e: React.PointerEvent) {
+    pointers.current.delete(e.pointerId);
+    const active = [...pointers.current.entries()];
+    // Dropping from two fingers to one shouldn't jump: restart a pan from
+    // wherever the remaining finger is.
+    gesture.current =
+      active.length === 1
+        ? { kind: "pan", id: active[0][0], from: active[0][1], offset }
+        : null;
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    if (!img) return;
+    zoomAbout(zoom * (1 - e.deltaY * 0.0015), localPoint(e));
   }
 
   function confirm() {
@@ -133,7 +226,7 @@ export function AvatarCropper({
 
   return (
     <div className="dialog-backdrop" style={{ zIndex: 60 }} role="dialog" aria-modal="true" aria-label="Crop your photo">
-      <div className="dialog" style={{ width: "min(420px, 100%)", background: "var(--color-bg)" }}>
+      <div className="dialog" style={{ width: "min(440px, 100%)", background: "var(--color-bg)" }}>
         <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 20 }}>
           Frame your face
         </p>
@@ -145,10 +238,12 @@ export function AvatarCropper({
         ) : (
           <>
             <div
+              ref={frameRef}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
+              onPointerUp={endPointer}
+              onPointerCancel={endPointer}
+              onWheel={onWheel}
               style={{
                 position: "relative",
                 width: viewport,
@@ -194,23 +289,43 @@ export function AvatarCropper({
             </div>
 
             <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              {detecting ? "Looking for a face…" : focal ? "Centred on the face — drag to adjust." : "Drag to position."}
+              {detecting
+                ? "Looking for a face…"
+                : focal
+                  ? "Centred on the face — drag or pinch to adjust."
+                  : "Drag to position, pinch to zoom."}
             </p>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-              <span style={{ letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Zoom
-              </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
+              <button
+                type="button"
+                className="btn btn-secondary wb-tap"
+                aria-label="Zoom out"
+                style={{ padding: "2px 12px", fontSize: 16, lineHeight: 1.2 }}
+                onClick={() => zoomAbout(zoom - 0.25, { x: viewport / 2, y: viewport / 2 })}
+              >
+                −
+              </button>
               <input
                 type="range"
+                aria-label="Zoom"
                 min={1}
-                max={3}
+                max={MAX_ZOOM}
                 step={0.01}
                 value={zoom}
-                onChange={(e) => setRawZoom(Number(e.target.value))}
+                onChange={(e) => zoomAbout(Number(e.target.value), { x: viewport / 2, y: viewport / 2 })}
                 style={{ flex: 1, accentColor: "var(--color-accent)" }}
               />
-            </label>
+              <button
+                type="button"
+                className="btn btn-secondary wb-tap"
+                aria-label="Zoom in"
+                style={{ padding: "2px 12px", fontSize: 16, lineHeight: 1.2 }}
+                onClick={() => zoomAbout(zoom + 0.25, { x: viewport / 2, y: viewport / 2 })}
+              >
+                +
+              </button>
+            </div>
           </>
         )}
 

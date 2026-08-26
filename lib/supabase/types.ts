@@ -93,6 +93,7 @@ export interface Database {
           phone: string | null;
           sms_opt_in: boolean;
           nomination_player_code: number | null;
+          avatar_updated_at: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["entrants"]["Row"]> & { display_name: string };

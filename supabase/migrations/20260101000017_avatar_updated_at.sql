@@ -1,0 +1,14 @@
+-- Whether someone has a photo was a client-side guess: the URL is derivable
+-- from the entrant id, so the app rendered an <img> at it and fell back to
+-- initials when the request failed. That has three problems, and the first one
+-- is why an uploaded photo still wasn't showing:
+--
+--   1. The URL never changes, so a browser that cached the 400 from before the
+--      photo existed keeps showing initials until the cache expires.
+--   2. Every entrant without a photo costs a guaranteed failed request on
+--      every page load.
+--   3. The server can't render the right thing, so there's always a flash.
+--
+-- One nullable timestamp fixes all three: null means no photo, and its value
+-- is the cache-busting token in the URL.
+alter table entrants add column avatar_updated_at timestamptz;
