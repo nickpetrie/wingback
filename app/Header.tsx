@@ -180,7 +180,7 @@ export function Header({
           background: "var(--color-bg)",
         }}
       >
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", overflowX: "auto" }}>
+        <div className="wb-standings">
           {sorted.map((row, i) => {
             const isMe = row.entrant_id === entrantId;
             return (

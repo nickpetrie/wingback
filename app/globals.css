@@ -462,11 +462,19 @@ img {
 .wb-stake-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px 12px;
   flex-wrap: wrap;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-divider);
+  margin-top: 16px;
+}
+/* Autosave status rides along at the end of the stake row rather than taking a
+   line of its own — it's a confirmation, not a paragraph. */
+.wb-pick-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .wb-stake-btn {
   padding: 8px 18px;
@@ -545,7 +553,7 @@ img {
   .wb-home-split-left {
     border-right: none;
     border-bottom: 2px solid var(--color-divider);
-    padding: 0 0 24px;
+    padding: 20px 0 24px;
   }
   .wb-home-split-right {
     padding: 24px 0 0;
@@ -570,6 +578,25 @@ img {
     left: auto;
     right: 24px;
     width: 380px;
+  }
+}
+
+.wb-standings {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  overflow-x: auto;
+}
+@media (min-width: 900px) {
+  .wb-standings {
+    justify-content: center;
+  }
+  /* The last cell's divider would sit off-centre once centred. */
+  .wb-standings > :last-child {
+    border-right: 0;
+    margin-right: 0;
+    padding-right: 0;
   }
 }
 

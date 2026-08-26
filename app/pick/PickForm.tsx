@@ -224,62 +224,52 @@ export function PickForm({
       )}
 
       {selected && !searching && (
-        <>
-          <div className="wb-stake-row">
-            <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED }}>Stake</span>
-            <div style={{ display: "flex", border: "1px solid var(--color-divider)" }}>
-              <button
-                type="button"
-                onClick={() => setStake(3)}
-                className="wb-stake-btn"
-                style={{
-                  background: stake === 3 ? "var(--color-text)" : "transparent",
-                  color: stake === 3 ? "var(--color-bg)" : "var(--color-text)",
-                }}
-              >
-                £3
-              </button>
-              <button
-                type="button"
-                onClick={() => setStake(6)}
-                className="wb-stake-btn"
-                style={{
-                  borderLeft: "1px solid var(--color-divider)",
-                  background: stake === 6 ? "var(--color-accent)" : "transparent",
-                  color: stake === 6 ? "var(--color-bg)" : "var(--color-text)",
-                }}
-              >
-                £6 · double
-              </button>
-            </div>
-            {/* £3 is the default and needs no explaining — only the double has
-                a consequence worth a line. */}
-            {stake === 6 && (
-              <span style={{ fontSize: 12, color: freeDoubles === 0 ? "var(--color-accent-700)" : MUTED }}>
-                {freeDoubles === 0
-                  ? "Both free doubles spent — a blank costs you −2."
-                  : `${freeDoubles} free double${freeDoubles === 1 ? "" : "s"} left this season.`}
-              </span>
-            )}
+        <div className="wb-stake-row">
+          <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: MUTED }}>Stake</span>
+          <div style={{ display: "flex", border: "1px solid var(--color-divider)" }}>
+            <button
+              type="button"
+              onClick={() => setStake(3)}
+              className="wb-stake-btn"
+              style={{
+                background: stake === 3 ? "var(--color-text)" : "transparent",
+                color: stake === 3 ? "var(--color-bg)" : "var(--color-text)",
+              }}
+            >
+              £3
+            </button>
+            <button
+              type="button"
+              onClick={() => setStake(6)}
+              className="wb-stake-btn"
+              style={{
+                borderLeft: "1px solid var(--color-divider)",
+                background: stake === 6 ? "var(--color-accent)" : "transparent",
+                color: stake === 6 ? "var(--color-bg)" : "var(--color-text)",
+              }}
+            >
+              £6 · double
+            </button>
           </div>
+          {/* £3 is the default and needs no explaining — only the double has
+              a consequence worth a line. */}
+          {stake === 6 && (
+            <span style={{ fontSize: 12, color: freeDoubles === 0 ? "var(--color-accent-700)" : MUTED }}>
+              {freeDoubles === 0
+                ? "Both free doubles spent — a blank costs you −2."
+                : `${freeDoubles} free double${freeDoubles === 1 ? "" : "s"} left this season.`}
+            </span>
+          )}
 
-          {/* Status line in place of a button: it says what already happened
-              rather than asking for permission to do it. */}
-          <p
-            style={{
-              margin: "14px 0 0",
-              fontSize: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: error ? "var(--color-accent-700)" : MUTED,
-            }}
+          <span
+            className="wb-pick-status"
             aria-live="polite"
+            style={{ color: error ? "var(--color-accent-700)" : MUTED }}
           >
             {error ? (
               error
             ) : burned ? (
-              "Not saved — the database will refuse this one."
+              "Not saved"
             ) : isPending || dirty ? (
               "Saving\u2026"
             ) : (
@@ -287,12 +277,11 @@ export function PickForm({
                 <span aria-hidden="true" style={{ color: "var(--color-accent)", fontSize: 13 }}>
                   &#10003;
                 </span>
-                Saved. Editable until the deadline.
+                Saved
               </>
             )}
-          </p>
-
-        </>
+          </span>
+        </div>
       )}
     </div>
   );
