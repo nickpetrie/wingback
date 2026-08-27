@@ -464,12 +464,22 @@ img {
   gap: 14px;
   align-items: stretch;
 }
+/* The card's height comes from here, so the ratio is set explicitly rather
+   than inherited from whatever the image route happens to return — otherwise
+   widening the photo drags the whole block taller and opens a void above the
+   controls, which sit at the bottom. */
 .wb-pick-photo {
   flex: none;
-  width: 116px;
+  width: 150px;
+  aspect-ratio: 4 / 5;
   align-self: stretch;
   background: var(--color-neutral-200);
   overflow: hidden;
+}
+@media (max-width: 720px) {
+  .wb-pick-photo {
+    width: 126px;
+  }
 }
 .wb-pick-photo img {
   width: 100%;
@@ -542,12 +552,22 @@ img {
 .wb-control:hover:not([aria-pressed="true"]) {
   background: color-mix(in srgb, var(--color-text) 7%, transparent);
 }
+/* One box with an internal divider, not two buttons that happen to touch — a
+   stake is a single choice with two positions and should look like it. It's a
+   grid item, so justify-self is what stops the 1fr column stretching it back
+   into two mismatched halves. */
 .wb-control-group {
   display: inline-flex;
+  justify-self: start;
+  border: 1px solid var(--color-divider);
 }
-/* Overlap rather than doubling up the shared edge. */
+.wb-control-group .wb-control {
+  height: 30px;
+  min-width: 52px;
+  border: 0;
+}
 .wb-control-group .wb-control + .wb-control {
-  margin-left: -1px;
+  border-left: 1px solid var(--color-divider);
 }
 .wb-pick-status {
   grid-column: 2;
@@ -650,18 +670,31 @@ img {
   }
 }
 
-.wb-standings {
-  max-width: 1200px;
+/* One column for the wordmark, the standings strip and the page body. Three
+   containers at three widths is what left the logo pinned far left, the menu
+   far right and the standings floating in the middle with nothing lining up.
+   width:100% is load-bearing: <main> is a direct flex item of the body's
+   column, and auto side margins on a flex item cancel the default stretch, so
+   without it the body column shrink-to-fits its content and never matches the
+   header above — whatever max-width says. */
+.wb-page {
+  width: 100%;
+  max-width: 1040px;
   margin: 0 auto;
+}
+
+.wb-standings {
   padding: 0 24px;
   display: flex;
   overflow-x: auto;
 }
 @media (min-width: 900px) {
-  .wb-standings {
-    justify-content: center;
+  /* Spread the five across the column so the strip's ends land on the same
+     edges as the wordmark and the menu button above it. Below 900px they keep
+     their natural width and scroll instead. */
+  .wb-standings > * {
+    flex: 1;
   }
-  /* The last cell's divider would sit off-centre once centred. */
   .wb-standings > :last-child {
     border-right: 0;
     margin-right: 0;

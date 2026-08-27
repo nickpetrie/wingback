@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
     : null;
 
   return (
-    <main className="wb-in" style={{ maxWidth: 480, margin: "0 auto", padding: "56px 24px 0" }}>
+    <main className="wb-in" style={{ width: "100%", maxWidth: 480, margin: "0 auto", padding: "56px 24px 0" }}>
       <h1 style={{ margin: 0, fontSize: 38, letterSpacing: "-.02em" }}>Hi, {entrant.display_name}!</h1>
       <p style={{ margin: "8px 0 0", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
         A few quick steps before you&rsquo;re in.

@@ -20,7 +20,7 @@ export default async function ClaimPage() {
   }));
 
   return (
-    <main className="wb-in" style={{ maxWidth: 560, margin: "0 auto", padding: "56px 24px 0" }}>
+    <main className="wb-in" style={{ width: "100%", maxWidth: 560, margin: "0 auto", padding: "56px 24px 0" }}>
       <h1 style={{ margin: 0, fontSize: 44, letterSpacing: "-.03em" }}>Which one are you?</h1>
       <p style={{ margin: "8px 0 0", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
         Five names, five seasons of evidence. Claim yours.

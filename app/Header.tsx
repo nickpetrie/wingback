@@ -44,7 +44,7 @@ export function Header({
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--color-bg)" }}>
-      <div style={{ padding: "14px 24px 12px", maxWidth: 1200, margin: "0 auto" }}>
+      <div className="wb-page" style={{ padding: "14px 24px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <Link
             href="/"
@@ -180,7 +180,7 @@ export function Header({
           background: "var(--color-bg)",
         }}
       >
-        <div className="wb-standings">
+        <div className="wb-page wb-standings">
           {sorted.map((row, i) => {
             const isMe = row.entrant_id === entrantId;
             return (
@@ -235,7 +235,10 @@ export function Header({
                     fontSize: 22,
                     lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
-                    marginLeft: "auto",
+                    // Not marginLeft:auto — once the cells stretch to fill the
+                    // column, that strands the score half a screen from the
+                    // name it belongs to.
+                    marginLeft: 4,
                   }}
                 >
                   {row.total_points}

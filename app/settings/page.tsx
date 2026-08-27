@@ -23,7 +23,7 @@ export default async function SettingsPage() {
     : null;
 
   return (
-    <main className="wb-in" style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px 64px" }}>
+    <main className="wb-in" style={{ width: "100%", maxWidth: 720, margin: "0 auto", padding: "32px 24px 64px" }}>
       <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 10 }}>
         <h1 style={{ margin: 0 }}>Settings</h1>
       </div>

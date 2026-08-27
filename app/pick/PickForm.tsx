@@ -231,7 +231,7 @@ export function PickForm({
                     color: stake === 6 ? "var(--color-bg)" : "var(--color-text)",
                   }}
                 >
-                  £6 · double
+                  £6
                 </button>
               </span>
 

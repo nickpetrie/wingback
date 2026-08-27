@@ -108,7 +108,7 @@ export default async function DashboardPage() {
   const myPoints = myPick ? myPick.goals * (myPick.stake === 6 ? 2 : 1) : 0;
 
   return (
-    <main className="wb-in" style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 64px" }}>
+    <main className="wb-in wb-page" style={{ padding: "20px 24px 64px" }}>
       {/* The countdown lives in the sticky header on every page — repeating it
           here just cost a screenful of phone. */}
       <div
