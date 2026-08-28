@@ -160,13 +160,16 @@ reading the project URL and service key from Supabase Vault at call time.
 - **iOS only allows push for an installed PWA.** That's why the home-screen
   prompt came first, and why `PushToggle` distinguishes "not supported" from
   "add to home screen first" rather than showing one dead button.
-- **Theming lives entirely in the 22 colour tokens** on `:root` in
+- **Theming lives entirely in the colour tokens** on `:root` in
   `globals.css`; `:root[data-theme="dark"]` restates them and nothing else
   changes, because every component reads them through `var()`. The dark
   neutral ramp is the light one *inverted* rather than re-picked — components
   use low numbers as backgrounds and high numbers as text, so flipping the
   values keeps those roles right way up. A scrim can't come from that ramp
-  (it must darken in both themes), hence `--color-scrim`. `data-theme` is
+  (it must darken in both themes), hence `--color-scrim`; `--color-closed` is
+  outside it for a different reason — it is the one non-green in the system,
+  because a locked deadline should not look like the good news everything
+  else in the accent colour is. `data-theme` is
   always stamped explicitly, including for "system", by the blocking script
   in `layout.tsx` — that's what stops a white flash before hydration, and
   it's why the stylesheet needs no `prefers-color-scheme` block.

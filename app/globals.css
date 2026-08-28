@@ -57,6 +57,12 @@
      between themes, so reading a "dark" value off it gives a white wash in
      dark mode. */
   --color-scrim: color-mix(in srgb, #2d2b2b 50%, transparent);
+
+  /* The one colour in the system that isn't green: "locked" is the single
+     state where the app is telling you that you can no longer act, and
+     borrowing the accent for it made a closed deadline look like every other
+     piece of good news on the screen. */
+  --color-closed: #b4231f;
 }
 
 /* — Dark theme. Only the 22 colour tokens change; every component reads them
@@ -104,6 +110,10 @@
   --shadow-lg: 0 12px 32px color-mix(in srgb, #000000 55%, transparent);
 
   --color-scrim: color-mix(in srgb, #000000 68%, transparent);
+
+  /* Lifted off the light theme's #b4231f, which reads as brown on a dark
+     ground — the same treatment the accent gets above. */
+  --color-closed: #e0483f;
 }
 
 /* Form controls and scrollbars follow the theme without being styled one by
@@ -914,11 +924,11 @@ img {
     padding: 24px 0 0;
   }
 }
-/* — "The other four". Four cards two-up; on a narrow phone the name column is
-   only ~80px, which turned "Havertz" into "Have…". The photo and the score
-   give up a few pixels each below 440px and the name is allowed a second
-   line, which is cheaper than an ellipsis on the one word the card exists to
-   show. — */
+/* — "The other four", built as a miniature of the pick card above it: a
+   portrait photo that stretches to the card's height, a detail column beside
+   it, and the figure anchored to the bottom of that column. Same shape, a
+   third of the size — the point is that a rival's pick reads as the same kind
+   of object as your own, not as a list item that happens to have a picture. — */
 .wb-others {
   display: grid;
   /* minmax(0, …), not 1fr: a bare 1fr cannot shrink below its content and
@@ -929,22 +939,35 @@ img {
 }
 .wb-other {
   background: var(--color-bg);
-  padding: 12px;
+  padding: 10px;
   display: flex;
   gap: 10px;
-  align-items: flex-start;
-  min-height: 96px;
+  align-items: stretch;
   min-width: 0;
 }
 .wb-other-photo {
-  width: 44px;
-  height: 44px;
   flex: none;
+  width: 52px;
+  /* Ratio set here rather than inherited from whatever the image route
+     returns, exactly as .wb-pick-photo does, so the four cards are the same
+     height whether or not a headshot exists. */
+  aspect-ratio: 4 / 5;
+  align-self: stretch;
   object-fit: cover;
+  background: var(--color-neutral-200);
+}
+.wb-other-empty {
+  flex: none;
+  width: 52px;
+  aspect-ratio: 4 / 5;
+  align-self: stretch;
+  border: 2px dashed var(--color-divider);
 }
 .wb-other-detail {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .wb-other-who {
   margin: 0;
@@ -959,48 +982,67 @@ img {
   font-weight: 800;
   font-size: 17px;
   line-height: 1.15;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
+/* Club and score share the bottom edge, the way the pick card's controls sit
+   at the bottom of its detail column. */
+.wb-other-foot {
+  margin-top: auto;
+  padding-top: 4px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
 .wb-other-club {
-  margin: 2px 0 0;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 11px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: color-mix(in srgb, var(--color-text) 55%, transparent);
 }
 .wb-other-points {
+  flex: none;
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+.wb-other-nopick {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
 /* Below this the name column is ~50px and a surname breaks mid-word, so the
-   four go one-up instead. Costs a little scroll, buys back the one word each
-   card exists to show. */
+   four go one-up instead. */
 @media (max-width: 360px) {
   .wb-others {
     grid-template-columns: minmax(0, 1fr);
   }
-  .wb-other {
-    min-height: 0;
-  }
 }
 @media (max-width: 440px) {
   .wb-other {
-    padding: 10px;
+    padding: 9px;
     gap: 8px;
   }
-  .wb-other-photo {
-    width: 36px;
-    height: 36px;
+  .wb-other-photo,
+  .wb-other-empty {
+    width: 44px;
   }
   .wb-other-name {
     font-size: 15px;
   }
   .wb-other-points {
-    font-size: 20px;
+    font-size: 19px;
   }
 }
 
@@ -1367,6 +1409,50 @@ details[open] > summary .wb-chev {
   }
   .wb-fixture-chips {
     grid-column: 2;
+  }
+}
+
+/* — Skeletons. Blocks in the shape of the thing that's coming, rather than a
+   spinner: the page doesn't jump when the real content lands, and the shape
+   itself tells you what you're waiting for. The sweep is a moving highlight
+   over the surface colour, so it works in both themes off the same token. — */
+.wb-skel {
+  background: var(--color-surface);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-text) 7%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: wb-sweep 1.4s ease-in-out infinite;
+}
+@keyframes wb-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.wb-skel-line {
+  height: 12px;
+}
+.wb-skel-head {
+  height: 26px;
+}
+/* Staggered, so the block reads as one surface catching the light rather than
+   six things flashing in lockstep. */
+.wb-skel-2 {
+  animation-delay: 0.12s;
+}
+.wb-skel-3 {
+  animation-delay: 0.24s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-skel {
+    background-image: none;
   }
 }
 
