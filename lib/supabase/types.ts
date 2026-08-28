@@ -32,6 +32,12 @@ export interface Database {
           news: string;
           chance_of_playing_next_round: number | null;
           photo: string | null;
+          // Nullable: null means "not synced yet", which is deliberately not
+          // the same answer as 0. See 20260101000020_player_season_stats.sql.
+          goals_scored: number | null;
+          assists: number | null;
+          starts: number | null;
+          minutes: number | null;
         };
         Insert: Partial<Database["public"]["Tables"]["players"]["Row"]> & { code: number; fpl_id: number };
         Update: Partial<Database["public"]["Tables"]["players"]["Row"]>;
@@ -156,10 +162,22 @@ export interface Database {
           is_substitution: boolean;
           goals: number;
         }>;
+        // Both foreign keys to `players` are listed. They have to be: with
+        // only one here the types happily accept `.select("players(...)")`,
+        // while PostgREST — which sees both — rejects it as ambiguous at
+        // runtime (PGRST201) and the query returns no rows at all. Every
+        // embed of players from picks must name its constraint.
         Relationships: [
           {
             foreignKeyName: "picks_player_code_fkey";
             columns: ["player_code"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "picks_substituted_from_player_code_fkey";
+            columns: ["substituted_from_player_code"];
             isOneToOne: false;
             referencedRelation: "players";
             referencedColumns: ["code"];

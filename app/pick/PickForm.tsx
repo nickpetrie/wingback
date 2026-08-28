@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { PlayerOption } from "@/lib/players";
-import { foldDiacritics, isPlayerAvailable } from "@/lib/rules";
+import { useEffect, useRef, useState, useTransition } from "react";
+import type { PlayerOption, TeamOption } from "@/lib/players";
 import { kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
 import type { Stake } from "@/lib/supabase/types";
 import { STATUS_LABEL } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
+import { PlayerBrowser, usedReason } from "./PlayerBrowser";
 import { submitPick } from "./actions";
 
 const MUTED = "color-mix(in srgb, var(--color-text) 58%, transparent)";
@@ -17,29 +17,29 @@ function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
   return { match: `${f.home} v ${f.away}`, when: kickoffLabel(f.kickoff_time) };
 }
 
-function usedReason(code: number, usedCounts: Map<number, number>, nominationCode: number | null): string | null {
-  if (isPlayerAvailable(code, usedCounts, nominationCode)) return null;
-  return code === nominationCode ? "Nomination, both uses gone" : "Already used this season";
-}
-
 export function PickForm({
   gameweek,
   players,
+  teams,
   fixtures,
   usedCounts,
+  usedGameweeks,
   nominationCode,
   doublesUsedCount,
   currentPick,
+  playersSyncedAt,
 }: {
   gameweek: number;
   players: PlayerOption[];
+  teams: TeamOption[];
   fixtures: GameweekFixture[];
   usedCounts: Map<number, number>;
+  usedGameweeks: Map<number, number[]>;
   nominationCode: number | null;
   doublesUsedCount: number;
   currentPick: { player_code: number; stake: Stake } | null;
+  playersSyncedAt: string | null;
 }) {
-  const [query, setQuery] = useState("");
   const [selectedCode, setSelectedCode] = useState<number | null>(currentPick?.player_code ?? null);
   const [stake, setStake] = useState<Stake>(currentPick?.stake ?? 3);
   const [savedPick, setSavedPick] = useState(currentPick);
@@ -49,19 +49,7 @@ export function PickForm({
   // The search is a tool for changing your mind, not the resting state of the
   // screen: once there's a pick to look at, it stays out of the way.
   const [searching, setSearching] = useState(currentPick === null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const openedByUser = useRef(false);
-  useEffect(() => {
-    if (searching && openedByUser.current) inputRef.current?.focus();
-  }, [searching]);
-
-  const results = useMemo(() => {
-    const q = foldDiacritics(query.trim());
-    if (q.length === 0) return [];
-    return players
-      .filter((p) => foldDiacritics(`${p.full_name} ${p.web_name} ${p.team_short_name}`).includes(q))
-      .slice(0, 12);
-  }, [query, players]);
+  const changeRef = useRef<HTMLButtonElement>(null);
 
   const selected = selectedCode ? players.find((p) => p.code === selectedCode) ?? null : null;
   const burned = selected ? usedReason(selected.code, usedCounts, nominationCode) : null;
@@ -70,24 +58,16 @@ export function PickForm({
   const freeDoubles = Math.max(0, 2 - doublesUsedCount);
   const dirty =
     !savedPick || savedPick.player_code !== selectedCode || savedPick.stake !== stake;
-  const hint =
-    query.trim().length === 0
-      ? "Anyone you've already used shows greyed, with the reason. Your nomination is the exception — you get them twice."
-      : results.length === 0
-        ? "Nobody by that name. Spelling is on you."
-        : null;
-
-  function openSearch() {
-    openedByUser.current = true;
-    setQuery("");
-    setSearching(true);
-  }
 
   function pick(player: PlayerOption) {
     setSelectedCode(player.code);
     setError(null);
-    setQuery("");
+    // The picker collapses back to the pick card once a choice is made; the
+    // card, not the search, is the resting state of this screen.
     setSearching(false);
+    // Focus has to land somewhere deliberate or it falls back to <body> and a
+    // keyboard user is dumped at the top of the page.
+    requestAnimationFrame(() => changeRef.current?.focus());
   }
 
   // Autosave. A pick is one row with two fields and a hard deadline — making
@@ -113,73 +93,19 @@ export function PickForm({
 
   return (
     <div className="wb-pickform">
-      {searching ? (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input
-              ref={inputRef}
-              className="input"
-              type="text"
-              placeholder="Search players — accents optional"
-              aria-label="Search players"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {selected && (
-              <button type="button" className="btn btn-ghost wb-tap" style={{ flex: "none" }} onClick={() => setSearching(false)}>
-                Cancel
-              </button>
-            )}
-          </div>
-
-          {results.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              {results.map((r) => {
-                const reason = usedReason(r.code, usedCounts, nominationCode);
-                const st = r.status !== "a" ? r : null;
-                const note = reason ?? (st ? STATUS_LABEL[st.status] ?? st.status : "");
-                return (
-                  <button
-                    key={r.code}
-                    type="button"
-                    onClick={() => pick(r)}
-                    disabled={!!reason}
-                    className="wb-result-row"
-                    style={{ cursor: reason ? "not-allowed" : "pointer", opacity: reason ? 0.45 : 1 }}
-                  >
-                    {r.team_code ? (
-                      <TeamBadge code={r.team_code} />
-                    ) : (
-                      <span style={{ width: 10, height: 10, flex: "none", background: "var(--color-neutral-500)" }} />
-                    )}
-                    <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 15 }}>{r.web_name}</span>
-                    <span style={{ fontSize: 12, color: MUTED }}>{r.team_short_name}</span>
-                    {note && (
-                      <span
-                        style={{
-                          marginLeft: "auto",
-                          paddingLeft: 8,
-                          fontSize: 11,
-                          textAlign: "right",
-                          color: reason ? "color-mix(in srgb, var(--color-text) 40%, transparent)" : "var(--color-accent-700)",
-                        }}
-                      >
-                        {note}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {hint && (
-            <p style={{ margin: "12px 0 0", fontSize: 12, color: MUTED }}>
-              {hint}
-            </p>
-          )}
-        </div>
-      ) : null}
+      {searching && (
+        <PlayerBrowser
+          players={players}
+          teams={teams}
+          fixtures={fixtures}
+          usedCounts={usedCounts}
+          usedGameweeks={usedGameweeks}
+          nominationCode={nominationCode}
+          syncedAt={playersSyncedAt}
+          onSelect={pick}
+          onCancel={selected ? () => setSearching(false) : null}
+        />
+      )}
 
       {selected && !searching && (
         <div className="wb-pick-card">
@@ -202,7 +128,12 @@ export function PickForm({
             <div className="wb-pick-controls">
               <span className="wb-pick-label">Player</span>
               <span>
-                <button type="button" className="wb-control wb-tap" onClick={openSearch}>
+                <button
+                  ref={changeRef}
+                  type="button"
+                  className="wb-control wb-tap"
+                  onClick={() => setSearching(true)}
+                >
                   Change
                 </button>
               </span>

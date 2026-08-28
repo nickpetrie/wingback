@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { AUTH_COOKIE_OPTIONS } from "./cookies";
 import type { Database } from "./types";
 
 // Refreshes the auth session on every request. Server Components can't set
@@ -12,6 +13,7 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -29,17 +31,36 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Redirecting means building a *different* response, and the refreshed
+  // session cookies live on the one built above. Losing them is not a
+  // cosmetic bug: Supabase rotates the refresh token on every use and treats
+  // a retired one coming back as theft, so a single dropped Set-Cookie ends
+  // with the whole session revoked and the entrant staring at a login form
+  // they filled in last week. Every redirect out of here goes through this.
+  const redirectTo = (pathname: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname;
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of response.cookies.getAll()) {
+      redirect.cookies.set(cookie);
+    }
+    return redirect;
+  };
+
+  const { data, error } = await supabase.auth.getUser();
+  const user = data.user;
 
   const isAuthRoute = request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth");
 
   if (!user && !isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    // A network blip or a 5xx from the auth server is not the same thing as
+    // "you are signed out", and treating it as such is how a phone on a bad
+    // train connection ends up back at the sign-in form with a session that
+    // was fine all along. Only a definite answer — no session, or a refresh
+    // token the server has actually rejected — sends anyone to /login.
+    if (error && !isAuthFailure(error)) return response;
+    return redirectTo("/login");
   }
 
   // First login: nobody has an account yet, they have a profile to claim.
@@ -54,12 +75,15 @@ export async function updateSession(request: NextRequest) {
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    if (!entrant) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/claim";
-      return NextResponse.redirect(url);
-    }
+    if (!entrant) return redirectTo("/claim");
   }
 
   return response;
+}
+
+/** True when the auth server gave a real verdict (no session, bad or expired
+ * refresh token) rather than failing to answer. */
+function isAuthFailure(error: { status?: number; name?: string }): boolean {
+  if (error.name === "AuthSessionMissingError") return true;
+  return typeof error.status === "number" && error.status >= 400 && error.status < 500;
 }

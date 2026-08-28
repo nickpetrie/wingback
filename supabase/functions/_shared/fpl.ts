@@ -23,6 +23,10 @@ export interface FplElement {
   news: string;
   chance_of_playing_next_round: number | null;
   photo: string;
+  goals_scored: number;
+  assists: number;
+  starts: number;
+  minutes: number;
 }
 
 export interface FplEvent {

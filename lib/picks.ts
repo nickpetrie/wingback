@@ -24,7 +24,12 @@ export async function getGameweekPicks(
   const { data } = await supabase
     .from("picks")
     .select(
-      "entrant_id, player_code, stake, goals, entrants(display_name), players(web_name, team_id, teams(short_name, code))",
+      // players!picks_player_code_fkey, not players: picks has *two* foreign
+      // keys into players (player_code and substituted_from_player_code), so
+      // an unqualified embed is ambiguous and PostgREST rejects the whole
+      // query (PGRST201) — which surfaces as "nobody has picked", not as an
+      // error.
+      "entrant_id, player_code, stake, goals, entrants(display_name), players!picks_player_code_fkey(web_name, team_id, teams(short_name, code))",
     )
     .eq("gameweek", gameweekId);
 

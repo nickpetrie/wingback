@@ -454,6 +454,259 @@ img {
 .wb-result-row:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }
+/* — The inline picker: one search field, a scrolling row of club chips, and
+   a results list. It stays inside the pick block on purpose — a full-screen
+   takeover for a five-person sweepstake is a lot of ceremony for choosing one
+   name, and it would strand the pick summary behind it. — */
+.wb-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.wb-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.wb-picker-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.wb-picker-input {
+  /* 16px, not 14: iOS Safari zooms the whole page in on any focused input
+     below 16px, which on this screen throws the results off the side. */
+  font-size: 16px;
+  min-height: 44px;
+  padding-left: 30px;
+}
+.wb-picker-cancel {
+  flex: none;
+  min-height: 44px;
+}
+
+/* Club chips. Bleeds to the edges of the pick block and pads itself back in,
+   so the row of chips reads as continuing off-screen rather than stopping
+   short of a margin. */
+.wb-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+.wb-chips::-webkit-scrollbar {
+  display: none;
+}
+/* Same trick as the standings strip: trailing space as a real flex item,
+   because padding-inline-end on an overflowing scroll container is not
+   reliably honoured. */
+.wb-chips::after {
+  content: "";
+  flex: 0 0 4px;
+}
+.wb-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  white-space: nowrap;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wb-chip:hover:not(.wb-chip-on) {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.wb-chip-on {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+.wb-chip-clear {
+  border-style: dashed;
+}
+
+.wb-picker-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-size: 12px;
+  min-width: 0;
+}
+.wb-picker-fixture {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.wb-picker-synced {
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+
+/* The list scrolls inside itself rather than growing the page. With the iOS
+   keyboard up there is roughly this much room between the search field and
+   the top of the keyboard, so the rows stay visible while you type instead of
+   being pushed underneath it. */
+.wb-picker-results {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  border-top: 1px solid var(--color-divider);
+}
+.wb-picker-results:empty {
+  display: none;
+}
+.wb-picker-hint {
+  margin: 12px 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+}
+
+.wb-team-row,
+.wb-player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 6px 8px 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.wb-row-active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+.wb-team-row-name {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 15px;
+}
+.wb-team-row-hint {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--color-accent);
+}
+.wb-player-photo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  object-fit: cover;
+  background: var(--color-neutral-200);
+}
+.wb-player-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.wb-player-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.wb-player-club {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--color-text) 58%, transparent);
+}
+.wb-player-stats {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-text) 75%, transparent);
+  /* One line, always. Letting the stat line wrap makes some rows half as
+     tall again as their neighbours, and a list you scroll with your thumb
+     wants an even rhythm more than it wants the last word. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-player-news {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--color-accent-700);
+}
+.wb-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+}
+.wb-flag-warn {
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+  border-left: 2px solid var(--color-accent);
+}
+.wb-flag-nom {
+  border: 1px solid var(--color-divider);
+  color: color-mix(in srgb, var(--color-text) 65%, transparent);
+}
+/* A used player stays on the list — seeing that Haaland is gone is part of
+   knowing where you are in the season — but can't be chosen. The state is
+   carried by the padlock, the wording and the dashed rule as well as the
+   dimming, so it survives greyscale. */
+.wb-player-row-locked,
+.wb-player-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  border-bottom-style: dashed;
+}
+.wb-player-row-locked .wb-player-photo {
+  filter: grayscale(1);
+}
+.wb-player-locked-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* — The pick card. The photo stretches to whatever height the detail column
    needs, so it's as large as the block allows rather than a fixed stamp, and
    the two columns end level. Name and fixture sit at the top of that column,
@@ -683,23 +936,126 @@ img {
   margin: 0 auto;
 }
 
+/* — The standings strip. Every cell is padded the same on both sides and the
+   gap between two cells is one divider, not a divider plus a stray margin, so
+   the rhythm reads as one row rather than five loose buttons. The old version
+   padded right-only and added marginRight on top, which is why the first name
+   sat flush against the page edge while the others floated. — */
 .wb-standings {
-  padding: 0 24px;
   display: flex;
+  /* Every cell is padded 14px, so the strip itself is inset by (page gutter
+     - 14px): the *content* of the first and last entry then lines up with
+     the wordmark above, without any cell being padded differently from its
+     neighbours. Safe-area insets take over from the 24px gutter when a
+     notched phone is turned on its side. */
+  --wb-standings-lead: calc(max(24px, env(safe-area-inset-left)) - 14px);
+  --wb-standings-trail: calc(max(24px, env(safe-area-inset-right)) - 14px);
+  padding-inline: var(--wb-standings-lead) 0;
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  /* Keeps a rubber-band swipe on the strip from dragging the whole page. */
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.wb-standings::-webkit-scrollbar {
+  display: none;
+}
+/* Trailing space as a real flex item rather than padding-inline-end, which
+   scroll containers have historically dropped once the content overflows —
+   and when it is dropped the fifth entry ends hard against the edge of the
+   screen with no way to scroll it clear, which is the "can't see the last
+   player" half of the bug. An element can't be dropped. */
+.wb-standings::after {
+  content: "";
+  flex: 0 0 var(--wb-standings-trail);
+}
+.wb-standing {
+  flex: 0 0 auto;
+  /* Never shrink below the content. Flex items shrink by default, which is
+     what let the name and the score close up and clip on a 320px screen. */
+  min-width: max-content;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 44px minimum tap target, and the same padding on all four sides of every
+     entry — the old rule padded right-only and then added a margin on top,
+     which is why the first name sat flush against the page edge while the
+     gaps between the others were twice as wide. */
+  min-height: 44px;
+  padding: 8px 14px;
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--color-divider);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+/* The divider belongs *between* entries; on the last one it would draw a
+   rule in the middle of the trailing space. */
+.wb-standings > .wb-standing:last-of-type {
+  border-right: 0;
+}
+.wb-standing-me {
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+}
+.wb-standing-rank {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.wb-standing-who {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+.wb-standing-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.wb-standing-stars {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.wb-standing-points {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  /* Not margin-left:auto — once the cells stretch to fill the column on
+     desktop, that strands the score half a screen from the name. */
+  margin-left: 2px;
 }
 @media (min-width: 900px) {
   /* Spread the five across the column so the strip's ends land on the same
-     edges as the wordmark and the menu button above it. Below 900px they keep
-     their natural width and scroll instead. */
-  .wb-standings > * {
-    flex: 1;
+     edges as the wordmark and the menu button above it. Below 900px they
+     keep their natural width and scroll instead. `1 0 auto`, not `1`: they
+     may grow to fill the row, never shrink below their contents. */
+  .wb-standing {
+    flex: 1 0 auto;
   }
-  .wb-standings > :last-child {
-    border-right: 0;
-    margin-right: 0;
-    padding-right: 0;
-  }
+}
+
+/* Visible to a screen reader, not to the eye. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* — Slide-out menu. Anchored right because that's the thumb that opened it. — */

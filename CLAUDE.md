@@ -62,6 +62,31 @@ reading the project URL and service key from Supabase Vault at call time.
   CONFLICT DO UPDATE, which re-runs the once-per-season reuse check as if
   it were a fresh usage. `app/pick/actions.ts` checks for an existing row
   and does an explicit insert or update instead.
+- **Never embed `players` from `picks` without naming the constraint.**
+  `picks` has two foreign keys into `players` (`player_code` and
+  `substituted_from_player_code`), so PostgREST rejects a bare
+  `.select("players(...)")` as ambiguous (PGRST201) and returns *no rows* —
+  which every caller here reads as "nobody has picked", not as an error.
+  That is how the season record on `/leaderboard` came to show 38 blank
+  gameweeks for someone who had scored. Always
+  `players!picks_player_code_fkey(...)`. Pinned by a pgTAP test.
+- **Season stats on `players` (`goals_scored`, `assists`, `starts`,
+  `minutes`) are nullable and mean it.** Null is "not synced yet", not zero;
+  the picker prints "Season stats not synced yet" rather than a confident 0.
+  Same reasoning as never storing points.
+- **Only the middleware may spend a refresh token.** Supabase rotates the
+  refresh token on every use and treats a retired one coming back as theft —
+  it revokes the whole session. So any response that drops the `Set-Cookie`
+  from a refresh signs the entrant out for good, which is what every
+  `NextResponse.redirect` in `lib/supabase/middleware.ts` used to do; they
+  now copy the cookies across. Same reason `/api` is out of the middleware
+  matcher: a leaderboard fires ~38 player-image requests at once and each was
+  racing to rotate the same token.
+- **Sign-in runs server-side** (`app/login/actions.ts`), not from the browser
+  client. A session established with `document.cookie` is capped at seven
+  days by Safari's tracking prevention no matter what expiry is asked for —
+  on an installed PWA that is the difference between signing in once a season
+  and once a week. Established over a `Set-Cookie` header it is not capped.
 - **A fixture is "played" when `played` is true, never `finished` alone.**
   FPL does not flip `finished` at full time — measured here, all ten GW1
   fixtures still read `finished: false` three days after kickoff while the
