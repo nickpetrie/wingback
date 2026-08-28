@@ -437,6 +437,12 @@ img {
    state you're not in, which is what kept leaving empty rules on screen. — */
 .wb-pickform {
   max-width: 560px;
+  /* Load-bearing with the max-width. A grid item's automatic minimum size is
+     its content's min-content width, and the chip row's is ~2500px; clamped
+     by the max-width above that still pins the whole column at 560px, so on
+     a 390px phone the page overflowed and Safari zoomed the entire app out to
+     fit. Every ancestor between here and the grid track needs this. */
+  min-width: 0;
 }
 .wb-result-row {
   display: flex;
@@ -494,6 +500,7 @@ img {
    short of a margin. */
 .wb-chips {
   display: flex;
+  min-width: 0;
   gap: 8px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -519,14 +526,15 @@ img {
   align-items: center;
   gap: 6px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 10px;
   white-space: nowrap;
   border: 1px solid var(--color-divider);
   background: transparent;
   color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 .wb-chip:hover:not(.wb-chip-on) {
@@ -884,13 +892,18 @@ img {
 .wb-home-split-left {
   border-right: 2px solid var(--color-divider);
   padding: 24px 24px 24px 0;
+  min-width: 0;
 }
 .wb-home-split-right {
   padding: 24px 0 24px 24px;
+  min-width: 0;
 }
 @media (max-width: 720px) {
   .wb-home-split {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr), never a bare 1fr: `1fr` means minmax(auto, 1fr), and
+       that auto floor is what let the picker's chip row set the width of the
+       whole page. */
+    grid-template-columns: minmax(0, 1fr);
   }
   .wb-home-split-left {
     border-right: none;
@@ -901,6 +914,96 @@ img {
     padding: 24px 0 0;
   }
 }
+/* — "The other four". Four cards two-up; on a narrow phone the name column is
+   only ~80px, which turned "Havertz" into "Have…". The photo and the score
+   give up a few pixels each below 440px and the name is allowed a second
+   line, which is cheaper than an ellipsis on the one word the card exists to
+   show. — */
+.wb-others {
+  display: grid;
+  /* minmax(0, …), not 1fr: a bare 1fr cannot shrink below its content and
+     puts the overflow back on the page. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--color-divider);
+}
+.wb-other {
+  background: var(--color-bg);
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 96px;
+  min-width: 0;
+}
+.wb-other-photo {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  object-fit: cover;
+}
+.wb-other-detail {
+  min-width: 0;
+  flex: 1;
+}
+.wb-other-who {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-other-name {
+  margin: 1px 0 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.wb-other-club {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-other-points {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+/* Below this the name column is ~50px and a surname breaks mid-word, so the
+   four go one-up instead. Costs a little scroll, buys back the one word each
+   card exists to show. */
+@media (max-width: 360px) {
+  .wb-others {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-other {
+    min-height: 0;
+  }
+}
+@media (max-width: 440px) {
+  .wb-other {
+    padding: 10px;
+    gap: 8px;
+  }
+  .wb-other-photo {
+    width: 36px;
+    height: 36px;
+  }
+  .wb-other-name {
+    font-size: 15px;
+  }
+  .wb-other-points {
+    font-size: 20px;
+  }
+}
+
 .wb-install {
   position: fixed;
   left: 12px;
