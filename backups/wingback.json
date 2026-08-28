@@ -1,0 +1,170 @@
+{
+  "taken_at": "2026-08-28T16:43:41.598Z",
+  "entrants": [
+    {
+      "id": "a1000000-0000-0000-0000-000000000003",
+      "display_name": "Alex Beetles",
+      "email": "alexanderbeetles@gmail.com",
+      "auth_user_id": "426123e6-e523-4a69-892f-8f71421dd7f1",
+      "nomination_player_code": 223094,
+      "avatar_updated_at": null,
+      "created_at": "2026-08-24T11:40:06.386869+00:00"
+    },
+    {
+      "id": "a1000000-0000-0000-0000-000000000005",
+      "display_name": "Casra Abedian",
+      "email": "casra.m.abedian@gmail.com",
+      "auth_user_id": "fe927584-3ecf-4fcb-94d8-18446bcd3a86",
+      "nomination_player_code": 223094,
+      "avatar_updated_at": "2026-08-27T05:30:42.425+00:00",
+      "created_at": "2026-08-24T11:40:06.386869+00:00"
+    },
+    {
+      "id": "a1000000-0000-0000-0000-000000000004",
+      "display_name": "Henry Kirby",
+      "email": "henryrkirby@gmail.com",
+      "auth_user_id": "99376b65-cecd-4083-8c9f-5a37c2063ea2",
+      "nomination_player_code": 223094,
+      "avatar_updated_at": null,
+      "created_at": "2026-08-24T11:40:06.386869+00:00"
+    },
+    {
+      "id": "a1000000-0000-0000-0000-000000000001",
+      "display_name": "Nick Petrie",
+      "email": "nicholaspetrie@gmail.com",
+      "auth_user_id": "3c957a14-749c-4765-9b0f-99b4474b5a4e",
+      "nomination_player_code": 223094,
+      "avatar_updated_at": "2026-08-26T00:52:20.910675+00:00",
+      "created_at": "2026-08-24T11:40:06.386869+00:00"
+    },
+    {
+      "id": "a1000000-0000-0000-0000-000000000002",
+      "display_name": "Tom Petrie",
+      "email": "tompetrie4@gmail.com",
+      "auth_user_id": "4570da2a-9f26-4ee2-9155-6d535d31a6c3",
+      "nomination_player_code": 475168,
+      "avatar_updated_at": null,
+      "created_at": "2026-08-24T11:40:06.386869+00:00"
+    }
+  ],
+  "picks": [
+    {
+      "id": 3,
+      "entrant_id": "a1000000-0000-0000-0000-000000000001",
+      "gameweek": 1,
+      "player_code": 219847,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 1,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-24T13:04:30.172372+00:00",
+      "updated_at": "2026-08-25T04:04:16.388387+00:00"
+    },
+    {
+      "id": 2,
+      "entrant_id": "a1000000-0000-0000-0000-000000000003",
+      "gameweek": 1,
+      "player_code": 224117,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-24T13:04:30.172372+00:00",
+      "updated_at": "2026-08-25T04:04:16.330897+00:00"
+    },
+    {
+      "id": 1,
+      "entrant_id": "a1000000-0000-0000-0000-000000000001",
+      "gameweek": 2,
+      "player_code": 219168,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-24T12:39:31.966956+00:00",
+      "updated_at": "2026-08-25T04:05:36.203624+00:00"
+    },
+    {
+      "id": 4,
+      "entrant_id": "a1000000-0000-0000-0000-000000000002",
+      "gameweek": 2,
+      "player_code": 219847,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-24T16:51:33.870432+00:00",
+      "updated_at": "2026-08-27T11:00:07.25351+00:00"
+    },
+    {
+      "id": 6,
+      "entrant_id": "a1000000-0000-0000-0000-000000000003",
+      "gameweek": 2,
+      "player_code": 430871,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-28T14:31:57.201996+00:00",
+      "updated_at": "2026-08-28T14:31:57.201996+00:00"
+    },
+    {
+      "id": 7,
+      "entrant_id": "a1000000-0000-0000-0000-000000000004",
+      "gameweek": 2,
+      "player_code": 223094,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-28T16:40:41.697657+00:00",
+      "updated_at": "2026-08-28T16:40:41.697657+00:00"
+    },
+    {
+      "id": 5,
+      "entrant_id": "a1000000-0000-0000-0000-000000000005",
+      "gameweek": 2,
+      "player_code": 446008,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-08-27T06:49:37.482886+00:00",
+      "updated_at": "2026-08-27T06:49:37.482886+00:00"
+    }
+  ],
+  "season_winners": [
+    {
+      "season_label": "2021/22",
+      "entrant_id": "a1000000-0000-0000-0000-000000000005",
+      "points": 25
+    },
+    {
+      "season_label": "2022/23",
+      "entrant_id": "a1000000-0000-0000-0000-000000000003",
+      "points": 18
+    },
+    {
+      "season_label": "2023/24",
+      "entrant_id": "a1000000-0000-0000-0000-000000000001",
+      "points": 18
+    },
+    {
+      "season_label": "2024/25",
+      "entrant_id": "a1000000-0000-0000-0000-000000000003",
+      "points": 23
+    },
+    {
+      "season_label": "2025/26",
+      "entrant_id": "a1000000-0000-0000-0000-000000000005",
+      "points": 19
+    }
+  ]
+}

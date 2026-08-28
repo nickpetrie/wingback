@@ -116,6 +116,14 @@ reading the project URL and service key from Supabase Vault at call time.
   `psql` (no Docker/Supabase CLI needed): `supabase/tests/run.sh`. See
   `00_local_harness.sql` for what it stubs out (`auth.uid()`/`auth.role()`,
   roles) to stand in for the real Supabase platform.
+- `.github/workflows/backup.yml` + `scripts/backup.mjs` — the daily copy of
+  entrants, picks and past winners, committed to `backups/`. Supabase's free
+  plan has no backups and no PITR, so this is the only second copy that
+  exists. It deliberately skips players, teams, fixtures and goals: all of it
+  comes back from the FPL API on the next `sync-fpl`/`score` run, and copying
+  it would bury the rows that can't be reconstructed. The points column in the
+  CSV is re-derived from `pick_points()`'s rule rather than stored, for the
+  same reason the app never stores it.
 - `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
   min live + daily settle), `remind` (every 15 min), `push-test` (on demand
   from Settings), `sheets-backup`

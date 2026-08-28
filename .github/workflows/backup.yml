@@ -1,0 +1,47 @@
+# A daily copy of the sweepstake, committed into this repository.
+#
+# The Supabase project is on the free plan, which has no automated backups and
+# no point-in-time recovery, so until now the only copy of who picked what
+# lived in one database. This is the second copy: it runs on GitHub's
+# machines and writes to GitHub's storage, so it survives the Supabase project
+# being paused, wiped or deleted outright.
+#
+# Needs one repository secret, SUPABASE_SERVICE_ROLE_KEY. Nothing else.
+name: Backup
+
+on:
+  schedule:
+    # 04:10 UTC daily — after the nightly settle run has finished writing
+    # goals, so the snapshot catches a settled gameweek rather than a
+    # half-scored one.
+    - cron: "10 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Take the snapshot
+        env:
+          SUPABASE_URL: https://avkmhhislngpzxosmrgh.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/backup.mjs
+
+      - name: Commit it, if anything changed
+        run: |
+          git config user.name "wingback-backup"
+          git config user.email "noreply@github.com"
+          git add backups
+          # Nothing changes on a quiet day, and an empty commit a day for the
+          # rest of the season is just noise in the history.
+          git diff --staged --quiet || git commit -m "Backup $(date -u +%Y-%m-%d)"
+          git push

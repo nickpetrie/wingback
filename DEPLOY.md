@@ -78,7 +78,32 @@ curl -X POST https://<project-ref>.supabase.co/functions/v1/sync-fpl \
   -H "Authorization: Bearer <service-role-key>"
 ```
 
-## 3b. Google Sheets backup (optional)
+## 3a. The daily backup (do this one)
+
+The Supabase project is on the free plan: no automated backups, no
+point-in-time recovery. Without a second copy, the only record of who picked
+what all season lives in one database.
+
+`.github/workflows/backup.yml` takes that copy on GitHub's machines at 04:10
+UTC daily and commits it to `backups/` in this repository — a different
+company, a different account, versioned, and readable from a phone. It needs
+exactly one thing:
+
+1. Copy the **service role key** from Supabase → Project Settings → API.
+2. Paste it into GitHub → this repo → Settings → Secrets and variables →
+   Actions → New repository secret, named `SUPABASE_SERVICE_ROLE_KEY`.
+
+That's the whole setup — no dependencies, no install step, nothing to keep up
+to date. Run it once from the Actions tab ("Backup" → Run workflow) to check
+it works rather than waiting for 04:10. See `backups/README.md` for what is
+and isn't in the snapshot, and how to restore it.
+
+## 3b. Google Sheets backup (optional, and superseded by 3a)
+
+Only worth doing if you specifically want the data *in a spreadsheet* for
+people to read; §3a already covers actually not losing it, and needs no
+Google account. Note this has never been set up on the live project — the
+function is undeployed and `20260101000012_sheets_backup_cron.sql` unapplied.
 
 `sheets-backup` mirrors the live leaderboard and full pick history into a
 Google Sheet once an hour, as a human-readable backup outside Postgres. It
