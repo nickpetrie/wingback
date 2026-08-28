@@ -1,24 +1,43 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Where a Supabase magic-link email points. Verifying the OTP here (rather
-// than trusting the link's own redirect) is what actually establishes the
-// session cookie.
+// Where a Supabase magic-link email points. Verifying here (rather than
+// trusting the link's own redirect) is what actually establishes the session
+// cookie, server-side, over a real Set-Cookie header.
+//
+// Two shapes arrive at this route and both have to work, because which one
+// you get depends on the email template configured in the Supabase
+// dashboard, not on anything in this repo:
+//
+//   ?token_hash=…&type=magiclink   — template uses {{ .TokenHash }}
+//   ?code=…                        — template uses {{ .ConfirmationURL }},
+//                                    i.e. the PKCE flow the browser client
+//                                    starts in app/login
+//
+// Handling only the first is why a link could land on /auth/error while the
+// code in the same email worked fine.
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const token_hash = searchParams.get("token_hash");
+  const { searchParams, origin } = request.nextUrl;
+  const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/";
+  const code = searchParams.get("code");
+  // Only same-site paths, so a crafted link can't turn a valid magic link
+  // into an open redirect.
+  const nextParam = searchParams.get("next");
+  const next = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+    ? nextParam
+    : "/";
 
-  if (token_hash && type) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
-    if (!error) {
-      redirect(next);
-    }
+  const supabase = await createClient();
+
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return NextResponse.redirect(new URL(next, origin));
+  } else if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (!error) return NextResponse.redirect(new URL(next, origin));
   }
 
-  redirect("/auth/error");
+  return NextResponse.redirect(new URL("/auth/error", origin));
 }

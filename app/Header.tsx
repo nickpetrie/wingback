@@ -180,39 +180,18 @@ export function Header({
           background: "var(--color-bg)",
         }}
       >
-        <div className="wb-page wb-standings">
+        <div className="wb-page wb-standings" aria-label="Standings">
           {sorted.map((row, i) => {
             const isMe = row.entrant_id === entrantId;
             return (
               <button
                 key={row.entrant_id}
                 type="button"
+                className={`wb-standing${isMe ? " wb-standing-me" : ""}`}
+                aria-label={`${row.display_name}, ${i + 1}${i === 0 ? "st" : i === 1 ? "nd" : i === 2 ? "rd" : "th"}, ${row.total_points} point${row.total_points === 1 ? "" : "s"}`}
                 onClick={() => router.push("/leaderboard")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 18px 8px 0",
-                  marginRight: 18,
-                  background: "none",
-                  border: 0,
-                  borderRight: "1px solid var(--color-divider)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontFamily: "var(--font-body)",
-                  color: "var(--color-text)",
-                  boxShadow: isMe ? "inset 0 -3px 0 var(--color-accent)" : undefined,
-                }}
               >
-                <span
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 800,
-                    fontSize: 10,
-                    letterSpacing: ".08em",
-                    color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                  }}
-                >
+                <span className="wb-standing-rank" aria-hidden="true">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <Avatar
@@ -222,25 +201,15 @@ export function Header({
                   size={24}
                   online={online.has(row.entrant_id)}
                 />
-                <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-                    {row.display_name.split(" ")[0]}
-                  </span>
-                  <span style={{ fontSize: 10, letterSpacing: ".04em" }}>{"★".repeat(row.stars)}</span>
+                <span className="wb-standing-who">
+                  <span className="wb-standing-name">{row.display_name.split(" ")[0]}</span>
+                  {row.stars > 0 && (
+                    <span className="wb-standing-stars" aria-hidden="true">
+                      {"\u2605".repeat(row.stars)}
+                    </span>
+                  )}
                 </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 800,
-                    fontSize: 22,
-                    lineHeight: 1,
-                    fontVariantNumeric: "tabular-nums",
-                    // Not marginLeft:auto — once the cells stretch to fill the
-                    // column, that strands the score half a screen from the
-                    // name it belongs to.
-                    marginLeft: 4,
-                  }}
-                >
+                <span className="wb-standing-points" aria-hidden="true">
                   {row.total_points}
                 </span>
               </button>

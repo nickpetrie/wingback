@@ -31,6 +31,7 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000009_public_picks.sql \
          supabase/migrations/20260101000011_team_code.sql \
          supabase/migrations/20260101000015_fixture_played.sql \
+         supabase/migrations/20260101000020_player_season_stats.sql \
          supabase/tests/01_local_grants.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done

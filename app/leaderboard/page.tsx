@@ -21,7 +21,11 @@ export default async function LeaderboardPage() {
 
   const { data: allPicks } = await supabase
     .from("picks")
-    .select("entrant_id, gameweek, player_code, stake, goals, players(web_name, teams(short_name))");
+    // The FK hint is load-bearing — see lib/picks.ts. Without it this query
+    // returns nothing and every season record renders as 38 empty gameweeks.
+    .select(
+      "entrant_id, gameweek, player_code, stake, goals, players!picks_player_code_fkey(web_name, teams(short_name))",
+    );
 
   const rows: BoardRow[] = (leaderboard ?? [])
     .slice()

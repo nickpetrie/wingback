@@ -139,11 +139,14 @@ export default async function DashboardPage() {
                 <PickForm
                   gameweek={gameweek.id}
                   players={pickForm.players}
+                  teams={pickForm.teams}
                   fixtures={fixtures}
                   usedCounts={pickForm.usedCounts}
+                  usedGameweeks={pickForm.usedGameweeks}
                   nominationCode={pickForm.nominationCode}
                   doublesUsedCount={pickForm.doublesUsedCount}
                   currentPick={pickForm.currentPick}
+                  playersSyncedAt={pickForm.playersSyncedAt}
                 />
               ) : myPick ? (
                 <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>

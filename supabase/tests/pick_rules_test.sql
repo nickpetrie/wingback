@@ -11,13 +11,14 @@
 --   psql -d wingback_test -f supabase/migrations/20260101000005_display_name_onboarding.sql
 --   psql -d wingback_test -f supabase/migrations/20260101000006_profile_claiming.sql
 --   psql -d wingback_test -f supabase/migrations/20260101000007_seed_entrants.sql
+--   psql -d wingback_test -f supabase/migrations/20260101000020_player_season_stats.sql
 --   psql -d wingback_test -f supabase/tests/01_local_grants.sql
 --   psql -d wingback_test -f supabase/tests/pick_rules_test.sql
 --
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(33);
+select plan(40);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -391,6 +392,35 @@ select is(
   (select count(*)::int from picks where gameweek = 20 and entrant_id = '22222222-2222-2222-2222-222222222222'),
   1,
   'picks remain visible after the lock too'
+);
+
+-- Season stats live on players, and every one of them is nullable. That is
+-- the rule, not an oversight: "not synced yet" and "zero goals" are
+-- different answers, and a pick screen that renders an unsynced player as a
+-- confident 0 is the miscounting spreadsheet all over again.
+select has_column('players', 'goals_scored', 'players.goals_scored exists');
+select has_column('players', 'assists', 'players.assists exists');
+select has_column('players', 'starts', 'players.starts exists');
+select col_is_null('players', 'goals_scored', 'goals_scored is nullable, so "unknown" is expressible');
+select col_is_null('players', 'assists', 'assists is nullable, so "unknown" is expressible');
+select col_is_null('players', 'starts', 'starts is nullable, so "unknown" is expressible');
+
+-- picks has *two* foreign keys into players (the pick itself, and the player
+-- a substitution replaced). PostgREST refuses an unqualified `players(...)`
+-- embed when more than one relationship exists (PGRST201) and returns no
+-- rows at all, which the app reads as "nobody has picked" — that is how
+-- every season record on the table page came to render as 38 blank
+-- gameweeks. If a third one is ever added, or one is dropped, this fails and
+-- sends you to check the FK hints in lib/picks.ts, app/leaderboard/page.tsx
+-- and supabase/functions/sheets-backup.
+select is(
+  (select count(*)::int
+     from pg_constraint
+    where conrelid = 'picks'::regclass
+      and contype = 'f'
+      and confrelid = 'players'::regclass),
+  2,
+  'picks has two FKs into players, so every embed of players from picks must name its constraint'
 );
 
 select * from finish();

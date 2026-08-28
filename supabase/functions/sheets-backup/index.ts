@@ -42,7 +42,11 @@ Deno.serve(async () => {
 
     const { data: picks, error: picksError } = await supabase
       .from("picks")
-      .select("gameweek, stake, goals, entrants(display_name), players(web_name, teams(short_name))")
+      // The FK hint is required: picks has two foreign keys into players, so
+      // an unqualified embed is ambiguous and PostgREST refuses the query.
+      .select(
+        "gameweek, stake, goals, entrants(display_name), players!picks_player_code_fkey(web_name, teams(short_name))",
+      )
       .order("gameweek", { ascending: true });
     if (picksError) throw picksError;
 

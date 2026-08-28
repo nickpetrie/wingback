@@ -81,6 +81,10 @@ Deno.serve(async () => {
         news: el.news,
         chance_of_playing_next_round: el.chance_of_playing_next_round,
         photo: el.photo,
+        goals_scored: el.goals_scored,
+        assists: el.assists,
+        starts: el.starts,
+        minutes: el.minutes,
       })),
       { onConflict: "code" },
     );
