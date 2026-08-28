@@ -7,7 +7,7 @@ import type { CurrentGameweek } from "@/lib/gameweek";
 import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
-import { LivePicks } from "./LivePicks";
+import { LiveRefresh } from "./LiveRefresh";
 import { usePresence } from "./usePresence";
 import { signOut } from "./actions";
 
@@ -96,8 +96,8 @@ export function Header({
             {gameweek.state === "locked" && (
               <span
                 style={{
-                  background: "var(--color-accent)",
-                  color: "var(--color-bg)",
+                  background: "var(--color-closed)",
+                  color: "#fff",
                   fontFamily: "var(--font-heading)",
                   fontWeight: 800,
                   fontSize: 11,
@@ -239,10 +239,12 @@ export function Header({
         </div>
       </div>
 
-      {/* Mounted here rather than on Home so the table page stays live too.
-          Unlike the toasts it is not gated on the lock: a pick appearing is
-          news before the deadline, not after it. */}
-      <LivePicks gameweekId={gameweek?.id ?? null} />
+      {/* Mounted here rather than on Home so the table page stays live too,
+          and so the standings strip above — which is layout, not page, and so
+          is not re-rendered by a navigation on its own — keeps up. Unlike the
+          toasts it is not gated on the lock: a pick appearing is news before
+          the deadline, not after it. */}
+      <LiveRefresh gameweekId={gameweek?.id ?? null} />
       <GoalToasts gameweekId={gameweek?.state === "locked" ? gameweek.id : null} />
     </header>
   );

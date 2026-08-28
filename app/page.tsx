@@ -238,38 +238,41 @@ export default async function DashboardPage() {
                         <img
                           className="wb-other-photo"
                           src={`/api/player-image/${o.pick.player_code}`}
-                          alt={o.pick.player_name}
+                          alt=""
                         />
                         <div className="wb-other-detail">
                           <p className="wb-other-who">{o.entrant}</p>
                           <p className="wb-other-name">{o.pick.player_name}</p>
-                          <p className="wb-other-club">
-                            <TeamBadge code={o.pick.team_code} size={12} />
-                            {o.pick.team_short_name}
-                            {o.pick.stake === 6 ? " \u00b7 \u00d72" : ""}
-                          </p>
+                          <div className="wb-other-foot">
+                            <p className="wb-other-club">
+                              <TeamBadge code={o.pick.team_code} size={12} />
+                              {o.pick.team_short_name}
+                              {o.pick.stake === 6 ? " \u00b7 \u00d72" : ""}
+                            </p>
+                            {(() => {
+                              const pts = o.pick.goals * (o.pick.stake === 6 ? 2 : 1);
+                              return (
+                                <span
+                                  className="wb-other-points"
+                                  style={{
+                                    color: pts > 0 ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 30%, transparent)",
+                                  }}
+                                >
+                                  {pts > 0 ? `+${pts}` : "0"}
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </div>
-                        {(() => {
-                          const pts = o.pick.goals * (o.pick.stake === 6 ? 2 : 1);
-                          return (
-                            <span
-                              className="wb-other-points"
-                              style={{
-                                color: pts > 0 ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 30%, transparent)",
-                              }}
-                            >
-                              {pts > 0 ? `+${pts}` : "0"}
-                            </span>
-                          );
-                        })()}
                       </>
                     ) : (
-                      <div className="wb-other-detail">
-                        <p className="wb-other-who">{o.entrant}</p>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                          No pick made
-                        </p>
-                      </div>
+                      <>
+                        <span className="wb-other-empty" aria-hidden="true" />
+                        <div className="wb-other-detail">
+                          <p className="wb-other-who">{o.entrant}</p>
+                          <p className="wb-other-nopick">No pick made</p>
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}
