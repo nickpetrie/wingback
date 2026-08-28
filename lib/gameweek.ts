@@ -12,45 +12,38 @@ export interface CurrentGameweek {
  * The gameweek the app should be showing right now, and which of three
  * states it's in:
  *   - "open": still pickable, has a known lock_at in the future.
- *   - "locked": lock_at has passed (or the gameweek is otherwise live) —
- *     picks are visible, but no new pick can be made.
- *   - "unscheduled": the next not-yet-finished gameweek exists but FPL
- *     hasn't confirmed its fixture times yet (international breaks,
- *     early-season gaps) — lock_at is null, so it isn't really "locked",
- *     just not open either.
+ *   - "locked": lock_at has passed — the matches are the story now, and no
+ *     new pick can be made.
+ *   - "unscheduled": it exists but FPL hasn't confirmed its fixture times
+ *     yet (international breaks, early-season gaps) — lock_at is null, so
+ *     it isn't really "locked", just not open either.
  * Returns null only when there's no gameweek data at all yet.
+ *
+ * The current gameweek is simply the earliest one that isn't finished, and
+ * the state follows from its lock. It is deliberately *not* "the earliest
+ * one still open for picks": that version skipped a gameweek the moment it
+ * locked, so at one minute past the deadline the whole app jumped forward to
+ * next week — the countdown, everyone's picks, the fixture list — while the
+ * matches you had just picked for hadn't kicked off yet. A gameweek stops
+ * being current when it is over, not when it closes.
  */
 export async function getCurrentGameweek(
   supabase: Awaited<ReturnType<typeof createClient>>,
 ): Promise<CurrentGameweek | null> {
-  const { data: openGameweek } = await supabase
+  const { data: gameweek } = await supabase
     .from("gameweeks")
     .select("id, lock_at")
     .eq("finished", false)
-    .not("lock_at", "is", null)
-    .gt("lock_at", new Date().toISOString())
     .order("id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  if (openGameweek) {
-    return { id: openGameweek.id, lock_at: openGameweek.lock_at, state: "open" };
+  if (!gameweek) return null;
+
+  if (!gameweek.lock_at) {
+    return { id: gameweek.id, lock_at: null, state: "unscheduled" };
   }
 
-  const { data: fallbackGameweek } = await supabase
-    .from("gameweeks")
-    .select("id, lock_at")
-    .eq("finished", false)
-    .order("id", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!fallbackGameweek) return null;
-
-  const isLocked = !!fallbackGameweek.lock_at && new Date(fallbackGameweek.lock_at) <= new Date();
-  return {
-    id: fallbackGameweek.id,
-    lock_at: fallbackGameweek.lock_at,
-    state: isLocked ? "locked" : "unscheduled",
-  };
+  const locked = new Date(gameweek.lock_at) <= new Date();
+  return { id: gameweek.id, lock_at: gameweek.lock_at, state: locked ? "locked" : "open" };
 }

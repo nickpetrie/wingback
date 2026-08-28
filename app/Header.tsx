@@ -7,6 +7,7 @@ import type { CurrentGameweek } from "@/lib/gameweek";
 import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
+import { LivePicks } from "./LivePicks";
 import { usePresence } from "./usePresence";
 import { signOut } from "./actions";
 
@@ -89,6 +90,24 @@ export function Header({
             >
               GW {gameweek.id}
             </span>
+            {/* Once the deadline passes, "locked" is the single most useful
+                thing the header can say, so it gets the same badge treatment
+                as the gameweek number rather than a line of grey prose. */}
+            {gameweek.state === "locked" && (
+              <span
+                style={{
+                  background: "var(--color-accent)",
+                  color: "var(--color-bg)",
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 800,
+                  fontSize: 11,
+                  letterSpacing: ".1em",
+                  padding: "3px 8px",
+                }}
+              >
+                LOCKED
+              </span>
+            )}
             <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
               {gameweek.state === "open" ? (
                 <>
@@ -106,7 +125,9 @@ export function Header({
                   </span>
                 </>
               ) : gameweek.state === "locked" ? (
-                "locked — live now"
+                // Not "live now": the lock lands an hour before the first
+                // kickoff, so for that hour nothing is live yet.
+                "picks are in"
               ) : (
                 "not scheduled yet"
               )}
@@ -218,6 +239,10 @@ export function Header({
         </div>
       </div>
 
+      {/* Mounted here rather than on Home so the table page stays live too.
+          Unlike the toasts it is not gated on the lock: a pick appearing is
+          news before the deadline, not after it. */}
+      <LivePicks gameweekId={gameweek?.id ?? null} />
       <GoalToasts gameweekId={gameweek?.state === "locked" ? gameweek.id : null} />
     </header>
   );

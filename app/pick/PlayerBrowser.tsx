@@ -190,8 +190,10 @@ export function PlayerBrowser({
   }
 
   const teamFixture = selectedTeam ? fixtureFor(fixtures, selectedTeam.id) : null;
-  const nothingYet = needle.length === 0 && teamId === null;
-  const noMatches = !nothingYet && options.length === 0;
+  // An empty box with no club chosen isn't "no matches", it's the resting
+  // state, and it says nothing.
+  const searching = needle.length > 0 || teamId !== null;
+  const noMatches = searching && options.length === 0;
 
   return (
     <div className="wb-picker" onKeyDown={onKeyDown}>
@@ -302,12 +304,10 @@ export function PlayerBrowser({
           ),
         )}
 
-        {nothingYet && (
-          <p className="wb-picker-hint">
-            Type a name, or tap a club to browse its squad. Players you&rsquo;ve used stay on the
-            list, locked.
-          </p>
-        )}
+        {/* No standing instructions here. The field says "Search player or
+            team" and there is a row of clubs under it; anyone who has used a
+            search box before does not need the rest explained, and it cost
+            three lines of a phone screen every time the picker opened. */}
         {noMatches && (
           <p className="wb-picker-hint" role="status">
             {selectedTeam
