@@ -238,10 +238,14 @@ export function PlayerBrowser({
             type="button"
             className={`wb-chip wb-tap${t.id === teamId ? " wb-chip-on" : ""}`}
             aria-pressed={t.id === teamId}
+            // The chip is three letters, so the club's real name has to reach
+            // a screen reader some other way.
+            aria-label={t.name}
+            title={t.name}
             onClick={() => chooseTeam(t.id === teamId ? null : t.id)}
           >
             <TeamBadge code={t.code} size={18} />
-            <span>{t.name}</span>
+            <span>{t.short_name}</span>
           </button>
         ))}
       </div>
@@ -250,7 +254,7 @@ export function PlayerBrowser({
         {selectedTeam && (
           <span className="wb-picker-fixture">
             {teamFixture
-              ? `${teamFixture.match} · ${teamFixture.when}`
+              ? `${selectedTeam.name} · ${teamFixture.match} · ${teamFixture.when}`
               : `${selectedTeam.name} · no fixture this gameweek`}
           </span>
         )}
@@ -300,9 +304,8 @@ export function PlayerBrowser({
 
         {nothingYet && (
           <p className="wb-picker-hint">
-            Type a name, or tap a club to browse its squad. Anyone you&rsquo;ve already used stays
-            on the list, locked, with the gameweek you spent them in. Your nomination is the
-            exception — you get them twice.
+            Type a name, or tap a club to browse its squad. Players you&rsquo;ve used stay on the
+            list, locked.
           </p>
         )}
         {noMatches && (

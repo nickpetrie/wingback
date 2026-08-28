@@ -229,40 +229,32 @@ export default async function DashboardPage() {
 
             <section className="wb-home-split-right">
               <h6 style={{ margin: "0 0 12px" }}>The other four</h6>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--color-divider)" }}>
+              <div className="wb-others">
                 {others.map((o) => (
-                  <div key={o.entrant} style={{ background: "var(--color-bg)", padding: 12, display: "flex", gap: 10, alignItems: "flex-start", minHeight: 96 }}>
+                  <div key={o.entrant} className="wb-other">
                     {o.pick ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
                         <img
+                          className="wb-other-photo"
                           src={`/api/player-image/${o.pick.player_code}`}
                           alt={o.pick.player_name}
-                          style={{ width: 44, height: 44, flex: "none", objectFit: "cover" }}
                         />
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <p style={{ margin: 0, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                            {o.entrant}
-                          </p>
-                          <p style={{ margin: "1px 0 0", fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 17, lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {o.pick.player_name}
-                          </p>
-                          <p style={{ margin: "2px 0 0", display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        <div className="wb-other-detail">
+                          <p className="wb-other-who">{o.entrant}</p>
+                          <p className="wb-other-name">{o.pick.player_name}</p>
+                          <p className="wb-other-club">
                             <TeamBadge code={o.pick.team_code} size={12} />
                             {o.pick.team_short_name}
-                            {o.pick.stake === 6 ? " · ×2" : ""}
+                            {o.pick.stake === 6 ? " \u00b7 \u00d72" : ""}
                           </p>
                         </div>
                         {(() => {
                           const pts = o.pick.goals * (o.pick.stake === 6 ? 2 : 1);
                           return (
                             <span
+                              className="wb-other-points"
                               style={{
-                                fontFamily: "var(--font-heading)",
-                                fontWeight: 800,
-                                fontSize: 24,
-                                lineHeight: 1,
-                                fontVariantNumeric: "tabular-nums",
                                 color: pts > 0 ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 30%, transparent)",
                               }}
                             >
@@ -272,11 +264,11 @@ export default async function DashboardPage() {
                         })()}
                       </>
                     ) : (
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ margin: 0, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                          {o.entrant}
+                      <div className="wb-other-detail">
+                        <p className="wb-other-who">{o.entrant}</p>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                          No pick made
                         </p>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>No Pick Made</p>
                       </div>
                     )}
                   </div>
