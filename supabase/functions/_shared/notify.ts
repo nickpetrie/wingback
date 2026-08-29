@@ -23,6 +23,21 @@ export async function sendReminderEmail(to: string, subject: string, text: strin
   }
 }
 
+/** Whether SMS can be sent at all.
+ *
+ * Callers check this instead of letting the send throw, because "Twilio was
+ * never set up" is not a delivery failure — it is a channel that does not
+ * exist yet, and counting it as a failure buried the real ones. Someone who
+ * has asked for SMS keeps that preference either way: the moment the three
+ * secrets are set, they start getting texts with nothing to switch back on. */
+export function smsConfigured(): boolean {
+  return Boolean(
+    Deno.env.get("TWILIO_ACCOUNT_SID") &&
+      Deno.env.get("TWILIO_AUTH_TOKEN") &&
+      Deno.env.get("TWILIO_FROM_NUMBER"),
+  );
+}
+
 export async function sendReminderSms(to: string, body: string) {
   const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
