@@ -2,11 +2,30 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoginHero } from "./LoginHero";
 import { sendMagicLink, verifyLoginCode } from "./actions";
 
-// The five friends this whole app is for — a friendly, familiar touch on
-// what would otherwise be a bare email form.
-const ENTRANT_FIRST_NAMES = ["Nick", "Tom", "Alex", "Henry", "Casra"];
+/** A button that keeps its label — and so its width — while it works.
+ *
+ * Swapping "Email me a link" for "Sending…" moved the button under the
+ * thumb that had just pressed it and read as a stall. The label stays put
+ * and a spinner appears beside it instead. */
+function SubmitButton({ busy, children }: { busy: boolean; children: React.ReactNode }) {
+  return (
+    <button type="submit" className="btn btn-primary wb-tap wb-login-submit" disabled={busy} aria-busy={busy}>
+      {busy && <span className="wb-spinner" aria-hidden="true" />}
+      {children}
+    </button>
+  );
+}
+
+function ErrorNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="wb-login-error" role="alert">
+      {children}
+    </p>
+  );
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -51,85 +70,17 @@ export function LoginForm() {
 
   return (
     <main className="wb-login-page">
-      <div className="wb-login-hero">
-        <svg
-          className="wb-login-hero-pitch"
-          viewBox="0 0 600 600"
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-        >
-          <g
-            fill="none"
-            strokeWidth={2}
-            style={{
-              stroke: "color-mix(in srgb, var(--color-bg) 22%, transparent)",
-            }}
-          >
-            <circle cx={520} cy={520} r={220} />
-            <circle
-              cx={520}
-              cy={520}
-              r={6}
-              fill="color-mix(in srgb, var(--color-bg) 22%, transparent)"
-            />
-            <path d="M 300 600 V 340 a 220 220 0 0 1 220 -220" />
-            <circle cx={520} cy={120} r={90} />
-          </g>
-        </svg>
-
-        <span
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontWeight: 800,
-            fontSize: "clamp(40px, 7vw, 72px)",
-            letterSpacing: "-.03em",
-            lineHeight: 1,
-          }}
-        >
-          WINGBACK
-        </span>
-        <p
-          style={{
-            margin: "14px 0 0",
-            fontSize: 17,
-            maxWidth: 360,
-            color: "color-mix(in srgb, var(--color-bg) 88%, transparent)",
-          }}
-        >
-          The gang&rsquo;s Premier League goalscorer sweepstake.
-        </p>
-        <p
-          style={{
-            margin: "28px 0 0",
-            fontSize: 12,
-            letterSpacing: ".08em",
-            textTransform: "uppercase",
-            color: "color-mix(in srgb, var(--color-bg) 65%, transparent)",
-          }}
-        >
-          {ENTRANT_FIRST_NAMES.join(" · ")}
-        </p>
-      </div>
+      <LoginHero />
 
       <div className="wb-login-form-panel">
-        <div style={{ width: "100%", maxWidth: 360, margin: "0 auto" }}>
+        <div className="wb-login-form-inner">
           <h6 style={{ margin: "0 0 16px" }}>Sign in</h6>
 
           {step === "email" ? (
-            <form
-              onSubmit={sendCode}
-              style={{ display: "flex", flexDirection: "column", gap: 12 }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  color:
-                    "color-mix(in srgb, var(--color-text) 60%, transparent)",
-                }}
-              >
-                Sign in with your email — no password needed.
-              </p>
+            // key: the step swap re-runs the entrance animation, so moving on
+            // reads as a step forward rather than as content silently replaced.
+            <form key="email" className="wb-login-step" onSubmit={sendCode}>
+              <p className="wb-login-hint">Sign in with your email — no password needed.</p>
               <div className="field">
                 <label htmlFor="wb-email">Email</label>
                 <input
@@ -140,126 +91,78 @@ export function LoginForm() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  // The fastest sign-in is the one you don't type: with these
+                  // the address comes from the keyboard's own suggestion strip
+                  // (or the password manager) in a single tap, and the keyboard
+                  // that appears has an @ on it and a Go key instead of return.
+                  // iOS ignores autoFocus without a gesture, so it only helps
+                  // on desktop rather than ambushing a phone with a keyboard.
+                  autoFocus
+                  autoComplete="email"
+                  inputMode="email"
+                  enterKeyHint="go"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
-              <button
-                type="submit"
-                className="btn btn-primary wb-tap"
-                disabled={status === "working"}
-              >
-                {status === "working" ? "Sending…" : "Email me a link"}
-              </button>
-              {status === "error" && (
-                <p
-                  style={{
-                    margin: 0,
-                    background: "var(--color-accent-100)",
-                    color: "var(--color-accent-800)",
-                    fontSize: 12,
-                    padding: "8px 10px",
-                    borderLeft: "3px solid var(--color-accent)",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
+              <SubmitButton busy={status === "working"}>Email me a link</SubmitButton>
+              {status === "error" && <ErrorNote>{error}</ErrorNote>}
             </form>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div
-                style={{
-                  background: "var(--color-accent-100)",
-                  padding: "16px 14px",
-                  borderLeft: "3px solid var(--color-accent)",
-                }}
-              >
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 800,
-                    fontSize: 16,
-                    color: "var(--color-accent-800)",
-                  }}
-                >
-                  Check your email
-                </p>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: 13,
-                    color: "var(--color-accent-800)",
-                  }}
-                >
-                  We sent a link to <strong>{email}</strong> — tap it on this
-                  device to sign in. (Worth a peek in spam for your first
-                  login.)
+            <div key="sent" className="wb-login-step">
+              <div className="wb-login-sent">
+                <p className="wb-login-sent-title">Check your email</p>
+                <p className="wb-login-sent-body">
+                  We sent a link to <strong>{email}</strong> — tap it on this device to sign
+                  in. (Worth a peek in spam for your first login.)
                 </p>
               </div>
 
               {!showCodeEntry ? (
                 <button
                   type="button"
-                  className="btn btn-ghost wb-tap"
-                  style={{ alignSelf: "flex-start", padding: 0 }}
+                  className="btn btn-ghost wb-tap wb-login-alt"
                   onClick={() => setShowCodeEntry(true)}
                 >
                   Got a 6-digit code instead? Enter it here
                 </button>
               ) : (
-                <form
-                  onSubmit={verifyCode}
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
-                >
+                <form onSubmit={verifyCode} className="wb-login-step">
                   <div className="field">
                     <label htmlFor="wb-code">Code</label>
                     <input
                       id="wb-code"
-                      className="input"
+                      className="input wb-login-code"
                       type="text"
-                      inputMode="numeric"
                       required
                       placeholder="123456"
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      style={{
-                        textAlign: "center",
-                        fontSize: 18,
-                        letterSpacing: "0.3em",
-                      }}
+                      // one-time-code is what makes iOS offer the digits
+                      // straight from the notification banner, turning
+                      // "memorise six numbers and come back" into one tap.
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      enterKeyHint="go"
+                      autoFocus
                     />
                   </div>
-                  <button
-                    type="submit"
-                    className="btn btn-primary wb-tap"
-                    disabled={status === "working"}
-                  >
-                    {status === "working" ? "Verifying…" : "Verify"}
-                  </button>
+                  <SubmitButton busy={status === "working"}>Verify</SubmitButton>
                 </form>
               )}
 
-              {status === "error" && (
-                <p
-                  style={{
-                    margin: 0,
-                    background: "var(--color-accent-100)",
-                    color: "var(--color-accent-800)",
-                    fontSize: 12,
-                    padding: "8px 10px",
-                    borderLeft: "3px solid var(--color-accent)",
-                  }}
-                >
-                  {error}
-                </p>
-              )}
+              {status === "error" && <ErrorNote>{error}</ErrorNote>}
               <button
                 type="button"
-                className="btn btn-ghost wb-tap"
-                style={{ alignSelf: "flex-start", padding: 0 }}
+                className="btn btn-ghost wb-tap wb-login-alt"
                 onClick={() => {
                   setStep("email");
                   setShowCodeEntry(false);
+                  setStatus("idle");
+                  setError(null);
                 }}
               >
                 Use a different email

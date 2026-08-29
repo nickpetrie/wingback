@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { loadAlertPrefs } from "@/lib/alerts";
 import { loadPlayers } from "@/lib/players";
 import { AlertsForm } from "./AlertsForm";
@@ -6,9 +6,7 @@ import { SettingsForm } from "./SettingsForm";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
   const { data: entrant } = await supabase

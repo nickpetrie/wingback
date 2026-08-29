@@ -288,6 +288,18 @@ img {
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
 }
+/* iOS Safari zooms the whole page in on any focused input under 16px, and the
+   zoomed layout viewport is then wider than the screen — which reads as the
+   field "going off the side" when you tap it. The picker's search box learned
+   this first and fixed it locally; the login email field then hit the same
+   thing, so the rule belongs here, once, where no new field can miss it.
+   Fine-pointer devices don't zoom, so they keep the denser 14px. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
 .input:hover {
   border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
 }
@@ -494,8 +506,9 @@ img {
   color: color-mix(in srgb, var(--color-text) 45%, transparent);
 }
 .wb-picker-input {
-  /* 16px, not 14: iOS Safari zooms the whole page in on any focused input
-     below 16px, which on this screen throws the results off the side. */
+  /* 16px on every pointer, not just coarse ones (where `.input` already sets
+     it, for the zoom reason documented there) — this is the field the whole
+     screen is built around and it reads as too small at 14. */
   font-size: 16px;
   min-height: 44px;
   padding-left: 30px;
@@ -849,7 +862,12 @@ img {
 }
 
 .wb-login-page {
+  /* svh, not vh: on iOS `100vh` is the *large* viewport — the height the page
+     would have if the URL bar were hidden — so a vh-centred layout sits partly
+     under browser chrome that is actually on screen. svh is the height you can
+     see right now, which is what "fits without scrolling" has to mean. */
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
 }
@@ -861,7 +879,7 @@ img {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 64px;
+  padding: max(64px, env(safe-area-inset-top)) 64px 64px;
 }
 .wb-login-hero-pitch {
   position: absolute;
@@ -870,22 +888,140 @@ img {
   height: 100%;
   pointer-events: none;
 }
+.wb-login-wordmark {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(38px, 7vw, 72px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.wb-login-tagline {
+  margin: 14px 0 0;
+  font-size: 17px;
+  max-width: 360px;
+  color: color-mix(in srgb, var(--color-bg) 88%, transparent);
+}
+.wb-login-names {
+  margin: 28px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-bg) 65%, transparent);
+}
 .wb-login-form-panel {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 48px 32px;
+  padding: 48px 32px calc(48px + env(safe-area-inset-bottom));
 }
+.wb-login-form-inner {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+/* The panel is what someone came here to use, so it arrives rather than
+   appearing — a short rise, once, on the thing that matters. The global
+   prefers-reduced-motion block turns this off. */
+.wb-login-form-panel,
+.wb-login-step {
+  animation: wb-login-rise 0.26s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes wb-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.wb-login-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wb-login-hint {
+  margin: 0;
+  font-size: 14px;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+.wb-login-submit {
+  min-height: 44px;
+}
+.wb-login-alt {
+  align-self: flex-start;
+  padding: 0;
+  min-height: 44px;
+}
+.wb-login-code {
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 0.3em;
+}
+.wb-login-error,
+.wb-login-sent {
+  margin: 0;
+  background: var(--color-accent-100);
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-accent-800);
+}
+.wb-login-error {
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.wb-login-sent {
+  padding: 16px 14px;
+}
+.wb-login-sent-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+}
+.wb-login-sent-body {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+/* Sending a magic link is a real second or two of someone else's network. A
+   spinner beside an unchanged label says "this is happening" without the
+   button resizing under the thumb that just pressed it. */
+.wb-spinner {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: wb-spin 0.6s linear infinite;
+}
+@keyframes wb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 760px) {
   .wb-login-page {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
   }
+  /* The hero becomes a band, not a screen. Measured at full height it stood
+     410–421px tall and pushed the email field to y=635 on a 390×844 phone and
+     y=641 on a 320×568 SE — below the fold on both, so you landed on a green
+     wall and had to scroll to reach the one control on the page. */
   .wb-login-hero {
-    padding: 40px 24px;
+    padding: max(26px, calc(env(safe-area-inset-top) + 12px)) 24px 22px;
+  }
+  .wb-login-tagline {
+    margin-top: 8px;
+    font-size: 15px;
+  }
+  .wb-login-names {
+    margin-top: 14px;
+    font-size: 11px;
   }
   .wb-login-form-panel {
-    padding: 32px 24px;
+    justify-content: flex-start;
+    padding: 26px 24px calc(40px + env(safe-area-inset-bottom));
   }
 }
 

@@ -82,6 +82,20 @@ reading the project URL and service key from Supabase Vault at call time.
   now copy the cookies across. Same reason `/api` is out of the middleware
   matcher: a leaderboard fires ~38 player-image requests at once and each was
   racing to rotate the same token.
+- **`getSessionUser()` is the read path's `getUser()`, and only the read
+  path's.** `supabase.auth.getUser()` is a network round trip to the auth
+  server every call — supabase-js never trusts a cached copy — and rendering
+  `/login` was making three of them (middleware, `Nav`, the page) to decide
+  whether to show one email field. `getSessionUser()` in `lib/supabase/server.ts`
+  wraps it in React `cache()`, which is per-request. Don't reach for it inside a
+  server action that signs someone in or out: there the whole point is to
+  observe the change this request just made.
+- **Inputs are 16px on coarse pointers** (`.input`, in `globals.css`). Below
+  that, iOS Safari zooms the page in on focus and the layout viewport ends up
+  wider than the screen — felt as the field flying off the side when you tap
+  it. The picker's search box hit this first and fixed it locally; the login
+  field then hit the identical thing, so the rule now lives on `.input` where
+  a new field can't miss it. Pinned by `tests/responsive.test.ts`.
 - **Sign-in runs server-side** (`app/login/actions.ts`), not from the browser
   client. A session established with `document.cookie` is capped at seven
   days by Safari's tracking prevention no matter what expiry is asked for —
@@ -138,6 +152,14 @@ reading the project URL and service key from Supabase Vault at call time.
   total failure. Stamping only successes is exactly how the old reminder
   ended up retrying an unsendable null address every fifteen minutes for a
   whole gameweek.
+- **A browser-invoked edge function must deploy with `verify_jwt` off and
+  check the caller itself** (`_shared/cors.ts`). The CORS preflight carries no
+  credentials by design, so the gateway 401s it before the function runs; the
+  browser then never sends the real request and supabase-js reports "Failed to
+  send a request to the Edge Function", which reads like the function is broken
+  when nothing has executed at all. `push-test` is the only one of these — it
+  reads the caller's own token, resolves it to an entrant, and only ever pushes
+  to that entrant's own subscriptions.
 - `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
   min live + daily settle), `remind` (every 15 min), `push-test` (on demand
   from Settings), `sheets-backup`
