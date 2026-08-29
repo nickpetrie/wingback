@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { AppNotification } from "@/lib/alerts";
 import type { CurrentGameweek } from "@/lib/gameweek";
+import { AlertBell } from "./AlertBell";
 import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
@@ -31,10 +33,12 @@ export function Header({
   gameweek,
   entrantId,
   standings,
+  notifications,
 }: {
   gameweek: CurrentGameweek | null;
   entrantId: string;
   standings: StandingRow[];
+  notifications: AppNotification[];
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -61,6 +65,9 @@ export function Header({
             WINGBACK
           </Link>
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
+          <AlertBell initial={notifications} />
+
           <button
             type="button"
             className="btn btn-secondary wb-tap"
@@ -73,6 +80,7 @@ export function Header({
               <path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" strokeWidth="2" />
             </svg>
           </button>
+          </div>
         </div>
 
         {gameweek && (

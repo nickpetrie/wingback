@@ -7,46 +7,27 @@ import { PlayerSearchInput } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
 import { initialsFor } from "@/lib/avatar";
 import { AvatarUploader } from "../AvatarUploader";
-import { PushToggle } from "../PushToggle";
 import { ThemeToggle } from "../ThemeToggle";
-import { updateNomination, updatePhone } from "./actions";
+import { updateNomination } from "./actions";
 
 export function SettingsForm({
   entrantId,
   avatarUpdatedAt,
   displayName,
-  initialPhone,
-  initialSmsOptIn,
   players,
   initialNomination,
 }: {
   entrantId: string;
   avatarUpdatedAt: string | null;
   displayName: string;
-  initialPhone: string;
-  initialSmsOptIn: boolean;
   players: PlayerOption[];
   initialNomination: PlayerOption | null;
 }) {
-  const [phone, setPhone] = useState(initialPhone);
-  const [smsOptIn, setSmsOptIn] = useState(initialSmsOptIn);
-  const [phoneMessage, setPhoneMessage] = useState<string | null>(null);
-  const [phonePending, startPhoneTransition] = useTransition();
-
   const [nomination, setNomination] = useState<PlayerOption | null>(initialNomination);
   const [changingNomination, setChangingNomination] = useState(!initialNomination);
   const [nominationMessage, setNominationMessage] = useState<string | null>(null);
   const [nominationPending, startNominationTransition] = useTransition();
 
-
-  function savePhone(e: React.FormEvent) {
-    e.preventDefault();
-    setPhoneMessage(null);
-    startPhoneTransition(async () => {
-      const result = await updatePhone(phone, smsOptIn);
-      setPhoneMessage(result.ok ? "Saved." : `Could not save: ${result.error}`);
-    });
-  }
 
   function saveNomination(player: PlayerOption) {
     setNomination(player);
@@ -68,32 +49,6 @@ export function SettingsForm({
             Shows up in the standings strip, next to your name.
           </p>
         </div>
-      </section>
-
-      <section style={{ padding: "24px 0", borderBottom: "1px solid var(--color-divider)" }}>
-        <h6 style={{ margin: "0 0 4px" }}>Mobile number</h6>
-        <p style={{ margin: "0 0 12px", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-          For the nudge two hours before lock, if you still haven&rsquo;t picked.
-        </p>
-        <form onSubmit={savePhone} style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <input
-            className="input"
-            type="tel"
-            placeholder="+44 7…"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={{ maxWidth: 220 }}
-          />
-          <button type="submit" className="btn btn-primary wb-tap" disabled={phonePending}>
-            {phonePending ? "Saving…" : "Save"}
-          </button>
-        </form>
-        <label className="radio" style={{ marginTop: 12 }}>
-          <input type="checkbox" checked={smsOptIn} onChange={(e) => setSmsOptIn(e.target.checked)} />
-          <span className="dot" />
-          Text me reminders
-        </label>
-        {phoneMessage && <p style={{ marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{phoneMessage}</p>}
       </section>
 
       <section style={{ padding: "24px 0" }}>
@@ -135,14 +90,6 @@ export function SettingsForm({
         {nominationMessage && !nominationPending && (
           <p style={{ marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{nominationMessage}</p>
         )}
-      </section>
-
-      <section style={{ padding: "24px 0", borderTop: "1px solid var(--color-divider)" }}>
-        <h6 style={{ margin: "0 0 4px" }}>Notifications</h6>
-        <p style={{ margin: "0 0 12px", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          Push reminders before a deadline, on top of the email everyone gets.
-        </p>
-        <PushToggle />
       </section>
 
       <section style={{ padding: "24px 0", borderTop: "1px solid var(--color-divider)" }}>

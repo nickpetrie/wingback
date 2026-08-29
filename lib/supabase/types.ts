@@ -133,6 +133,59 @@ export interface Database {
         Update: Partial<{ source: string; synced_at: string }>;
         Relationships: [];
       };
+      alert_prefs: {
+        Row: {
+          entrant_id: string;
+          email: boolean;
+          sms: boolean;
+          push: boolean;
+          pick_reminders: boolean;
+          pick_activity: boolean;
+          goal_alerts: boolean;
+          injury_alerts: boolean;
+          results: boolean;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["alert_prefs"]["Row"]> & { entrant_id: string };
+        Update: Partial<Database["public"]["Tables"]["alert_prefs"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "alert_prefs_entrant_id_fkey";
+            columns: ["entrant_id"];
+            isOneToOne: true;
+            referencedRelation: "entrants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          id: number;
+          entrant_id: string;
+          kind: "pick_reminder" | "pick_made" | "goal" | "injury" | "results";
+          title: string;
+          body: string;
+          url: string;
+          gameweek: number | null;
+          created_at: string;
+          read_at: string | null;
+          delivered_at: string | null;
+        };
+        Insert: Omit<Database["public"]["Tables"]["notifications"]["Row"], "id" | "created_at"> & {
+          id?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "notifications_entrant_id_fkey";
+            columns: ["entrant_id"];
+            isOneToOne: false;
+            referencedRelation: "entrants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       picks: {
         Row: {
           id: number;
@@ -215,15 +268,15 @@ export interface Database {
         Row: {
           entrant_id: string;
           gameweek: number;
-          channel: "email" | "sms";
-          window_key: "t24h" | "t2h";
+          channel: "email" | "sms" | "push";
+          window_key: "t24h" | "t2h" | "open" | "midpoint" | "t1h";
           sent_at: string;
         };
         Insert: {
           entrant_id: string;
           gameweek: number;
-          channel: "email" | "sms";
-          window_key: "t24h" | "t2h";
+          channel: "email" | "sms" | "push";
+          window_key: "t24h" | "t2h" | "open" | "midpoint" | "t1h";
         };
         Update: Record<string, never>;
         Relationships: [];

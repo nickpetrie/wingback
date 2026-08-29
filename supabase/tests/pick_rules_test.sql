@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(40);
+select plan(49);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -421,6 +421,110 @@ select is(
       and confrelid = 'players'::regclass),
   2,
   'picks has two FKs into players, so every embed of players from picks must name its constraint'
+);
+
+-- — Alerts. The triggers that turn a pick, a goal and a bit of injury news
+--   into notification rows. All three write to other people's feeds, so the
+--   thing worth pinning is *who* gets told, not that anything is written. —
+-- As admin: alert_prefs is RLS'd to its owner, and the suite is currently
+-- wearing an entrant persona from the tests above.
+select test_as_admin();
+
+insert into alert_prefs (entrant_id, pick_activity, goal_alerts, injury_alerts)
+values
+  ('11111111-1111-1111-1111-111111111111', true, true, true),
+  ('22222222-2222-2222-2222-222222222222', true, true, true)
+on conflict (entrant_id) do update
+  set pick_activity = true, goal_alerts = true, injury_alerts = true;
+
+delete from notifications;
+-- A player of its own, so this block doesn't collide with the once-per-season
+-- reuse rule the tests above have already spent players on.
+insert into players (code, fpl_id, web_name, first_name, second_name, team_id, element_type, status, news)
+values (900, 900, 'AlertMan', 'Al', 'Ert', 1, 4, 'a', '');
+insert into gameweeks (id, deadline_time, finished) values (31, now() + interval '3 days', false);
+insert into fixtures (id, event, team_h, team_a, kickoff_time)
+values (3100, 31, 1, 2, now() + interval '3 days');
+
+insert into picks (entrant_id, gameweek, player_code, stake)
+values ('11111111-1111-1111-1111-111111111111', 31, 900, 3);
+
+-- You know perfectly well who you just picked.
+select is(
+  (select count(*)::int from notifications where kind = 'pick_made'
+     and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  0,
+  'the entrant who picked is not told about their own pick'
+);
+select is(
+  (select count(*)::int from notifications where kind = 'pick_made'
+     and entrant_id = '22222222-2222-2222-2222-222222222222'),
+  1,
+  'the other entrant is told that a pick was made'
+);
+
+-- As the results sync: picks_guard refuses a goals edit from anyone else,
+-- which is exactly the door the score function comes through.
+select test_as_service();
+update picks set goals = 1 where gameweek = 31;
+-- Counted against the preference rather than a literal: a goal is news for
+-- the whole group, so the right number is however many people asked for it —
+-- which includes the five seeded entrants, who get goal alerts by default.
+select is(
+  (select count(*)::int from notifications where kind = 'goal'),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  'a goal reaches everyone who asked for goal alerts, the scorer included'
+);
+
+-- score rewrites every pick in a gameweek on each run, so the same total
+-- arriving twice must not buzz anyone a second time.
+update picks set goals = 1 where gameweek = 31;
+select is(
+  (select count(*)::int from notifications where kind = 'goal'),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  'a re-sync that changes no score sends nothing'
+);
+
+-- Only the entrant holding the player, and only while they can still act.
+select test_as_admin();
+update players set status = 'i', news = 'Knock' where code = 900;
+select is(
+  (select count(*)::int from notifications where kind = 'injury'),
+  1,
+  'injury news goes only to the entrant who picked that player'
+);
+select is(
+  (select entrant_id from notifications where kind = 'injury'),
+  '11111111-1111-1111-1111-111111111111'::uuid,
+  'and it is the entrant who actually holds them'
+);
+
+-- Coming back from injury is not news worth waking anyone for.
+update players set status = 'a', news = '' where code = 900;
+select is(
+  (select count(*)::int from notifications where kind = 'injury'),
+  1,
+  'a player returning to fitness raises no alert'
+);
+
+-- The week is over: one summary each, with your own score and whoever won it.
+select test_as_admin();
+delete from notifications;
+update gameweeks set finished = true where id = 31;
+
+select is(
+  (select count(*)::int from notifications where kind = 'results'),
+  (select count(*)::int from alert_prefs where results),
+  'settling a gameweek tells everyone who asked for results'
+);
+
+-- The pick in gameweek 31 is a forward on 1 goal at the base stake, so one
+-- point, and its owner is the only scorer that week.
+select is(
+  (select body from notifications
+    where kind = 'results' and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  'You scored 1 point. alice took the week on 1 point.',
+  'the summary carries your own score and the week''s winner'
 );
 
 select * from finish();
