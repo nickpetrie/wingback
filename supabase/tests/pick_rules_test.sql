@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(49);
+select plan(53);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -525,6 +525,50 @@ select is(
     where kind = 'results' and entrant_id = '11111111-1111-1111-1111-111111111111'),
   'You scored 1 point. alice took the week on 1 point.',
   'the summary carries your own score and the week''s winner'
+);
+
+-- — The nomination lock. The one player you may pick twice is worth more than
+--   any other decision in the game, so being able to swap it once you can see
+--   who is actually scoring would be the whole sweepstake. —
+select test_as_admin();
+-- The migration seeds this only when its gameweek already exists, and this
+-- scratch database has no FPL data at migration time.
+insert into season_config (nominations_lock_after_gameweek) values (31)
+on conflict (id) do update set nominations_lock_after_gameweek = 31;
+update gameweeks set finished = false where id = 31;
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select lives_ok(
+  $$update entrants set nomination_player_code = 300 where id = '11111111-1111-1111-1111-111111111111'$$,
+  'a nomination can be changed freely before the lock gameweek finishes'
+);
+
+select test_as_admin();
+update gameweeks set finished = true where id = 31;
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select throws_ok(
+  $$update entrants set nomination_player_code = 400 where id = '11111111-1111-1111-1111-111111111111'$$,
+  'P0001',
+  'nominations closed at the end of gameweek 31',
+  'once that gameweek is finished the nomination cannot be changed'
+);
+
+-- Everything else about the row is still yours to edit; the guard is about
+-- one column, not about freezing the entrant.
+select lives_ok(
+  $$update entrants set display_name = 'alice renamed' where id = '11111111-1111-1111-1111-111111111111'$$,
+  'the lock does not freeze the rest of the profile'
+);
+
+-- Someone who never nominated would otherwise lose the second use outright,
+-- which is a harsher penalty than the rule intends.
+select test_as_admin();
+update entrants set nomination_player_code = null where id = '22222222-2222-2222-2222-222222222222';
+select test_as_entrant('22222222-2222-2222-2222-222222222222'::uuid);
+select lives_ok(
+  $$update entrants set nomination_player_code = 300 where id = '22222222-2222-2222-2222-222222222222'$$,
+  'an entrant who never nominated may still set one after the lock'
 );
 
 select * from finish();

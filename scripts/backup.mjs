@@ -13,6 +13,8 @@
 // Reads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from the environment. No
 // dependencies: Node's own fetch, so the workflow needs no install step.
 
+import { pointsFor } from "./points.mjs";
+
 const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) {
@@ -58,15 +60,8 @@ const playerByCode = new Map(players.map((p) => [p.code, p]));
 const teamById = new Map(teams.map((t) => [t.id, t.short_name]));
 const entrantById = new Map(entrants.map((e) => [e.id, e.display_name]));
 
-// Mirrors pick_points() in 20260101000001_functions.sql line for line —
-// element_type 2 is a defender, and a defender's goal counts double, as does
-// any goal at the £6 stake. Points are never stored anywhere, and that rule
-// holds here too: a backup that carried a points column would be free to
-// disagree with the app about a scoreline, which is the whole reason this
-// app exists instead of the spreadsheet.
-const pointsFor = (elementType, stake, goals) =>
-  goals * (elementType === 2 ? 2 : 1) * (stake === 6 ? 2 : 1);
-
+// The rule itself lives in points.mjs so it can be tested; see that file for
+// why the copy exists at all.
 const csvCell = (v) => {
   const s = String(v ?? "");
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

@@ -1,0 +1,49 @@
+# Runs on every push and pull request. Before this existed the checks only ran
+# when somebody remembered to run them, which is the same as not having them.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  app:
+    name: Types, lint, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      # Chromium for the responsive tests. --with-deps pulls the system
+      # libraries the headless browser needs on a bare runner.
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      # Last, because it's the slowest and the others localise a failure
+      # better than a build log does.
+      - run: npm run build
+        env:
+          # The build only needs these to exist — it renders nothing that
+          # talks to Supabase at build time, since every page is dynamic.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-time-placeholder
+
+  rules:
+    name: Database rules (pgTAP)
+    runs-on: ubuntu-latest
+    # The suite runs against a plain Postgres with pgTAP — no Docker, no
+    # Supabase CLI — which is the whole reason it's cheap enough to run here.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postgres and pgTAP
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql postgresql-contrib postgresql-16-pgtap
+      - name: Start Postgres
+        run: sudo systemctl start postgresql || sudo pg_ctlcluster 16 main start
+      - name: Run the rules suite
+        run: supabase/tests/run.sh

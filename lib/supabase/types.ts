@@ -186,6 +186,20 @@ export interface Database {
           },
         ];
       };
+      season_config: {
+        Row: { id: number; nominations_lock_after_gameweek: number };
+        Insert: { id?: number; nominations_lock_after_gameweek: number };
+        Update: Partial<{ nominations_lock_after_gameweek: number }>;
+        Relationships: [
+          {
+            foreignKeyName: "season_config_nominations_lock_after_gameweek_fkey";
+            columns: ["nominations_lock_after_gameweek"];
+            isOneToOne: false;
+            referencedRelation: "gameweeks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       picks: {
         Row: {
           id: number;

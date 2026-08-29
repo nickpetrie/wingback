@@ -19,10 +19,19 @@ export default async function SettingsPage() {
 
   if (!entrant) return null; // middleware sends anyone without a claim to /claim first
 
-  const [players, prefs] = await Promise.all([
+  const [players, prefs, { data: config }] = await Promise.all([
     loadPlayers(supabase),
     loadAlertPrefs(supabase, entrant.id),
+    supabase
+      .from("season_config")
+      .select("nominations_lock_after_gameweek, gameweeks(finished)")
+      .maybeSingle(),
   ]);
+
+  // The trigger in 20260101000026 is the enforcement; this only decides
+  // whether the screen offers a Change button it knows would be refused.
+  const lockGameweek = config?.nominations_lock_after_gameweek ?? null;
+  const nominationsLocked = config?.gameweeks?.finished ?? false;
   const initialNomination = entrant.nomination_player_code
     ? (players.find((p) => p.code === entrant.nomination_player_code) ?? null)
     : null;
@@ -43,6 +52,8 @@ export default async function SettingsPage() {
         displayName={entrant.display_name}
         players={players}
         initialNomination={initialNomination}
+        nominationsLocked={nominationsLocked}
+        lockGameweek={lockGameweek}
       />
     </main>
   );

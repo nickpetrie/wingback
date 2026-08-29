@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { ALERT_TYPES, CHANNELS, type AlertPrefs } from "@/lib/alerts";
-import { PushToggle } from "../PushToggle";
+import { usePush } from "@/lib/usePush";
+import { PushTest } from "../PushTest";
 import { updateAlertPrefs, updatePhone } from "./actions";
 
 /** Alerts: what you want to hear about, and how you want to hear it.
@@ -26,11 +27,26 @@ export function AlertsForm({
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const [phonePending, startPhoneTransition] = useTransition();
+  const push = usePush();
 
   // Autosaved, like the pick form: a settings screen with a Save button is a
   // settings screen people leave without pressing it.
   function set(key: keyof AlertPrefs, value: boolean) {
     const next = { ...prefs, [key]: value };
+    save(next);
+  }
+
+  /** The Push switch is the subscription, not a note about it: flipping it
+   * asks the browser for permission and subscribes or unsubscribes this
+   * device. If the browser says no, the switch goes back rather than
+   * recording a preference that can never be honoured. */
+  async function setPush(value: boolean) {
+    if (push.state === "working") return;
+    const worked = value ? await push.enable() : await push.disable();
+    if (worked) save({ ...prefs, push: value });
+  }
+
+  function save(next: AlertPrefs) {
     setPrefs(next);
     setError(null);
     startTransition(async () => {
@@ -59,16 +75,7 @@ export function AlertsForm({
 
   return (
     <section style={{ padding: "24px 0" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 12,
-          borderBottom: "2px solid var(--color-divider)",
-          paddingBottom: 8,
-        }}
-      >
+      <div className="wb-settings-head">
         <h6 style={{ margin: 0 }}>Alerts</h6>
         <span
           aria-live="polite"
@@ -88,22 +95,31 @@ export function AlertsForm({
 
       <h6 className="wb-alert-head">How</h6>
       <div className="wb-alert-list">
-        {CHANNELS.map((c) => (
-          <label key={c.key} className="wb-alert-row">
-            <span className="wb-alert-text">
-              <span className="wb-alert-label">{c.label}</span>
-              <span className="wb-alert-note">
-                {c.key === "email" && email ? `To ${email}.` : c.note}
+        {CHANNELS.map((c) => {
+          const isPush = c.key === "push";
+          return (
+            <label key={c.key} className="wb-alert-row">
+              <span className="wb-alert-text">
+                <span className="wb-alert-label">{c.label}</span>
+                <span className="wb-alert-note">
+                  {isPush
+                    ? (push.blocker ?? c.note)
+                    : c.key === "email" && email
+                      ? `To ${email}.`
+                      : c.note}
+                </span>
+                {isPush && push.error && <span className="wb-alert-error">{push.error}</span>}
               </span>
-            </span>
-            <input
-              type="checkbox"
-              className="wb-switch"
-              checked={prefs[c.key]}
-              onChange={(e) => set(c.key, e.target.checked)}
-            />
-          </label>
-        ))}
+              <input
+                type="checkbox"
+                className="wb-switch"
+                checked={isPush ? push.state === "on" : prefs[c.key]}
+                disabled={isPush && (push.blocker !== null || push.state === "working")}
+                onChange={(e) => (isPush ? void setPush(e.target.checked) : set(c.key, e.target.checked))}
+              />
+            </label>
+          );
+        })}
       </div>
 
       {nothingOn && (
@@ -138,11 +154,7 @@ export function AlertsForm({
       )}
       {phoneMessage && <p className="wb-alert-note">{phoneMessage}</p>}
 
-      {prefs.push && (
-        <div className="wb-alert-phone">
-          <PushToggle />
-        </div>
-      )}
+      {push.state === "on" && <PushTest />}
 
       <h6 className="wb-alert-head">What</h6>
       <div className="wb-alert-list">
