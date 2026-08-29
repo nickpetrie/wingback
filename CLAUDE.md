@@ -189,6 +189,13 @@ reading the project URL and service key from Supabase Vault at call time.
   always stamped explicitly, including for "system", by the blocking script
   in `layout.tsx` — that's what stops a white flash before hydration, and
   it's why the stylesheet needs no `prefers-color-scheme` block.
+- `scripts/icons.mjs` (`npm run icons`) — every app icon, generated from one
+  SVG so the set stays editable. The W is drawn as stroked paths, not SVG
+  text: text needs Archivo available to whatever rasterises it, and a missing
+  font substitutes silently, so you would get the wrong typeface and no error.
+  A mitred join on a V that sharp throws its point well past the vertex, so
+  the path's numbers are chosen to centre the *ink*, not the geometry — check
+  with a bounding-box measurement rather than by eye if you move them.
 - `app/api/player-image/[code]/route.ts` — fetches the official headshot
   server-side, posterises it onto the club colour with `sharp`, falls back
   to a procedural monogram card (never an AI-generated likeness) when
