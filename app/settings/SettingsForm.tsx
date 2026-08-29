@@ -16,14 +16,22 @@ export function SettingsForm({
   displayName,
   players,
   initialNomination,
+  nominationsLocked,
+  lockGameweek,
 }: {
   entrantId: string;
   avatarUpdatedAt: string | null;
   displayName: string;
   players: PlayerOption[];
   initialNomination: PlayerOption | null;
+  nominationsLocked: boolean;
+  lockGameweek: number | null;
 }) {
   const [nomination, setNomination] = useState<PlayerOption | null>(initialNomination);
+  // Locked *and* already nominated means there is nothing to change. Locked
+  // with nothing set still lets you set one, or you'd lose the second use
+  // entirely — see the trigger in 20260101000026.
+  const canChange = !nominationsLocked || !initialNomination;
   const [changingNomination, setChangingNomination] = useState(!initialNomination);
   const [nominationMessage, setNominationMessage] = useState<string | null>(null);
   const [nominationPending, startNominationTransition] = useTransition();
@@ -41,7 +49,11 @@ export function SettingsForm({
 
   return (
     <div>
-      <section style={{ padding: "24px 0", borderBottom: "1px solid var(--color-divider)", display: "flex", gap: 20, alignItems: "center" }}>
+      <section style={{ padding: "24px 0" }}>
+        <div className="wb-settings-head">
+          <h6 style={{ margin: 0 }}>Profile</h6>
+        </div>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", marginTop: 16 }}>
         <AvatarUploader entrantId={entrantId} initials={initialsFor(displayName)} updatedAt={avatarUpdatedAt} />
         <div>
           <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 22 }}>{displayName}</p>
@@ -49,16 +61,26 @@ export function SettingsForm({
             Shows up in the standings strip, next to your name.
           </p>
         </div>
+        </div>
       </section>
 
       <section style={{ padding: "24px 0" }}>
-        <h6 style={{ margin: "0 0 4px" }}>Nominated player</h6>
-        <p style={{ margin: "0 0 12px", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-          Your one player who can be picked twice. Meant to be locked before gameweek 1 — you can still change it,
-          but the others will hear about it.
+        <div className="wb-settings-head">
+          <h6 style={{ margin: 0 }}>Nomination</h6>
+          {nominationsLocked && (
+            <span className="wb-settings-locked">LOCKED</span>
+          )}
+        </div>
+        <p className="wb-settings-note">
+          Your one player who can be picked twice.{" "}
+          {nominationsLocked
+            ? "Nominations closed at the end of the gameweek, so this is your player for the season."
+            : lockGameweek !== null
+              ? `It locks for the season when gameweek ${lockGameweek} finishes — after that it can't be changed.`
+              : "It locks once the season is under way."}
         </p>
 
-        {nomination && !changingNomination ? (
+        {nomination && (!changingNomination || !canChange) ? (
           <div
             style={{
               display: "flex",
@@ -74,14 +96,16 @@ export function SettingsForm({
               <TeamBadge code={nomination.team_code} size={14} />
               {nomination.team_short_name}
             </span>
-            <button
-              type="button"
-              className="btn btn-ghost wb-tap"
-              style={{ marginLeft: "auto" }}
-              onClick={() => setChangingNomination(true)}
-            >
-              Change
-            </button>
+            {canChange && (
+              <button
+                type="button"
+                className="btn btn-ghost wb-tap"
+                style={{ marginLeft: "auto" }}
+                onClick={() => setChangingNomination(true)}
+              >
+                Change
+              </button>
+            )}
           </div>
         ) : (
           <PlayerSearchInput players={players} placeholder="Search for your nominated player…" onSelect={saveNomination} />
@@ -92,11 +116,11 @@ export function SettingsForm({
         )}
       </section>
 
-      <section style={{ padding: "24px 0", borderTop: "1px solid var(--color-divider)" }}>
-        <h6 style={{ margin: "0 0 4px" }}>Appearance</h6>
-        <p style={{ margin: "0 0 12px", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          Auto follows your phone&rsquo;s setting.
-        </p>
+      <section style={{ padding: "24px 0" }}>
+        <div className="wb-settings-head">
+          <h6 style={{ margin: 0 }}>Appearance</h6>
+        </div>
+        <p className="wb-settings-note">Auto follows your phone&rsquo;s setting.</p>
         <ThemeToggle />
       </section>
     </div>

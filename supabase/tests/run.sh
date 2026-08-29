@@ -36,6 +36,8 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/tests/02_local_realtime.sql \
          supabase/migrations/20260101000022_alerts.sql \
          supabase/migrations/20260101000023_results_alerts.sql \
+         supabase/migrations/20260101000025_security_hardening.sql \
+         supabase/migrations/20260101000026_nomination_lock.sql \
          supabase/tests/01_local_grants.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done
