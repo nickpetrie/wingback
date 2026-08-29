@@ -17,6 +17,15 @@ export type SeasonCell =
       hat: boolean;
     };
 
+export interface Nomination {
+  playerCode: number;
+  webName: string;
+  /** Uses spent against the allowance of two — the picker's own count, so a
+   * hat-trick reset shows here as 0/2 exactly as it does on the pick screen. */
+  used: number;
+  uses: { gw: number; goals: number; finished: boolean }[];
+}
+
 export interface BoardRow {
   entrant_id: string;
   avatar_updated_at: string | null;
@@ -27,6 +36,7 @@ export interface BoardRow {
   points: number;
   scoring: number;
   album: SeasonCell[];
+  nomination: Nomination | null;
   summary: string;
 }
 
@@ -93,6 +103,8 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
                   hat-trick — player unlocked again
                 </span>
               </div>
+              <NominationView nomination={row.nomination} />
+
               <p style={{ margin: "12px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
                 {row.summary}
               </p>
@@ -100,6 +112,58 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/** The nominated player and how much of the double allowance is gone.
+ *
+ * The count is the thing being asked for, so it is the big number; the
+ * gameweeks under it answer the follow-up ("which ones?") without a second
+ * tap. A use in a gameweek that hasn't finished still counts — the allowance
+ * is spent at the moment you pick, not at full time — so it is listed as
+ * to come rather than left out. */
+function NominationView({ nomination }: { nomination: Nomination | null }) {
+  if (!nomination) {
+    return (
+      <div className="wb-nom wb-nom-none">
+        <p className="wb-nom-label">Double-pick nomination</p>
+        <p className="wb-nom-empty">None nominated.</p>
+      </div>
+    );
+  }
+
+  const { used, uses } = nomination;
+  // More picks on record than uses counted means a hat-trick wiped the slate,
+  // which otherwise reads as an arithmetic bug sitting next to the list.
+  const reset = uses.length > used;
+
+  return (
+    <div className="wb-nom">
+      {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
+      <img className="wb-nom-photo" src={`/api/player-image/${nomination.playerCode}`} alt="" />
+      <div className="wb-nom-detail">
+        <p className="wb-nom-label">Double-pick nomination</p>
+        <p className="wb-nom-name">{nomination.webName}</p>
+        <p className="wb-nom-uses">
+          {uses.length === 0
+            ? "Not played yet"
+            : uses
+                .map((u) =>
+                  u.finished
+                    ? `GW${u.gw} · ${u.goals} goal${u.goals === 1 ? "" : "s"}`
+                    : `GW${u.gw} · to come`,
+                )
+                .join("  ·  ")}
+          {reset ? " — hat-trick, allowance reset" : ""}
+        </p>
+      </div>
+      <span
+        className={`wb-nom-count${used >= 2 ? " wb-nom-count-spent" : ""}`}
+        title={`${used} of 2 uses spent`}
+      >
+        {used}/2
+      </span>
     </div>
   );
 }

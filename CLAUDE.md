@@ -109,6 +109,15 @@ reading the project URL and service key from Supabase Vault at call time.
   there's one answer and no caller can forget half the condition. Reading
   `finished` alone is what silently stopped the double-gameweek penalty
   ever firing; there's a pgTAP test pinning this.
+- **"Playing right now" is decided in `lib/live.ts`, not from one column.**
+  `played` is the only thing trusted to *end* a match (see the `finished`
+  invariant above — a fixture finished last night still reads
+  `finished: false`), but `started` is mirrored by `score` on a ten-minute
+  cron, so waiting for it means the LIVE badge appears after the first goal.
+  So the clock starts a match, `played` ends it, and a 150-minute cap stops a
+  tab nobody reloads claiming LIVE until Thursday. The same module returns the
+  moment the answer could next change, which is what `LiveTick` sleeps on
+  instead of polling. Pinned by `lib/live.test.ts`.
 - **FPL blocks are about the IP, not the request.** Fastly refuses
   Supabase's edge-function egress in bursts — every path including the
   homepage, 403 in 1-4ms with `server: Varnish`. Nine header shapes were

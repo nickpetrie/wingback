@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeUsedCounts, type PickHistoryEntry } from "@/lib/rules";
 import { getStarCounts } from "@/lib/winners";
 import { teamColor } from "@/lib/teamColors";
-import { LeaderboardTable, type BoardRow, type SeasonCell } from "./LeaderboardTable";
+import { LeaderboardTable, type BoardRow, type Nomination, type SeasonCell } from "./LeaderboardTable";
 
 const TOTAL_GAMEWEEKS = 38;
 
@@ -12,9 +13,22 @@ export default async function LeaderboardPage() {
     .from("leaderboard")
     .select("entrant_id, display_name, total_points, scoring_gameweeks");
 
-  const { data: avatars } = await supabase.from("entrants").select("id, avatar_updated_at");
-  const avatarAt = new Map((avatars ?? []).map((a) => [a.id, a.avatar_updated_at]));
+  const { data: entrantRows } = await supabase
+    .from("entrants")
+    .select("id, avatar_updated_at, nomination_player_code");
+  const avatarAt = new Map((entrantRows ?? []).map((a) => [a.id, a.avatar_updated_at]));
+  const nominationCodes = new Map(
+    (entrantRows ?? []).map((e) => [e.id, e.nomination_player_code]),
+  );
   const starCounts = await getStarCounts(supabase);
+
+  // The nominated player may never have been picked, so their name can't come
+  // from the picks embed the season record uses.
+  const codes = [...new Set([...nominationCodes.values()].filter((c): c is number => c !== null))];
+  const { data: nominees } = codes.length
+    ? await supabase.from("players").select("code, web_name").in("code", codes)
+    : { data: [] };
+  const nomineeName = new Map((nominees ?? []).map((p) => [p.code, p.web_name]));
 
   const { data: gameweeks } = await supabase.from("gameweeks").select("id, finished");
   const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));
@@ -78,6 +92,30 @@ export default async function LeaderboardPage() {
       const stars = starCounts.get(entrant.entrant_id) ?? 0;
       const totalPicks = mine.length;
 
+      const nominationCode = nominationCodes.get(entrant.entrant_id) ?? null;
+      let nomination: Nomination | null = null;
+      if (nominationCode !== null) {
+        // computeUsedCounts is the same function the picker warns from, so
+        // the count here can't drift from the one that decides whether the
+        // player is still selectable — including the hat-trick reset, which
+        // puts a used-up nomination back to zero.
+        const used = computeUsedCounts(mine as PickHistoryEntry[]).get(nominationCode) ?? 0;
+        const uses = mine
+          .filter((p) => p.player_code === nominationCode)
+          .sort((a, b) => a.gameweek - b.gameweek)
+          .map((p) => ({
+            gw: p.gameweek,
+            goals: p.goals,
+            finished: finishedByGw.get(p.gameweek) ?? false,
+          }));
+        nomination = {
+          playerCode: nominationCode,
+          webName: nomineeName.get(nominationCode) ?? "Unknown player",
+          used,
+          uses,
+        };
+      }
+
       return {
         entrant_id: entrant.entrant_id,
         avatar_updated_at: avatarAt.get(entrant.entrant_id) ?? null,
@@ -88,6 +126,7 @@ export default async function LeaderboardPage() {
         points: entrant.total_points,
         scoring: entrant.scoring_gameweeks,
         album,
+        nomination,
         summary: `${entrant.scoring_gameweeks} scoring gameweeks from ${totalPicks} pick${totalPicks === 1 ? "" : "s"}. ${
           stars > 0 ? `${stars} title${stars > 1 ? "s" : ""} on the shirt.` : "Still waiting on a first title."
         }`,
