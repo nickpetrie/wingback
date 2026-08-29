@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekPicks } from "@/lib/picks";
@@ -9,9 +9,7 @@ import { LockRevealOverlay } from "./LockRevealOverlay";
 
 export async function Nav() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return null;
 
   const entrantId = await getCurrentEntrantId(supabase, user.id);

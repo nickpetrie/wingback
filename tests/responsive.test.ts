@@ -23,6 +23,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // 14/15, and the Pro Max.
 const WIDTHS = [320, 375, 390, 430];
 
+// The same phones with the height Safari actually leaves you after its own
+// chrome — which is what "above the fold" has to be measured against, and is
+// well short of the device height these are usually quoted at.
+const PHONES = [
+  { width: 320, height: 568, usable: 460 },
+  { width: 375, height: 667, usable: 553 },
+  { width: 390, height: 844, usable: 740 },
+  { width: 430, height: 932, usable: 828 },
+];
+
 const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8")
   // Tailwind's import can't resolve from a file:// page and nothing here
   // depends on it; the design system is plain CSS.
@@ -182,5 +192,84 @@ describe("home, with the picker open", () => {
 
     await context.close();
     expect(chipWidth).toBeLessThan(390);
+  });
+});
+
+/** The sign-in screen, in the state everyone meets it in: signed out, one
+ * email field. Two things broke here and both are asserted below. */
+function loginPage(): string {
+  return `<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>${css}:root{--font-archivo:system-ui}body{margin:0}</style></head><body>
+<main class="wb-login-page">
+  <div class="wb-login-hero">
+    <svg class="wb-login-hero-pitch" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    <span class="wb-login-wordmark">WINGBACK</span>
+    <p class="wb-login-tagline">The gang&rsquo;s Premier League goalscorer sweepstake.</p>
+    <p class="wb-login-names">Nick · Tom · Alex · Henry · Casra</p>
+  </div>
+  <div class="wb-login-form-panel">
+    <div class="wb-login-form-inner">
+      <h6 style="margin:0 0 16px">Sign in</h6>
+      <form class="wb-login-step">
+        <p class="wb-login-hint">Sign in with your email — no password needed.</p>
+        <div class="field"><label for="wb-email">Email</label>
+          <input id="wb-email" class="input" type="email" placeholder="you@example.com"></div>
+        <button type="submit" class="btn btn-primary wb-tap wb-login-submit">Email me a link</button>
+      </form>
+    </div>
+  </div>
+</main></body></html>`;
+}
+
+describe("sign in", () => {
+  for (const { width, height, usable } of PHONES) {
+    it(`puts the whole form above the fold at ${width}×${height}`, async () => {
+      // The hero used to fill the screen: the email field landed at y≈635 on a
+      // 390-wide phone and y≈641 on an SE, so you arrived at a green wall and
+      // had to scroll to reach the only control on the page.
+      const context = await browser.newContext({ viewport: { width, height } });
+      const page = await context.newPage();
+      await page.setContent(loginPage());
+
+      const bottom = await page.evaluate(
+        () => document.querySelector(".wb-login-submit")!.getBoundingClientRect().bottom,
+      );
+
+      await context.close();
+      expect(bottom).toBeLessThanOrEqual(usable);
+    });
+  }
+
+  it("gives touch devices a 16px field, so iOS doesn't zoom the page on focus", async () => {
+    // Under 16px, Safari zooms in on focus and the layout viewport ends up
+    // wider than the screen — which is felt as the field flying off the side.
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await context.newPage();
+    await page.setContent(loginPage());
+
+    const size = await page.evaluate(() =>
+      parseFloat(getComputedStyle(document.querySelector(".input")!).fontSize),
+    );
+
+    await context.close();
+    expect(size).toBeGreaterThanOrEqual(16);
+  });
+
+  it("does not scroll sideways at any width", async () => {
+    for (const width of WIDTHS) {
+      const context = await browser.newContext({ viewport: { width, height: 800 } });
+      const page = await context.newPage();
+      await page.setContent(loginPage());
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      await context.close();
+      expect(overflow, `at ${width}px`).toBe(0);
+    }
   });
 });

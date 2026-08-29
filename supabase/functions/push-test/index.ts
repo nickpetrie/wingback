@@ -2,18 +2,24 @@
 // way to see a push is to wait for a real deadline, and a notification system
 // you can't try is a notification system nobody trusts.
 //
-// verify_jwt is on, so Supabase has already checked the caller's token before
-// this runs. We then resolve the caller to an entrant and only ever push to
-// that entrant's own subscriptions — the token identifies who you are, it
-// doesn't let you pick whose phone buzzes.
+// This is the one function the browser calls directly, so it is deployed with
+// verify_jwt *off* and checks the caller itself — see _shared/cors.ts for why
+// the gateway's own check makes a cross-origin call impossible. Every path
+// below still requires a token, resolves it to an entrant, and only ever
+// pushes to that entrant's own subscriptions: the token identifies who you
+// are, it doesn't let you pick whose phone buzzes.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsJson, preflight } from "../_shared/cors.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 
 Deno.serve(async (req) => {
+  const pre = preflight(req);
+  if (pre) return pre;
+
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return Response.json({ ok: false, error: "not signed in" }, { status: 401 });
+    if (!authHeader) return corsJson({ ok: false, error: "not signed in" }, { status: 401 });
 
     const publicUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -25,12 +31,12 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: { user } } = await asCaller.auth.getUser();
-    if (!user) return Response.json({ ok: false, error: "not signed in" }, { status: 401 });
+    if (!user) return corsJson({ ok: false, error: "not signed in" }, { status: 401 });
 
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
     if (!vapidPublic || !vapidPrivate) {
-      return Response.json(
+      return corsJson(
         { ok: false, error: "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are not set on this project" },
         { status: 500 },
       );
@@ -47,7 +53,7 @@ Deno.serve(async (req) => {
       .select("id, display_name")
       .eq("auth_user_id", user.id)
       .maybeSingle();
-    if (!entrant) return Response.json({ ok: false, error: "no claimed profile" }, { status: 403 });
+    if (!entrant) return corsJson({ ok: false, error: "no claimed profile" }, { status: 403 });
 
     const { data: subs, error: subsError } = await supabase
       .from("push_subscriptions")
@@ -55,7 +61,7 @@ Deno.serve(async (req) => {
       .eq("entrant_id", entrant.id);
     if (subsError) throw subsError;
     if (!subs || subs.length === 0) {
-      return Response.json({ ok: false, error: "no subscriptions for this account" }, { status: 404 });
+      return corsJson({ ok: false, error: "no subscriptions for this account" }, { status: 404 });
     }
 
     const payload = JSON.stringify({
@@ -80,13 +86,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json(
+    return corsJson(
       { ok: delivered > 0, delivered, tried: subs.length, errors },
       { status: delivered > 0 ? 200 : 502 },
     );
   } catch (err) {
     console.error("push-test failed", err);
-    return Response.json(
+    return corsJson(
       { ok: false, error: err instanceof Error ? err.message : String(err) },
       { status: 500 },
     );
