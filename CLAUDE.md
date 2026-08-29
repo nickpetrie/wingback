@@ -156,6 +156,16 @@ reading the project URL and service key from Supabase Vault at call time.
   generated for you at all, the *channels* decide how it reaches you, and the
   in-app feed always gets everything generated because it is the one channel
   that needs no configuration to work.
+- **The goal-alert clock is two crons, not one.** A goal reaches a phone only
+  after `score` notices it and then `notify` dispatches it, so the delay is
+  the sum of both schedules — measured at 15 minutes on Isak's gameweek 2
+  goal, when `notify` ticked 4 seconds before the trigger wrote the row.
+  `notify` now runs every minute (it costs one empty indexed query when there
+  is nothing to send) and `score` every three, but only inside a fixture's
+  match window rather than for the whole three-and-a-half days a gameweek
+  spends unfinished — which is *fewer* FPL requests per gameweek than the old
+  ten-minute always-on schedule, not more. If you widen that window, check the
+  invocation count first; FPL's Fastly layer is the constraint.
 - **`notifications.delivered_at` means "the dispatcher has considered this",
   not "someone received it".** It is stamped whatever happened, including
   total failure. Stamping only successes is exactly how the old reminder
