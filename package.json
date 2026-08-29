@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "supabase/tests/run.sh"
+    "test:db": "supabase/tests/run.sh",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
