@@ -124,9 +124,25 @@ reading the project URL and service key from Supabase Vault at call time.
   it would bury the rows that can't be reconstructed. The points column in the
   CSV is re-derived from `pick_points()`'s rule rather than stored, for the
   same reason the app never stores it.
+- **Alerts are one pipeline, not several.** Every alert — a goal, a pick,
+  injury news, a reminder, a gameweek settling — is written to
+  `notifications` (by a trigger, or by `remind`), and the `notify` edge
+  function delivers it outward to whichever channels `alert_prefs` says that
+  entrant wants. Nothing sends directly any more. `alert_prefs` splits two
+  questions that used to be tangled: the *types* decide whether an event is
+  generated for you at all, the *channels* decide how it reaches you, and the
+  in-app feed always gets everything generated because it is the one channel
+  that needs no configuration to work.
+- **`notifications.delivered_at` means "the dispatcher has considered this",
+  not "someone received it".** It is stamped whatever happened, including
+  total failure. Stamping only successes is exactly how the old reminder
+  ended up retrying an unsendable null address every fifteen minutes for a
+  whole gameweek.
 - `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
   min live + daily settle), `remind` (every 15 min), `push-test` (on demand
   from Settings), `sheets-backup`
+  `notify` (every 5 min — the only thing that sends email/SMS/push),
+  `sheets-backup`
   (hourly, optional — one-way mirror of standings/picks into a Google
   Sheet, see DEPLOY.md §3b; `_shared/google.ts` hand-rolls the service-
   account JWT flow since there's no Deno-friendly googleapis client). All

@@ -1203,6 +1203,201 @@ img {
   border: 0;
 }
 
+/* — The bell, and the panel behind it. — */
+.wb-bell {
+  position: relative;
+  flex: none;
+  padding: 8px 10px;
+}
+.wb-bell-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--color-closed);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  /* Ring in the page colour, so the badge reads as sitting on top of the
+     button rather than as part of its border. */
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+/* Anchored right like the menu drawer, for the same reason: that's the thumb
+   that opened it. */
+.wb-alerts-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  width: min(380px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border-left: 2px solid var(--color-divider);
+  animation: wb-slide-in 0.22s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.wb-alerts-panel-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-alerts-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.wb-alerts-empty {
+  margin: 0;
+  padding: 20px 18px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-alert-item {
+  display: flex;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.wb-alert-glyph {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  background: var(--color-surface);
+}
+.wb-alert-item-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.wb-alert-item-body {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
+}
+.wb-alert-item-when {
+  margin: 3px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+
+/* — The Alerts settings block. Rows of label + switch, so "what am I signed
+   up for" is one column you can run your eye down. — */
+.wb-alert-intro {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+}
+.wb-alert-head {
+  margin: 20px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-alert-list {
+  margin-top: 6px;
+  border-top: 1px solid var(--color-divider);
+}
+.wb-alert-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  /* 44px minimum target, and the whole row is the label, so the tap area is
+     the row rather than a 20px checkbox. */
+  min-height: 44px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-divider);
+  cursor: pointer;
+}
+.wb-alert-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.wb-alert-label {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 15px;
+}
+.wb-alert-note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-alert-warn {
+  margin: 10px 0 0;
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-closed);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.wb-alert-phone {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* A switch rather than a tick box: these are on/off states you scan down a
+   column, and a checkbox reads as "form to submit" where this is "setting
+   that already applies". */
+.wb-switch {
+  appearance: none;
+  flex: none;
+  margin: 2px 0 0;
+  width: 44px;
+  height: 26px;
+  background: var(--color-neutral-300);
+  border: 1px solid var(--color-divider);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease;
+}
+.wb-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--color-bg);
+  transition: transform 0.15s ease;
+}
+.wb-switch:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.wb-switch:checked::after {
+  transform: translateX(18px);
+}
+.wb-switch:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* — Slide-out menu. Anchored right because that's the thumb that opened it. — */
 .wb-scrim {
   position: fixed;

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { loadAlertPrefs } from "@/lib/alerts";
 import { loadPlayers } from "@/lib/players";
+import { AlertsForm } from "./AlertsForm";
 import { SettingsForm } from "./SettingsForm";
 
 export default async function SettingsPage() {
@@ -11,15 +13,18 @@ export default async function SettingsPage() {
 
   const { data: entrant } = await supabase
     .from("entrants")
-    .select("id, display_name, phone, sms_opt_in, nomination_player_code, avatar_updated_at")
+    .select("id, display_name, email, phone, nomination_player_code, avatar_updated_at")
     .eq("auth_user_id", user.id)
     .single();
 
   if (!entrant) return null; // middleware sends anyone without a claim to /claim first
 
-  const players = await loadPlayers(supabase);
+  const [players, prefs] = await Promise.all([
+    loadPlayers(supabase),
+    loadAlertPrefs(supabase, entrant.id),
+  ]);
   const initialNomination = entrant.nomination_player_code
-    ? players.find((p) => p.code === entrant.nomination_player_code) ?? null
+    ? (players.find((p) => p.code === entrant.nomination_player_code) ?? null)
     : null;
 
   return (
@@ -27,12 +32,15 @@ export default async function SettingsPage() {
       <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 10 }}>
         <h1 style={{ margin: 0 }}>Settings</h1>
       </div>
+      <AlertsForm
+        initialPrefs={prefs}
+        initialPhone={entrant.phone ?? ""}
+        email={entrant.email ?? user.email ?? null}
+      />
       <SettingsForm
         entrantId={entrant.id}
         avatarUpdatedAt={entrant.avatar_updated_at}
         displayName={entrant.display_name}
-        initialPhone={entrant.phone ?? ""}
-        initialSmsOptIn={entrant.sms_opt_in}
         players={players}
         initialNomination={initialNomination}
       />
