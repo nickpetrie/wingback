@@ -4,6 +4,7 @@ export interface GameweekFixture {
   id: number;
   kickoff_time: string | null;
   played: boolean;
+  started: boolean;
   team_h: number;
   team_a: number;
   home: string;
@@ -19,7 +20,7 @@ export async function getGameweekFixtures(
   const { data } = await supabase
     .from("fixtures")
     .select(
-      "id, kickoff_time, played, team_h, team_a, home:teams!fixtures_team_h_fkey(short_name, code), away:teams!fixtures_team_a_fkey(short_name, code)",
+      "id, kickoff_time, played, started, team_h, team_a, home:teams!fixtures_team_h_fkey(short_name, code), away:teams!fixtures_team_a_fkey(short_name, code)",
     )
     .eq("event", gameweekId)
     .order("kickoff_time", { ascending: true });
@@ -28,6 +29,7 @@ export async function getGameweekFixtures(
     id: f.id,
     kickoff_time: f.kickoff_time,
     played: f.played,
+    started: f.started,
     team_h: f.team_h,
     team_a: f.team_a,
     home: f.home?.short_name ?? "?",

@@ -1107,6 +1107,13 @@ img {
 }
 .wb-other-who {
   margin: 0;
+  /* A row rather than a line, so a LIVE badge can sit opposite the name
+     without displacing the player underneath it. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1855,6 +1862,114 @@ details[open] > summary .wb-chev {
   background: color-mix(in srgb, var(--color-text) 4%, transparent);
   cursor: pointer;
 }
+/* The double-pick nomination, inside an expanded leaderboard row. Laid out
+   like a small pick card — photo, detail, number — so it reads as part of the
+   same family as the rival picks on Home rather than as a new kind of thing. */
+.wb-nom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 16px;
+  padding: 10px;
+  background: var(--color-surface);
+}
+.wb-nom-photo {
+  flex: none;
+  width: 40px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--color-neutral-200);
+}
+.wb-nom-detail {
+  flex: 1;
+  min-width: 0;
+}
+.wb-nom-label {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-nom-name {
+  margin: 1px 0 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.wb-nom-uses {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-nom-empty {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-nom-none {
+  display: block;
+}
+/* The count is the question being asked, so it gets the weight. Spent goes
+   muted rather than red: using both is playing the game, not a failure. */
+.wb-nom-count {
+  flex: none;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.wb-nom-count-spent {
+  color: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+
+/* LIVE. Red rather than the accent for the same reason a locked deadline is
+   red: this is match *state*, not good news, and the accent is spoken for.
+   The dot pulses because a static red dot beside a name reads as an error
+   badge; a pulsing one reads as broadcast. */
+.wb-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 3px 6px 3px 5px;
+  color: var(--color-bg);
+  background: var(--color-closed);
+}
+.wb-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: wb-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes wb-live-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+/* Small enough to sit inside a rival's pick card without pushing the name
+   onto a second line. */
+.wb-live-sm {
+  font-size: 9px;
+  padding: 2px 5px 2px 4px;
+  gap: 4px;
+}
+.wb-live-sm .wb-live-dot {
+  width: 5px;
+  height: 5px;
+}
+
 .wb-tap {
   transition: transform 0.12s ease;
 }

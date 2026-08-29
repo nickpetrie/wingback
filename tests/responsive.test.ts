@@ -73,12 +73,16 @@ function homePage(): string {
     )
     .join("");
 
+  // Two of the four carry a LIVE badge: it shares the entrant's line, so it is
+  // the badge most likely to push a narrow card wider than its column.
   const others = ["Tom", "Alex", "Henry", "Casra"]
     .map(
       (who, i) => `<div class="wb-other">
         <span class="wb-other-photo" style="background:#7d2b28"></span>
         <div class="wb-other-detail">
-          <p class="wb-other-who">${who}</p>
+          <p class="wb-other-who">${who}${
+            i % 2 === 0 ? '<span class="wb-live wb-live-sm"><span class="wb-live-dot"></span>LIVE</span>' : ""
+          }</p>
           <p class="wb-other-name">${["Havertz", "Cunha", "Haaland", "Mbeumo"][i]}</p>
           <div class="wb-other-foot">
             <p class="wb-other-club">${box("12px", "12px")}MUN · ×2</p>

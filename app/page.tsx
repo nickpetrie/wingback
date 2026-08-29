@@ -2,14 +2,28 @@ import { createClient, getSessionUser } from "@/lib/supabase/server";
 import { getCurrentGameweek } from "@/lib/gameweek";
 import { getCurrentEntrantId } from "@/lib/entrant";
 import { getGameweekFixtures, kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
+import { liveState } from "@/lib/live";
 import { getGameweekPicks } from "@/lib/picks";
 import { getPickFormContext } from "@/lib/pick-form-context";
 import { relativeTime } from "@/lib/relativeTime";
 import { computeUsedCounts, doublesUsed, type PickHistoryEntry } from "@/lib/rules";
 import { FixtureDayList } from "./FixtureDayList";
+import { LiveTick } from "./LiveTick";
 import { STATUS_LABEL } from "./PlayerSearchInput";
 import { TeamBadge } from "./TeamBadge";
 import { PickForm } from "./pick/PickForm";
+
+/** The one on-screen indicator that a picked player is out there now. Its
+ * own element rather than a tag, because "LIVE" has to survive being read at
+ * a glance from across a pub table. */
+function LiveBadge({ small = false }: { small?: boolean }) {
+  return (
+    <span className={small ? "wb-live wb-live-sm" : "wb-live"}>
+      <span className="wb-live-dot" aria-hidden="true" />
+      LIVE
+    </span>
+  );
+}
 
 function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
   const f = fixtures.find((fx) => fx.team_h === teamId || fx.team_a === teamId);
@@ -105,6 +119,10 @@ export default async function DashboardPage() {
   const myFixture = myPick ? fixtureFor(fixtures, myPick.team_id) : null;
   const myPoints = myPick ? myPick.goals * (myPick.stake === 6 ? 2 : 1) : 0;
 
+  // Which picks are on the pitch right now, and when that answer could next
+  // change. One clock read, in lib/live.ts — see the note there on why.
+  const { liveTeamIds, nextChangeAt } = liveState(fixtures);
+
   return (
     <main className="wb-in wb-page" style={{ padding: "20px 24px 64px" }}>
       {/* The countdown lives in the sticky header on every page — repeating it
@@ -130,6 +148,7 @@ export default async function DashboardPage() {
 
       {gameweek && (
         <>
+          <LiveTick at={nextChangeAt} />
           <div className="wb-home-split">
             <section className="wb-home-split-left">
               <h6 style={{ margin: "0 0 12px" }}>Your pick</h6>
@@ -179,7 +198,8 @@ export default async function DashboardPage() {
                     <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 44, lineHeight: 1.02, letterSpacing: "-.03em" }}>
                       {myPick.player_name}
                     </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 10 }}>
+                      {liveTeamIds.has(myPick.team_id) && <LiveBadge />}
                       {myFixture && (
                         <>
                           <span className="tag tag-neutral">{myFixture.match}</span>
@@ -239,7 +259,10 @@ export default async function DashboardPage() {
                           alt=""
                         />
                         <div className="wb-other-detail">
-                          <p className="wb-other-who">{o.entrant}</p>
+                          <p className="wb-other-who">
+                            {o.entrant}
+                            {liveTeamIds.has(o.pick.team_id) && <LiveBadge small />}
+                          </p>
                           <p className="wb-other-name">{o.pick.player_name}</p>
                           <div className="wb-other-foot">
                             <p className="wb-other-club">
