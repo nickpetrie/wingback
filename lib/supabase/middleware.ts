@@ -63,6 +63,23 @@ export async function updateSession(request: NextRequest) {
     return redirectTo("/login");
   }
 
+  // Someone already signed in has no business on the sign-in form, and the
+  // decision has to be made *here* rather than in the page.
+  //
+  // /login has a loading.tsx that streams its green hero the instant the
+  // route is entered, before the page component has finished asking the auth
+  // server who you are. So a signed-in entrant opening the PWA got the login
+  // header painted at them, then a blank while the page's own redirect
+  // resolved, then home — which reads as the app failing to remember them.
+  // Redirecting before any HTML is produced means the hero is never sent.
+  //
+  // /login only, not every auth route: /auth/confirm is the magic-link
+  // callback, and it has to run *with* a session to exchange the code and
+  // forward to `next`. Bouncing it would break the one flow it exists for.
+  if (user && request.nextUrl.pathname.startsWith("/login")) {
+    return redirectTo("/");
+  }
+
   // First login: nobody has an account yet, they have a profile to claim.
   // /onboarding is exempt too — it's the very next (optional) step right
   // after claiming, not something to bounce back out of.

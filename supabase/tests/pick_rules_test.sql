@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(53);
+select plan(56);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -533,9 +533,15 @@ select is(
 select test_as_admin();
 -- The migration seeds this only when its gameweek already exists, and this
 -- scratch database has no FPL data at migration time.
-insert into season_config (nominations_lock_after_gameweek) values (31)
-on conflict (id) do update set nominations_lock_after_gameweek = 31;
-update gameweeks set finished = false where id = 31;
+-- Its own gameweek, not 31. The results-alert block above finishes 31 to
+-- fire its summaries, so sharing it meant this section had to *un*-finish a
+-- gameweek to get back to "not yet locked" — a hidden ordering dependency
+-- between two unrelated sections, and one the finished-latch below rightly
+-- refuses to allow.
+insert into gameweeks (id, deadline_time, finished)
+  values (32, now() - interval '1 day', false);
+insert into season_config (nominations_lock_after_gameweek) values (32)
+on conflict (id) do update set nominations_lock_after_gameweek = 32;
 
 select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
 select lives_ok(
@@ -544,13 +550,13 @@ select lives_ok(
 );
 
 select test_as_admin();
-update gameweeks set finished = true where id = 31;
+update gameweeks set finished = true where id = 32;
 
 select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
 select throws_ok(
   $$update entrants set nomination_player_code = 400 where id = '11111111-1111-1111-1111-111111111111'$$,
   'P0001',
-  'nominations closed at the end of gameweek 31',
+  'nominations closed at the end of gameweek 32',
   'once that gameweek is finished the nomination cannot be changed'
 );
 
@@ -569,6 +575,43 @@ select test_as_entrant('22222222-2222-2222-2222-222222222222'::uuid);
 select lives_ok(
   $$update entrants set nomination_player_code = 300 where id = '22222222-2222-2222-2222-222222222222'$$,
   'an entrant who never nominated may still set one after the lock'
+);
+
+-- A finished gameweek stays finished, whatever writes to it.
+--
+-- sync-fpl used to upsert `finished` straight from FPL's events[], which lags
+-- full time by days — so the hourly run reverted what score had settled, and
+-- remind then locked onto the stale gameweek and sent nobody their reminder
+-- for the one actually open. The function no longer writes the column; this
+-- pins the rule regardless of caller.
+select test_as_admin();
+insert into gameweeks (id, deadline_time, finished)
+  values (95, now() - interval '2 days', true);
+
+update gameweeks set finished = false where id = 95;
+select is(
+  (select finished from gameweeks where id = 95),
+  true,
+  'a finished gameweek cannot be un-finished'
+);
+
+-- The latch is one-way: settling one must still work.
+insert into gameweeks (id, deadline_time, finished)
+  values (96, now() - interval '2 days', false);
+update gameweeks set finished = true where id = 96;
+select is(
+  (select finished from gameweeks where id = 96),
+  true,
+  'an unfinished gameweek can still be marked finished'
+);
+
+-- And it guards only that column.
+-- ok(), not isnt(..., null): an untyped NULL leaves pgTAP's polymorphic
+-- argument unresolvable and the whole file errors rather than failing.
+update gameweeks set deadline_time = now() + interval '9 days' where id = 95;
+select ok(
+  (select deadline_time > now() + interval '8 days' from gameweeks where id = 95),
+  'the latch does not block other columns on a finished gameweek'
 );
 
 select * from finish();

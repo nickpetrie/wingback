@@ -70,10 +70,9 @@ export function Header({
 
           <button
             type="button"
-            className="btn btn-secondary wb-tap"
+            className="btn btn-secondary wb-tap btn-icon"
             aria-label="Menu"
             aria-expanded={menuOpen}
-            style={{ flex: "none", padding: "8px 10px" }}
             onClick={() => setMenuOpen(true)}
           >
             <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" fill="none">

@@ -147,6 +147,12 @@ reading the project URL and service key from Supabase Vault at call time.
   it would bury the rows that can't be reconstructed. The points column in the
   CSV is re-derived from `pick_points()`'s rule rather than stored, for the
   same reason the app never stores it.
+- **A channel that isn't configured is skipped, not attempted.** `notify`
+  checks `smsConfigured()` once per run rather than letting each send throw:
+  without the Twilio secrets, every SMS-opted entrant was contributing a
+  guaranteed failure to every alert, which buried the real ones in `failed`.
+  Someone who asked for SMS keeps that preference — the channel resumes by
+  itself when the secrets appear, with nothing to switch back on.
 - **Alerts are one pipeline, not several.** Every alert — a goal, a pick,
   injury news, a reminder, a gameweek settling — is written to
   `notifications` (by a trigger, or by `remind`), and the `notify` edge
@@ -156,6 +162,25 @@ reading the project URL and service key from Supabase Vault at call time.
   generated for you at all, the *channels* decide how it reaches you, and the
   in-app feed always gets everything generated because it is the one channel
   that needs no configuration to work.
+- **The goal-alert clock is two crons, not one.** A goal reaches a phone only
+  after `score` notices it and then `notify` dispatches it, so the delay is
+  the sum of both schedules — measured at 15 minutes on Isak's gameweek 2
+  goal, when `notify` ticked 4 seconds before the trigger wrote the row.
+  `notify` now runs every minute (it costs one empty indexed query when there
+  is nothing to send) and `score` every three, but only inside a fixture's
+  match window rather than for the whole three-and-a-half days a gameweek
+  spends unfinished — which is *fewer* FPL requests per gameweek than the old
+  ten-minute always-on schedule, not more. If you widen that window, check the
+  invocation count first; FPL's Fastly layer is the constraint.
+- **The FPL polling ladder has three rungs, and each one is guarded in SQL,
+  not in the function.** Hourly between gameweeks; every 10 minutes from 5
+  hours before a lock (late team news); every 3 minutes inside a fixture's
+  match window. The guards live in the `cron.schedule` bodies in
+  `20260101000004_cron.sql` and its successors, so a job can tick without
+  costing an FPL request — `sync-prelock` ticks 144 times a day and calls FPL
+  12 of them. Count invocations before widening any rung: widening the prelock
+  window to the 48 hours once considered would have been 288 calls a gameweek
+  against 30, each pulling FPL's ~5MB bootstrap.
 - **`notifications.delivered_at` means "the dispatcher has considered this",
   not "someone received it".** It is stamped whatever happened, including
   total failure. Stamping only successes is exactly how the old reminder

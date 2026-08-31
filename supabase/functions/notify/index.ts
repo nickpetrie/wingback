@@ -10,7 +10,7 @@
 // provider key, SMS needs a number, push needs an installed PWA — so the
 // channel that cannot fail is the one that needs no configuration at all.
 import { serviceClient } from "../_shared/supabase.ts";
-import { sendReminderEmail, sendReminderSms } from "../_shared/notify.ts";
+import { sendReminderEmail, sendReminderSms, smsConfigured } from "../_shared/notify.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 
 // Anything older than this on a first run is history, not news. Without it,
@@ -72,8 +72,13 @@ Deno.serve(async () => {
     const prefsBy = new Map((prefs ?? []).map((p: { entrant_id: string }) => [p.entrant_id, p]));
     const personBy = new Map((people ?? []).map((p: { id: string }) => [p.id, p]));
 
+    // Checked once, not per row: without the Twilio secrets every SMS-opted
+    // entrant contributed a guaranteed failure to every single alert.
+    const canText = smsConfigured();
+
     let emailed = 0;
     let texted = 0;
+    let smsSkipped = 0;
     let pushed = 0;
     let failed = 0;
 
@@ -95,12 +100,16 @@ Deno.serve(async () => {
       // SMS is the one that costs money per message, so it is held back for
       // the alerts you would actually want to be interrupted by.
       if (pref.sms && person.phone && (note.kind === "pick_reminder" || note.kind === "goal")) {
-        try {
-          await sendReminderSms(person.phone, `${note.title}. ${note.body}`);
-          texted++;
-        } catch (err) {
-          failed++;
-          console.error(`sms to ${note.entrant_id} failed`, err);
+        if (!canText) {
+          smsSkipped++;
+        } else {
+          try {
+            await sendReminderSms(person.phone, `${note.title}. ${note.body}`);
+            texted++;
+          } catch (err) {
+            failed++;
+            console.error(`sms to ${note.entrant_id} failed`, err);
+          }
         }
       }
 
@@ -143,7 +152,7 @@ Deno.serve(async () => {
       .in("id", (pending as Row[]).map((n) => n.id));
     if (stampError) throw stampError;
 
-    return Response.json({ ok: true, considered: pending.length, emailed, texted, pushed, failed });
+    return Response.json({ ok: true, considered: pending.length, emailed, texted, smsSkipped, pushed, failed });
   } catch (err) {
     console.error("notify failed", err);
     return Response.json(

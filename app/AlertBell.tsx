@@ -65,7 +65,7 @@ export function AlertBell({ initial: items }: { initial: AppNotification[] }) {
     <>
       <button
         type="button"
-        className="btn btn-secondary wb-tap wb-bell"
+        className="btn btn-secondary wb-tap btn-icon wb-bell"
         aria-label={unread > 0 ? `Alerts, ${unread} unread` : "Alerts"}
         aria-expanded={open}
         onClick={toggle}
