@@ -41,7 +41,8 @@ Deno.serve(async () => {
     // selects that one, finds its deadline already past, and returns without
     // sending — so nobody gets a pick reminder for the gameweek that is
     // actually open. The column defaults to false, so a genuinely new
-    // gameweek still inserts correctly.
+    // gameweek still inserts correctly. A latch on the table refuses the
+    // write regardless (see 20260101000029).
     const { error: gwError } = await supabase.from("gameweeks").upsert(
       bootstrap.events.map((e) => ({
         id: e.id,
