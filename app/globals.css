@@ -1347,10 +1347,12 @@ img {
 }
 
 /* — The bell, and the panel behind it. — */
+/* Only the badge anchor. The box itself comes from .btn-icon, which both
+   header buttons now share: they used to size themselves from their icons,
+   and a 17px bell beside a 14px menu glyph made two buttons of visibly
+   different height sitting next to each other. */
 .wb-bell {
   position: relative;
-  flex: none;
-  padding: 8px 10px;
 }
 .wb-bell-count {
   position: absolute;

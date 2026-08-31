@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -58,7 +58,16 @@ export function LiveRefresh({ gameweekId }: { gameweekId: number | null }) {
   // the table underneath it, being a page, showed the real ones: Henry on 1
   // in the strip and 2 in the table, from the same view, at the same moment.
   // Refreshing on a route change re-renders the layout too.
+  // The ref seeds to the pathname that was server-rendered, so the first run
+  // is a no-op. Without it this fires on *mount* as well as on change, and
+  // every cold load immediately re-requested the tree it had just been sent —
+  // a second full render, every query again, competing with the images still
+  // in flight. That is the "it appears, goes blank, then fills in" on opening
+  // the PWA.
+  const rendered = useRef(pathname);
   useEffect(() => {
+    if (rendered.current === pathname) return;
+    rendered.current = pathname;
     router.refresh();
   }, [pathname, router]);
 

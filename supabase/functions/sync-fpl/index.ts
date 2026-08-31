@@ -26,11 +26,26 @@ Deno.serve(async () => {
       );
     if (teamsError) throw teamsError;
 
+    // `finished` is deliberately NOT written here — `score` owns it.
+    //
+    // FPL's events[].finished lags full time by days, exactly as fixtures[]
+    // .finished does (see CLAUDE.md, and 000015): every gameweek 2 fixture
+    // still read finished:false on the Monday, three days after kickoff,
+    // while nine of them were finished_provisional. `score` therefore marks a
+    // gameweek done on `finished or finished_provisional`, and an upsert
+    // listing `finished` here would overwrite that verdict on the next hourly
+    // run — PostgREST upserts SET every column listed.
+    //
+    // That is not cosmetic. `remind` takes the current gameweek to be the
+    // earliest unfinished one; reset a settled gameweek to unfinished and it
+    // selects that one, finds its deadline already past, and returns without
+    // sending — so nobody gets a pick reminder for the gameweek that is
+    // actually open. The column defaults to false, so a genuinely new
+    // gameweek still inserts correctly.
     const { error: gwError } = await supabase.from("gameweeks").upsert(
       bootstrap.events.map((e) => ({
         id: e.id,
         deadline_time: e.deadline_time,
-        finished: e.finished,
       })),
     );
     if (gwError) throw gwError;

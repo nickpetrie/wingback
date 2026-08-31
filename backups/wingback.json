@@ -1,5 +1,5 @@
 {
-  "taken_at": "2026-08-28T16:43:41.598Z",
+  "taken_at": "2026-08-31T11:46:44.381Z",
   "entrants": [
     {
       "id": "a1000000-0000-0000-0000-000000000003",
@@ -81,11 +81,11 @@
       "player_code": 219168,
       "fixture_id": null,
       "stake": 3,
-      "goals": 0,
+      "goals": 1,
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-08-24T12:39:31.966956+00:00",
-      "updated_at": "2026-08-25T04:05:36.203624+00:00"
+      "updated_at": "2026-08-31T03:30:02.1572+00:00"
     },
     {
       "id": 4,
@@ -98,7 +98,7 @@
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-08-24T16:51:33.870432+00:00",
-      "updated_at": "2026-08-27T11:00:07.25351+00:00"
+      "updated_at": "2026-08-31T03:30:02.283191+00:00"
     },
     {
       "id": 6,
@@ -111,7 +111,7 @@
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-08-28T14:31:57.201996+00:00",
-      "updated_at": "2026-08-28T14:31:57.201996+00:00"
+      "updated_at": "2026-08-31T03:30:02.33698+00:00"
     },
     {
       "id": 7,
@@ -120,11 +120,11 @@
       "player_code": 223094,
       "fixture_id": null,
       "stake": 3,
-      "goals": 0,
+      "goals": 2,
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-08-28T16:40:41.697657+00:00",
-      "updated_at": "2026-08-28T16:40:41.697657+00:00"
+      "updated_at": "2026-08-31T03:30:02.389574+00:00"
     },
     {
       "id": 5,
@@ -133,11 +133,11 @@
       "player_code": 446008,
       "fixture_id": null,
       "stake": 3,
-      "goals": 0,
+      "goals": 1,
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-08-27T06:49:37.482886+00:00",
-      "updated_at": "2026-08-27T06:49:37.482886+00:00"
+      "updated_at": "2026-08-31T03:30:02.231195+00:00"
     }
   ],
   "season_winners": [
