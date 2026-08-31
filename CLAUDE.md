@@ -82,6 +82,28 @@ reading the project URL and service key from Supabase Vault at call time.
   now copy the cookies across. Same reason `/api` is out of the middleware
   matcher: a leaderboard fires ~38 player-image requests at once and each was
   racing to rotate the same token.
+- **`createClient()` and the read helpers are `cache()`d, and that is load
+  bearing.** React's `cache()` keys on argument identity, and
+  `getCurrentGameweek` / `getCurrentEntrantId` / `getGameweekPicks` all take
+  the client as their first argument — so memoising them only works because
+  `createClient` is itself `cache()`d and hands every caller in a request the
+  same instance. Without it `Nav` and the page ran the same three queries
+  twice per render. Per-request, so nothing is ever carried across requests.
+- **Page data is fetched in tiers, not one `await` per line.** `/` was eleven
+  serialised round trips before a byte of HTML and `/leaderboard` six, almost
+  all of them waiting on nothing. Both are now `Promise.all` tiers with only
+  the genuine dependencies (the gameweek; the nomination's player name)
+  sequenced. If you add a query, put it in the tier it actually belongs to.
+- **`notify` claims rows before it sends, not after.** `delivered_at` is
+  stamped on the whole batch up front, so an isolate killed mid-loop cannot
+  make the next tick re-send what already went out. That is what
+  "the dispatcher has considered this" always meant: at-most-once, which for
+  a goal alert is the right way to be wrong.
+- **`score` never writes `goals` for a player absent from the live payload.**
+  "Not in this response" is not "scored nothing" — writing 0 wipes a real
+  score, and the next good run restoring it 0→2 re-fires the goal alert
+  (`notify_goal` only guards downward moves). Same reasoning as the nullable
+  season stats above.
 - **`getSessionUser()` is the read path's `getUser()`, and only the read
   path's.** `supabase.auth.getUser()` is a network round trip to the auth
   server every call — supabase-js never trusts a cached copy — and rendering

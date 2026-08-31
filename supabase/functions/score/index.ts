@@ -121,7 +121,9 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
   // Per-gameweek totals (correct even across a double gameweek).
   const { data: picks, error: picksError } = await supabase
     .from("picks")
-    .select("id, player_code")
+    // `goals` too: the loop below skips a write when the value is unchanged,
+    // which keeps the notify_goal trigger off the hot path of a 3-minute cron.
+    .select("id, player_code, goals")
     .eq("gameweek", gwId);
   if (picksError) throw picksError;
 
@@ -132,7 +134,20 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
 
   for (const pick of picks ?? []) {
     const fplId = fplIdByCode[pick.player_code];
-    const goals = fplId !== undefined ? totalByFplId[fplId] ?? 0 : 0;
+    // "Not in this response" is not "scored nothing" — the same distinction
+    // players.goals_scored keeps by being nullable. Writing 0 for an element
+    // the payload simply didn't carry (a truncated response, or a new signing
+    // not yet in `players`) wipes a real score, and the next good run puts it
+    // back 0 -> 2, which re-fires the goal alert for a goal from hours ago:
+    // notify_goal only guards against downward moves.
+    const goals = fplId === undefined ? undefined : totalByFplId[fplId];
+    if (goals === undefined) {
+      console.warn(
+        `score: gameweek ${gwId} pick ${pick.id} (player ${pick.player_code}) not in the live payload — left at ${pick.goals}`,
+      );
+      continue;
+    }
+    if (goals === pick.goals) continue; // nothing to write, no trigger to fire
     const { error } = await supabase.from("picks").update({ goals }).eq("id", pick.id);
     if (error) throw error;
   }

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { createClient } from "@/lib/supabase/server";
 
 export type GameweekState = "open" | "locked" | "unscheduled";
@@ -27,7 +28,7 @@ export interface CurrentGameweek {
  * matches you had just picked for hadn't kicked off yet. A gameweek stops
  * being current when it is over, not when it closes.
  */
-export async function getCurrentGameweek(
+export const getCurrentGameweek = cache(async function getCurrentGameweek(
   supabase: Awaited<ReturnType<typeof createClient>>,
 ): Promise<CurrentGameweek | null> {
   const { data: gameweek } = await supabase
@@ -46,4 +47,4 @@ export async function getCurrentGameweek(
 
   const locked = new Date(gameweek.lock_at) <= new Date();
   return { id: gameweek.id, lock_at: gameweek.lock_at, state: locked ? "locked" : "open" };
-}
+});

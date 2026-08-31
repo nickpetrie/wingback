@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { createClient } from "@/lib/supabase/server";
 import type { Stake } from "@/lib/supabase/types";
 
@@ -17,7 +18,7 @@ export interface GameweekPick {
  * visible to everyone as soon as they're made, not just after lock (see
  * CLAUDE.md: this was a deliberate call to match how the old spreadsheet
  * worked, not an oversight). */
-export async function getGameweekPicks(
+export const getGameweekPicks = cache(async function getGameweekPicks(
   supabase: Awaited<ReturnType<typeof createClient>>,
   gameweekId: number,
 ): Promise<GameweekPick[]> {
@@ -46,4 +47,4 @@ export async function getGameweekPicks(
       stake: p.stake,
       goals: p.goals,
     }));
-}
+});

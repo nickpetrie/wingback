@@ -8,7 +8,15 @@ import type { Database } from "./types";
 // makes runs under RLS — that's what makes the write-side rules hold no
 // matter what a server component forgets to check. The service role key
 // never appears here; it belongs only in edge function secrets.
-export async function createClient() {
+// cache(): one client per request, not one per component.
+//
+// It is cheap to build, but its *identity* is what matters — the helpers in
+// lib/gameweek.ts, lib/entrant.ts and lib/picks.ts take it as their first
+// argument, and React's cache() keys on argument identity. With a fresh
+// object per caller, memoising those helpers would never hit; with one shared
+// instance, Nav and the page stop running the same three queries twice in a
+// single render. Per-request, so no session is ever carried across requests.
+export const createClient = cache(async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -33,7 +41,7 @@ export async function createClient() {
       },
     },
   );
-}
+});
 
 // getUser() is a network round trip to Supabase's auth server every single
 // time — supabase-js deliberately does not trust a cached copy. Rendering
