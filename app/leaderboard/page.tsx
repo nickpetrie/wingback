@@ -9,18 +9,30 @@ const TOTAL_GAMEWEEKS = 38;
 export default async function LeaderboardPage() {
   const supabase = await createClient();
 
-  const { data: leaderboard } = await supabase
-    .from("leaderboard")
-    .select("entrant_id, display_name, total_points, scoring_gameweeks");
+  // Two tiers. Only the nominee names genuinely depend on anything above
+  // them — they need the codes from `entrants` — so the other five queries
+  // were serialised for no reason on the page the standings strip taps into.
+  const [{ data: leaderboard }, { data: entrantRows }, starCounts, { data: gameweeks }, { data: allPicks }] =
+    await Promise.all([
+      supabase.from("leaderboard").select("entrant_id, display_name, total_points, scoring_gameweeks"),
+      supabase.from("entrants").select("id, avatar_updated_at, nomination_player_code"),
+      getStarCounts(supabase),
+      supabase.from("gameweeks").select("id, finished"),
+      supabase
+        .from("picks")
+        // The FK hint is load-bearing — see lib/picks.ts. Without it this
+        // query returns nothing and every season record renders as 38 empty
+        // gameweeks.
+        .select(
+          "entrant_id, gameweek, player_code, stake, goals, players!picks_player_code_fkey(web_name, teams(short_name))",
+        ),
+    ]);
 
-  const { data: entrantRows } = await supabase
-    .from("entrants")
-    .select("id, avatar_updated_at, nomination_player_code");
   const avatarAt = new Map((entrantRows ?? []).map((a) => [a.id, a.avatar_updated_at]));
   const nominationCodes = new Map(
     (entrantRows ?? []).map((e) => [e.id, e.nomination_player_code]),
   );
-  const starCounts = await getStarCounts(supabase);
+  const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));
 
   // The nominated player may never have been picked, so their name can't come
   // from the picks embed the season record uses.
@@ -29,17 +41,6 @@ export default async function LeaderboardPage() {
     ? await supabase.from("players").select("code, web_name").in("code", codes)
     : { data: [] };
   const nomineeName = new Map((nominees ?? []).map((p) => [p.code, p.web_name]));
-
-  const { data: gameweeks } = await supabase.from("gameweeks").select("id, finished");
-  const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));
-
-  const { data: allPicks } = await supabase
-    .from("picks")
-    // The FK hint is load-bearing — see lib/picks.ts. Without it this query
-    // returns nothing and every season record renders as 38 empty gameweeks.
-    .select(
-      "entrant_id, gameweek, player_code, stake, goals, players!picks_player_code_fkey(web_name, teams(short_name))",
-    );
 
   const rows: BoardRow[] = (leaderboard ?? [])
     .slice()

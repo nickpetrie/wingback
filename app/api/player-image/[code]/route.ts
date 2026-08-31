@@ -3,11 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { hexToRgb, teamColor } from "@/lib/teamColors";
 import { monogramCardSvg } from "@/lib/monogramCard";
 
+// s-maxage is the one Vercel's edge network keys shared caching on, and it was
+// missing — so every cold miss (a new device, another entrant, anything past a
+// day) re-ran the whole route: a Supabase lookup, a fetch from the Premier
+// League CDN, and two sharp passes. Expanding one leaderboard row asks for 38
+// of these at once.
+//
+// A year is safe because these are keyed by players.code, which is stable
+// across seasons (see CLAUDE.md) — the bytes for a given code never change.
+const CACHE_CONTROL = "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800";
+
 export const runtime = "nodejs";
 
 function svgResponse(svg: string) {
   return new Response(svg, {
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" },
+    headers: { "Content-Type": "image/svg+xml", "Cache-Control": CACHE_CONTROL },
   });
 }
 
@@ -63,7 +73,7 @@ export async function GET(
     return new Response(new Uint8Array(card), {
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "Cache-Control": CACHE_CONTROL,
       },
     });
   } catch {

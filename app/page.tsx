@@ -39,34 +39,60 @@ export default async function DashboardPage() {
   const entrantId = await getCurrentEntrantId(supabase, user.id);
   if (!entrantId) return null; // middleware sends anyone without a claim to /claim first
 
-  const gameweek = await getCurrentGameweek(supabase);
-  const fixtures = gameweek ? await getGameweekFixtures(supabase, gameweek.id) : [];
-  const picks = gameweek ? await getGameweekPicks(supabase, gameweek.id) : [];
+  // Three tiers, not eleven awaits. Everything below was written one `await`
+  // per line, which read fine and cost eleven serialised round trips to
+  // Supabase before a single byte of HTML — most of them waiting on nothing.
+  // Only two links in that chain were ever real dependencies: the gameweek,
+  // and the nomination's player name. `getPickFormContext` already batches
+  // its own five this way; this is the same shape one level up.
+  //
+  // Tier 1: needs the entrant and nothing else.
+  //
+  // One `entrants` query, not two: the page wanted "everyone but me" for the
+  // rival cards and "me" for the nomination, which is the same five-row table
+  // read twice.
+  const [gameweek, { data: allEntrants }, { data: historyRaw }, { data: syncRow }, { data: newsRaw }] =
+    await Promise.all([
+      getCurrentGameweek(supabase),
+      supabase
+        .from("entrants")
+        .select("id, display_name, nomination_player_code")
+        .order("created_at", { ascending: true }),
+      supabase.from("picks").select("gameweek, player_code, goals, stake").eq("entrant_id", entrantId),
+      supabase.from("sync_state").select("synced_at").eq("source", "players").maybeSingle(),
+      supabase
+        .from("players")
+        .select("code, web_name, status, news, team_id, teams(short_name)")
+        .neq("news", "")
+        .order("web_name"),
+    ]);
+
+  const nominationCode =
+    (allEntrants ?? []).find((e) => e.id === entrantId)?.nomination_player_code ?? null;
+
+  // Tier 2: needs the gameweek, or the nomination code, from tier 1.
+  const [fixtures, picks, pickForm, { data: nomPlayer }] = await Promise.all([
+    gameweek ? getGameweekFixtures(supabase, gameweek.id) : Promise.resolve([]),
+    gameweek ? getGameweekPicks(supabase, gameweek.id) : Promise.resolve([]),
+    gameweek?.state === "open"
+      ? getPickFormContext(supabase, entrantId, gameweek.id)
+      : Promise.resolve(null),
+    nominationCode
+      ? supabase.from("players").select("web_name").eq("code", nominationCode).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   const myPick = picks.find((p) => p.entrant_id === entrantId) ?? null;
-  const pickForm =
-    gameweek?.state === "open" ? await getPickFormContext(supabase, entrantId, gameweek.id) : null;
+  const others = (allEntrants ?? [])
+    .filter((e) => e.id !== entrantId)
+    .map((e) => ({
+      entrant: e.display_name.split(" ")[0],
+      pick: picks.find((p) => p.entrant_id === e.id) ?? null,
+    }));
 
-  const { data: otherEntrants } = await supabase
-    .from("entrants")
-    .select("id, display_name")
-    .neq("id", entrantId)
-    .order("created_at", { ascending: true });
-  const others = (otherEntrants ?? []).map((e) => ({
-    entrant: e.display_name.split(" ")[0],
-    pick: picks.find((p) => p.entrant_id === e.id) ?? null,
-  }));
-
-  const { data: entrantRow } = await supabase
-    .from("entrants")
-    .select("nomination_player_code")
-    .eq("id", entrantId)
-    .single();
-  const nominationCode = entrantRow?.nomination_player_code ?? null;
-
-  const { data: historyRaw } = await supabase
-    .from("picks")
-    .select("gameweek, player_code, goals, stake")
-    .eq("entrant_id", entrantId);
+  // Deliberately the *whole* history, including this gameweek's own pick —
+  // unlike pickForm.usedCounts, which excludes it because re-selecting your
+  // own pick isn't a new use. A player you have picked this week is burned.
   const history: PickHistoryEntry[] = historyRaw ?? [];
   const usedCounts = computeUsedCounts(history);
   const doublesLeft = Math.max(0, 2 - doublesUsed(history));
@@ -74,29 +100,9 @@ export default async function DashboardPage() {
     ([code, count]) => count >= (code === nominationCode ? 2 : 1),
   ).length;
 
-  let nominationName = "None yet";
-  if (nominationCode) {
-    const { data: nomPlayer } = await supabase
-      .from("players")
-      .select("web_name")
-      .eq("code", nominationCode)
-      .maybeSingle();
-    nominationName = nomPlayer?.web_name ?? "None yet";
-  }
-
-  const { data: syncRow } = await supabase
-    .from("sync_state")
-    .select("synced_at")
-    .eq("source", "players")
-    .maybeSingle();
+  const nominationName = nomPlayer?.web_name ?? "None yet";
   const newsSyncedAt = syncRow?.synced_at ?? null;
-
   const playingTeamIds = new Set(fixtures.flatMap((f) => [f.team_h, f.team_a]));
-  const { data: newsRaw } = await supabase
-    .from("players")
-    .select("code, web_name, status, news, team_id, teams(short_name)")
-    .neq("news", "")
-    .order("web_name");
   const news = (newsRaw ?? [])
     .map((p) => ({
       code: p.code,

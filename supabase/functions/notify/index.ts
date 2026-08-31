@@ -41,15 +41,25 @@ Deno.serve(async () => {
       .limit(100);
     if (pendingError) throw pendingError;
 
-    if (!pending || pending.length === 0) {
-      // Still stamp anything too old to send, or it is reconsidered forever.
-      await supabase
-        .from("notifications")
-        .update({ delivered_at: new Date().toISOString() })
-        .is("delivered_at", null)
-        .lt("created_at", since);
-      return Response.json({ ok: true, delivered: 0 });
+    // Age-out runs every time, not only when the queue happens to be empty.
+    // Sitting inside the empty branch meant a busy matchday could starve it,
+    // and it discards rows without sending them — so it says so in the log
+    // rather than doing it silently.
+    const { data: expired, error: expiredError } = await supabase
+      .from("notifications")
+      .update({ delivered_at: new Date().toISOString() })
+      .is("delivered_at", null)
+      .lt("created_at", since)
+      .select("id, kind");
+    if (expiredError) throw expiredError;
+    if (expired && expired.length > 0) {
+      console.warn(
+        `notify: dropped ${expired.length} notification(s) older than ${MAX_AGE_MINUTES}m without sending: ` +
+          [...new Set(expired.map((e: { kind: string }) => e.kind))].join(", "),
+      );
     }
+
+    if (!pending || pending.length === 0) return Response.json({ ok: true, delivered: 0 });
 
     const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
@@ -60,6 +70,23 @@ Deno.serve(async () => {
         subject: Deno.env.get("VAPID_SUBJECT") ?? "mailto:wingback@example.com",
       }
       : null;
+
+    // Claimed *before* anything is sent, not after.
+    //
+    // The stamp used to happen once at the end, so an isolate killed mid-loop
+    // — a hung Resend call, a wall-clock timeout — left rows that had already
+    // been emailed and pushed still marked undelivered, and the next tick
+    // (now every minute) sent them again. Two overlapping runs would likewise
+    // both select the same batch. `delivered_at` already means "the
+    // dispatcher has considered this", never "someone received it", so
+    // stamping first is what that sentence always described: at-most-once,
+    // which for a goal alert is the right way to be wrong.
+    const ids = (pending as Row[]).map((n) => n.id);
+    const { error: claimError } = await supabase
+      .from("notifications")
+      .update({ delivered_at: new Date().toISOString() })
+      .in("id", ids);
+    if (claimError) throw claimError;
 
     const entrantIds = [...new Set(pending.map((n: Row) => n.entrant_id))];
 
@@ -141,16 +168,6 @@ Deno.serve(async () => {
         }
       }
     }
-
-    // Stamped whatever happened above. delivered_at means "the dispatcher has
-    // considered this row", not "someone received it": marking only successes
-    // is how the old reminder ended up retrying an unsendable address every
-    // fifteen minutes for a whole gameweek.
-    const { error: stampError } = await supabase
-      .from("notifications")
-      .update({ delivered_at: new Date().toISOString() })
-      .in("id", (pending as Row[]).map((n) => n.id));
-    if (stampError) throw stampError;
 
     return Response.json({ ok: true, considered: pending.length, emailed, texted, smsSkipped, pushed, failed });
   } catch (err) {
