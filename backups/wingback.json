@@ -1,5 +1,5 @@
 {
-  "taken_at": "2026-09-03T08:52:03.021Z",
+  "taken_at": "2026-09-04T08:47:25.409Z",
   "entrants": [
     {
       "id": "a1000000-0000-0000-0000-000000000003",
@@ -156,14 +156,14 @@
       "id": 8,
       "entrant_id": "a1000000-0000-0000-0000-000000000002",
       "gameweek": 3,
-      "player_code": 223340,
+      "player_code": 223094,
       "fixture_id": null,
-      "stake": 3,
+      "stake": 6,
       "goals": 0,
       "is_substitution": false,
       "substituted_from_player_code": null,
       "created_at": "2026-09-02T12:34:43.351043+00:00",
-      "updated_at": "2026-09-02T12:34:43.351043+00:00"
+      "updated_at": "2026-09-03T18:06:54.312322+00:00"
     },
     {
       "id": 10,
