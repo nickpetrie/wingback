@@ -194,6 +194,43 @@ reading the project URL and service key from Supabase Vault at call time.
   total failure. Stamping only successes is exactly how the old reminder
   ended up retrying an unsendable null address every fifteen minutes for a
   whole gameweek.
+- **A goal is one alert per person, and `dedupe_key` is what makes it so.**
+  `score` writes picks one at a time, so the per-row `notify_goal` trigger
+  fires once per pick — five people on the same player produced 25 rows for
+  one goal, measured on Haaland in gameweek 3. Every pick on that player in
+  that gameweek now builds the same key (`goal:gw:player:tally`), a partial
+  unique index on `(entrant_id, dedupe_key)` rejects the repeats, and the
+  insert is `on conflict do nothing`. The tally is in the key so a second goal
+  is still a second alert. Points are computed from *each recipient's own*
+  stake, not the triggering row's.
+- **`notifications.body` is what a phone shows; `detail` is what email
+  shows.** The settled-week alert puts a standings table in `detail`, and
+  `notify` sends `detail ?? body` by email while push and SMS stay on `body`.
+  Putting the table in `body` would push it to a notification shade and a text
+  message.
+- **A gameweek settling and the next one opening are one message.** They are
+  one event — "GW3 is settled" was written at 17:30:01 and "GW4 is open" at
+  17:30:02 — so `notify_results` carries the next gameweek's deadline and
+  `remind` skips its own `open` window for anyone whose `results` alerts are
+  on. Anyone with `results` off still gets the standalone reminder.
+- **A deadline is the `lock_at`, and both formatters agree on it.**
+  `picks_guard` enforces `lock_at`, the header counts down to it, and FPL's
+  own `deadline_time` is half an hour earlier — quoting both would give one
+  gameweek two deadlines. `remind` formats it in TypeScript and `uk_when()` in
+  Postgres, so they were measured against each other: en-GB abbreviates
+  September as "Sept" where `to_char` gives "Sep", which is why the TS side
+  asks for en-US, and why the minutes are dropped on the hour on both sides.
+  Change one and you must change the other.
+- **The subject line is `Wingback: ` + `notifications.title`.** So the title is
+  the only thing that reaches someone who never opens the mail, and it is
+  written per recipient — their position and movement, their points at their
+  stake, the actual deadline.
+- **The prize pot is derived, never stored** (`lib/prize.ts`), for the same
+  reason points are. £3 per entrant per *locked* gameweek and £6 where they
+  doubled, owed whether or not they picked. The three split percentages are
+  named constants that must sum to 100 or the module refuses to load, and the
+  labels on `/leaderboard` render from those same constants rather than
+  repeating the numbers as text.
 - **A browser-invoked edge function must deploy with `verify_jwt` off and
   check the caller itself** (`_shared/cors.ts`). The CORS preflight carries no
   credentials by design, so the gateway 401s it before the function runs; the
