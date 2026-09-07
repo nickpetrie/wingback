@@ -126,14 +126,13 @@ Deno.serve(async () => {
 
     for (const window of windows) {
       for (const entrant of owing as { entrant_id: string; results: boolean }[]) {
-        // The results alert (a DB trigger, not this function) is being
-        // rewritten to carry the next gameweek's opening and deadline in
-        // the same message. Anyone who gets that already got told the
-        // gameweek is open, one second apart, saying the same thing — so
-        // `open` is skipped for them. Entrants with `results` off never see
-        // that message, so they still need this one; that's the only
-        // reason the skip is conditional rather than removing `open`
-        // outright.
+        // The results alert (a DB trigger, not this function) carries the
+        // next gameweek's opening and deadline in the same message. Measured
+        // before it did: "Gameweek 3 is settled" at 17:30:01 and "Gameweek 4
+        // is open" at 17:30:02, two mails about one event. So `open` is
+        // skipped for anyone who gets that. Entrants with `results` off never
+        // see it, which is the only reason this is a condition rather than
+        // the window being dropped outright.
         if (window === "open" && entrant.results) continue;
 
         // The marker is the lock. If it's already there, this window has been
