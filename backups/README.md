@@ -9,6 +9,13 @@ what lived in one database. These files are written by
 Actions tab) and committed straight back here, so the copy lives on GitHub —
 different company, different account, versioned, and readable from a phone.
 
+- `state.md` — **start here.** The whole season as one page of readable
+  Markdown: the gameweek in play and who still has to pick, the table,
+  everyone's nomination and how much of its double allowance is spent, every
+  pick so far, which channels an alert can actually reach, and how fresh the
+  FPL sync is. It is derived from the files below and never restored from —
+  it exists so that a question like "who hasn't picked?" costs one file read
+  instead of a database connection and four joins.
 - `wingback.json` — the restorable snapshot: entrants, every pick, past
   season winners.
 - `picks.csv` — every pick with player, club, stake, goals and points.
@@ -21,12 +28,18 @@ is mirrored from the FPL API, and `sync-fpl` and `score` rebuild every row on
 their next run. Copying it daily would bury the handful of rows that actually
 matter under thousands that don't.
 
-Points aren't stored either — the CSV re-derives them the same way
-`pick_points()` does, so a stale backup can't disagree with the app about a
-scoreline.
+Points aren't stored either — the CSV and `state.md` re-derive them the same
+way `pick_points()` does, so a stale backup can't disagree with the app about
+a scoreline.
+
+Nor are push credentials. `push_subscriptions` is read for its `entrant_id`
+alone: the `p256dh` and `auth` columns are the keys a notification is
+encrypted to, and committing those into a repository would be handing out the
+ability to push to someone's phone. `state.md` only ever needs the count.
 
 ## Restoring
 
+`state.md` is not part of a restore — regenerate it, don't replay it.
 `wingback.json` is three arrays matching the `entrants`, `picks` and
 `season_winners` tables column for column, so a restore is an insert per array
 followed by a `sync-fpl` run to repopulate the reference data. Note that

@@ -3,7 +3,10 @@
 A private Next.js + Supabase app for five friends running a season-long
 Premier League goalscorer sweepstake. See `wingback-brief.md` (if present)
 for the full product spec; this file is the fast-orientation summary for
-future sessions, and `DEPLOY.md` covers setup/deployment specifically.
+future sessions, and `DEPLOY.md` covers setup/deployment specifically. For the
+*data* — who is in the lead, whose pick is missing, how far off the deadline
+is — read `backups/state.md`, which the daily backup regenerates; it saves a
+round of queries and needs no database connection.
 
 ## What this is
 
@@ -134,8 +137,8 @@ reading the project URL and service key from Supabase Vault at call time.
 - **"Playing right now" is decided in `lib/live.ts`, not from one column.**
   `played` is the only thing trusted to *end* a match (see the `finished`
   invariant above — a fixture finished last night still reads
-  `finished: false`), but `started` is mirrored by `score` on a ten-minute
-  cron, so waiting for it means the LIVE badge appears after the first goal.
+  `finished: false`), but `started` is only as fresh as `score`'s last run, so
+  waiting for it means the LIVE badge appears after the first goal.
   So the clock starts a match, `played` ends it, and a 150-minute cap stops a
   tab nobody reloads claiming LIVE until Thursday. The same module returns the
   moment the answer could next change, which is what `LiveTick` sleeps on
@@ -151,24 +154,6 @@ reading the project URL and service key from Supabase Vault at call time.
   (`recompute_gameweek_lock_at`), not a generated column — `timestamptz`
   aggregate arithmetic is `stable`, not `immutable`, so Postgres rejects a
   generated column here.
-
-## Where things live
-
-- `supabase/migrations/` — schema, RLS, triggers, views, pg_cron. Applied
-  in filename order; `20260101000004_cron.sql` needs pg_cron/pg_net/Vault
-  and only makes sense on an actual Supabase project.
-- `supabase/tests/` — the pgTAP rules suite, runnable locally with a plain
-  `psql` (no Docker/Supabase CLI needed): `supabase/tests/run.sh`. See
-  `00_local_harness.sql` for what it stubs out (`auth.uid()`/`auth.role()`,
-  roles) to stand in for the real Supabase platform.
-- `.github/workflows/backup.yml` + `scripts/backup.mjs` — the daily copy of
-  entrants, picks and past winners, committed to `backups/`. Supabase's free
-  plan has no backups and no PITR, so this is the only second copy that
-  exists. It deliberately skips players, teams, fixtures and goals: all of it
-  comes back from the FPL API on the next `sync-fpl`/`score` run, and copying
-  it would bury the rows that can't be reconstructed. The points column in the
-  CSV is re-derived from `pick_points()`'s rule rather than stored, for the
-  same reason the app never stores it.
 - **A channel that isn't configured is skipped, not attempted.** `notify`
   checks `smsConfigured()` once per run rather than letting each send throw:
   without the Twilio secrets, every SMS-opted entrant was contributing a
@@ -200,9 +185,10 @@ reading the project URL and service key from Supabase Vault at call time.
   match window. The guards live in the `cron.schedule` bodies in
   `20260101000004_cron.sql` and its successors, so a job can tick without
   costing an FPL request — `sync-prelock` ticks 144 times a day and calls FPL
-  12 of them. Count invocations before widening any rung: widening the prelock
-  window to the 48 hours once considered would have been 288 calls a gameweek
-  against 30, each pulling FPL's ~5MB bootstrap.
+  on 30 of them a gameweek, the rest returning without a request. Count
+  invocations before widening any rung: the 48-hour prelock window once
+  considered would have been 288 calls a gameweek against those 30, each
+  pulling FPL's ~5MB bootstrap.
 - **`notifications.delivered_at` means "the dispatcher has considered this",
   not "someone received it".** It is stamped whatever happened, including
   total failure. Stamping only successes is exactly how the old reminder
@@ -216,16 +202,39 @@ reading the project URL and service key from Supabase Vault at call time.
   when nothing has executed at all. `push-test` is the only one of these — it
   reads the caller's own token, resolves it to an entrant, and only ever pushes
   to that entrant's own subscriptions.
-- `supabase/functions/` — `sync-fpl` (hourly + pre-lock), `score` (every 10
-  min live + daily settle), `remind` (every 15 min), `push-test` (on demand
-  from Settings), `sheets-backup`
-  `notify` (every 5 min — the only thing that sends email/SMS/push),
-  `sheets-backup`
-  (hourly, optional — one-way mirror of standings/picks into a Google
-  Sheet, see DEPLOY.md §3b; `_shared/google.ts` hand-rolls the service-
-  account JWT flow since there's no Deno-friendly googleapis client). All
-  Deno; the only place in the codebase that calls
-  `fantasy.premierleague.com` is `sync-fpl`/`_shared/fpl.ts`.
+
+## Where things live
+
+- `supabase/migrations/` — schema, RLS, triggers, views, pg_cron. Applied
+  in filename order; `20260101000004_cron.sql` needs pg_cron/pg_net/Vault
+  and only makes sense on an actual Supabase project.
+- `supabase/tests/` — the pgTAP rules suite, runnable locally with a plain
+  `psql` (no Docker/Supabase CLI needed): `supabase/tests/run.sh`. See
+  `00_local_harness.sql` for what it stubs out (`auth.uid()`/`auth.role()`,
+  roles) to stand in for the real Supabase platform.
+- `.github/workflows/backup.yml` + `scripts/backup.mjs` — the daily copy of
+  entrants, picks and past winners, committed to `backups/`. Supabase's free
+  plan has no backups and no PITR, so this is the only second copy that
+  exists. It deliberately skips players, teams, fixtures and goals: all of it
+  comes back from the FPL API on the next `sync-fpl`/`score` run, and copying
+  it would bury the rows that can't be reconstructed. The points column in the
+  CSV is re-derived from `pick_points()`'s rule rather than stored, for the
+  same reason the app never stores it. The same run writes
+  `backups/state.md` (from `scripts/state.mjs`) — the season as one readable
+  page, which is where to look first for who is in play, who still has to
+  pick, and how much of each nomination is spent. It is derived, never
+  restored from.
+- `supabase/functions/` — `sync-fpl` (hourly between gameweeks, every 10
+  minutes for the 5 hours before a lock), `score` (every 3 minutes inside a
+  fixture's match window, plus a daily settle), `notify` (every minute — the
+  only thing that sends email/SMS/push), `remind` (every 15 min), `push-test`
+  (on demand from Settings), and `sheets-backup` (hourly, optional — one-way
+  mirror of standings/picks into a Google Sheet, see DEPLOY.md §3b;
+  `_shared/google.ts` hand-rolls the service-account JWT flow since there's no
+  Deno-friendly googleapis client). The schedules are the polling ladder
+  described above, and the guards are in SQL, not in the functions. All Deno;
+  the only place in the codebase that calls `fantasy.premierleague.com` is
+  `sync-fpl`/`_shared/fpl.ts`.
 - `lib/supabase/` — `server.ts`/`client.ts` (anon key + session, RLS
   always on), `middleware.ts` (session refresh, used by `proxy.ts`),
   `types.ts` (hand-written `Database` type — there's no live project to
