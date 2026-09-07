@@ -2,9 +2,31 @@ import { createClient } from "@/lib/supabase/server";
 import { computeUsedCounts, type PickHistoryEntry } from "@/lib/rules";
 import { getStarCounts } from "@/lib/winners";
 import { teamColor } from "@/lib/teamColors";
+import {
+  computePrizeBreakdown,
+  RUNNER_UP_SHARE_PCT,
+  SHARED_POT_SHARE_PCT,
+  WINNER_SHARE_PCT,
+} from "@/lib/prize";
 import { LeaderboardTable, type BoardRow, type Nomination, type SeasonCell } from "./LeaderboardTable";
 
 const TOTAL_GAMEWEEKS = 38;
+
+// Intl over toFixed(2): a share can be a whole pound (£36) or need pence
+// (£1.80), and this is the one call that gets both right without a branch.
+function formatGBP(amount: number): string {
+  return amount.toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+}
+
+// Pulled out of the component body — same reason lib/live.ts takes `now` as
+// a parameter rather than reading the clock inline: a component render must
+// stay pure, so the impure call lives in a default argument instead.
+function lockedGameweekIds(
+  gameweeks: { id: number; lock_at: string | null }[],
+  now: number = Date.now(),
+): number[] {
+  return gameweeks.filter((g) => g.lock_at !== null && Date.parse(g.lock_at) <= now).map((g) => g.id);
+}
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -17,7 +39,7 @@ export default async function LeaderboardPage() {
       supabase.from("leaderboard").select("entrant_id, display_name, total_points, scoring_gameweeks"),
       supabase.from("entrants").select("id, avatar_updated_at, nomination_player_code"),
       getStarCounts(supabase),
-      supabase.from("gameweeks").select("id, finished"),
+      supabase.from("gameweeks").select("id, finished, lock_at"),
       supabase
         .from("picks")
         // The FK hint is load-bearing — see lib/picks.ts. Without it this
@@ -33,6 +55,15 @@ export default async function LeaderboardPage() {
     (entrantRows ?? []).map((e) => [e.id, e.nomination_player_code]),
   );
   const finishedByGw = new Map((gameweeks ?? []).map((g) => [g.id, g.finished]));
+
+  // A gameweek counts toward the pot once it's locked, not once it's
+  // finished — the money is owed the moment picks close, whatever the
+  // matches go on to do.
+  const prize = computePrizeBreakdown(
+    (entrantRows ?? []).length,
+    lockedGameweekIds(gameweeks ?? []),
+    (allPicks ?? []).map((p) => ({ gameweek: p.gameweek, stake: p.stake })),
+  );
 
   // The nominated player may never have been picked, so their name can't come
   // from the picks embed the season record uses.
@@ -141,6 +172,36 @@ export default async function LeaderboardPage() {
         <p style={{ margin: "2px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
           Tap a name for their season record
         </p>
+      </div>
+
+      <div className="wb-prize">
+        <div className="wb-prize-head">
+          <div>
+            <p className="wb-prize-label">Prize pot</p>
+            <p className="wb-prize-pot">{formatGBP(prize.pot)}</p>
+          </div>
+          <p className="wb-prize-sub">
+            £3 a gameweek per entrant, £6 when they double — {prize.lockedGameweeks} gameweek
+            {prize.lockedGameweeks === 1 ? "" : "s"} locked in so far, whether or not everyone picked.
+          </p>
+        </div>
+        <div className="wb-prize-splits">
+          <div className="wb-prize-split">
+            <p className="wb-prize-split-label">Winner · {WINNER_SHARE_PCT}%</p>
+            <p className="wb-prize-split-amount">{formatGBP(prize.winnerShare)}</p>
+            {rows[0] && <p className="wb-prize-split-who">{rows[0].name}, if it ended today</p>}
+          </div>
+          <div className="wb-prize-split">
+            <p className="wb-prize-split-label">Runner-up · {RUNNER_UP_SHARE_PCT}%</p>
+            <p className="wb-prize-split-amount">{formatGBP(prize.runnerUpShare)}</p>
+            {rows[1] && <p className="wb-prize-split-who">{rows[1].name}, if it ended today</p>}
+          </div>
+          <div className="wb-prize-split">
+            <p className="wb-prize-split-label">Shared pot · {SHARED_POT_SHARE_PCT}%</p>
+            <p className="wb-prize-split-amount">{formatGBP(prize.sharedPotShare)}</p>
+            <p className="wb-prize-split-who">{formatGBP(prize.sharedPotPerEntrant)} each, everyone</p>
+          </div>
+        </div>
       </div>
 
       <LeaderboardTable rows={rows} />

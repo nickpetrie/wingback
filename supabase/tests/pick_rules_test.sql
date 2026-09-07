@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(56);
+select plan(66);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -520,10 +520,12 @@ select is(
 
 -- The pick in gameweek 31 is a forward on 1 goal at the base stake, so one
 -- point, and its owner is the only scorer that week.
-select is(
+-- alike rather than is: the message now also opens the next gameweek, and
+-- that clause carries a real deadline whose text moves with the clock.
+select alike(
   (select body from notifications
     where kind = 'results' and entrant_id = '11111111-1111-1111-1111-111111111111'),
-  'You scored 1 point. alice took the week on 1 point.',
+  'You scored 1 point. alice took the week on 1 point.%',
   'the summary carries your own score and the week''s winner'
 );
 
@@ -612,6 +614,140 @@ update gameweeks set deadline_time = now() + interval '9 days' where id = 95;
 select ok(
   (select deadline_time > now() + interval '8 days' from gameweeks where id = 95),
   'the latch does not block other columns on a finished gameweek'
+);
+
+-- ---------------------------------------------------------------------
+-- One goal, one alert — even when several people are on the same player
+-- ---------------------------------------------------------------------
+-- Measured in production: Haaland's gameweek 3 goal produced 25 notification
+-- rows for 5 people. `score` writes picks one at a time, so this per-row
+-- trigger fired once per pick and each firing fanned out to everybody. The
+-- dedupe key is what collapses that back to one alert each.
+select test_as_admin();
+delete from notifications;
+insert into players (code, fpl_id, web_name, first_name, second_name, team_id, element_type, status, news)
+values (901, 901, 'AlertPair', 'Al', 'Pair', 1, 4, 'a', '');
+insert into gameweeks (id, deadline_time, finished) values (33, now() + interval '3 days', false);
+insert into fixtures (id, event, team_h, team_a, kickoff_time)
+values (3300, 33, 1, 2, now() + interval '3 days');
+
+-- Different stakes deliberately: the old trigger read the stake off whichever
+-- pick row happened to fire it, so everyone was told the triggering
+-- entrant's points rather than their own.
+insert into picks (entrant_id, gameweek, player_code, stake) values
+  ('11111111-1111-1111-1111-111111111111', 33, 901, 3),
+  ('22222222-2222-2222-2222-222222222222', 33, 901, 6);
+
+select test_as_service();
+update picks set goals = 1 where gameweek = 33;
+
+select is(
+  (select count(*)::int from notifications where kind = 'goal' and gameweek = 33),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  'two people on the same player still means one alert each, not two'
+);
+
+select is(
+  (select title from notifications
+    where kind = 'goal' and gameweek = 33
+      and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  'AlertPair scores — 1 pt for you',
+  'the alert counts the points at your own stake'
+);
+
+select is(
+  (select title from notifications
+    where kind = 'goal' and gameweek = 33
+      and entrant_id = '22222222-2222-2222-2222-222222222222'),
+  'AlertPair scores — 2 pts for you',
+  'and at the doubled stake for the entrant who paid for it'
+);
+
+select alike(
+  (select body from notifications
+    where kind = 'goal' and gameweek = 33
+      and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  '%and bob are both on him.',  -- an earlier test renames alice
+  'and it says who else is on him rather than repeating itself'
+);
+
+-- A second goal is genuinely new, so the key moves with the tally.
+select test_as_service();
+update picks set goals = 2 where gameweek = 33;
+select is(
+  (select count(*)::int from notifications where kind = 'goal' and gameweek = 33),
+  (select count(*)::int from alert_prefs where goal_alerts) * 2,
+  'a second goal from the same player is a second alert'
+);
+
+-- ---------------------------------------------------------------------
+-- The settled-gameweek summary
+-- ---------------------------------------------------------------------
+select test_as_admin();
+delete from notifications;
+insert into players (code, fpl_id, web_name, first_name, second_name, team_id, element_type, status, news)
+values (902, 902, 'AlertSettle', 'Al', 'Settle', 1, 4, 'a', '');
+insert into gameweeks (id, deadline_time, finished) values (34, now() + interval '3 days', false);
+insert into gameweeks (id, deadline_time, finished) values (35, now() + interval '10 days', false);
+insert into fixtures (id, event, team_h, team_a, kickoff_time) values
+  (3400, 34, 1, 2, now() + interval '3 days'),
+  -- 35 needs a fixture too: its lock_at is derived from one, and the alert
+  -- quotes the lock rather than FPL's deadline.
+  (3500, 35, 1, 2, now() + interval '10 days');
+insert into picks (entrant_id, gameweek, player_code, stake)
+values ('11111111-1111-1111-1111-111111111111', 34, 902, 3);
+
+select test_as_service();
+update picks set goals = 1 where gameweek = 34;
+select test_as_admin();
+delete from notifications;
+update gameweeks set finished = true where id = 34;
+
+-- The subject line is `Wingback: ` + the title, so the title is the only
+-- place a standing can reach someone who never opens the mail.
+select alike(
+  (select title from notifications
+    where kind = 'results' and gameweek = 34
+      and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  'GW34 settled — you''re %',
+  'the settled-week subject line carries where you now stand'
+);
+
+-- Gameweek 35 opens the moment 34 settles. Before this, that arrived as a
+-- second email one second later.
+select alike(
+  (select body from notifications
+    where kind = 'results' and gameweek = 34
+      and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  '%Gameweek 35 is open — deadline %',
+  'and the same message opens the next gameweek instead of a second email'
+);
+
+-- The long form is email-only, which is why the table lives in `detail` and
+-- never in `body`: `body` is what a push notification and an SMS carry.
+select alike(
+  (select detail from notifications
+    where kind = 'results' and gameweek = 34
+      and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  '%The table after gameweek 34%',
+  'the email detail carries the table and the short body does not'
+);
+
+-- Before the first gameweek nobody has scored, so nobody has moved — the
+-- baseline every later movement is measured against.
+select is(
+  (select count(distinct prev_pos)::int from standings_at(1::smallint)),
+  1,
+  'before the first gameweek everyone is joint top'
+);
+
+-- Not `security definer`: it reads through pick_scores, which is
+-- security_invoker, and making this the definer would hand an anon caller
+-- every entrant's scores through the back door.
+select is(
+  (select prosecdef from pg_proc where proname = 'standings_at'),
+  false,
+  'standings_at does not run as its owner'
 );
 
 select * from finish();
