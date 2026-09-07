@@ -15,6 +15,35 @@ import { pointsFor } from "./points.mjs";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** How many of a player's allowed picks an entrant has spent, keyed by code.
+ *
+ * A hat-trick puts that player back to zero — the rule the picker enforces,
+ * mirrored from computeUsedCounts() in lib/rules.ts for the same reason
+ * pointsFor() is mirrored from pick_points(): this file runs under plain node
+ * on a GitHub runner and cannot import the app's TypeScript. The two are
+ * pinned together by a test that runs both over the same histories, because a
+ * digest that disagrees with the app about who is still pickable is worse
+ * than no digest. */
+export function usedCounts(picks) {
+  const counts = new Map();
+  for (const pick of [...picks].sort((a, b) => a.gameweek - b.gameweek)) {
+    const next = (counts.get(pick.player_code) ?? 0) + 1;
+    counts.set(pick.player_code, (pick.goals ?? 0) >= 3 ? 0 : next);
+  }
+  return counts;
+}
+
+/** The gameweeks a player has been picked in since their last reset, so the
+ * count above and the gameweeks printed beside it can never disagree. */
+function usesSinceReset(picks, code) {
+  let gameweeks = [];
+  for (const pick of [...picks].sort((a, b) => a.gameweek - b.gameweek)) {
+    if (pick.player_code !== code) continue;
+    gameweeks = (pick.goals ?? 0) >= 3 ? [] : [...gameweeks, pick.gameweek];
+  }
+  return gameweeks;
+}
+
 /** Deterministic, UTC, and unambiguous to a reader in any timezone. Locale
  * formatting would make the daily diff depend on the runner's environment. */
 function stamp(iso) {
@@ -164,10 +193,10 @@ export function buildState({
   );
   out.push("");
 
-  out.push("## Nominations");
+  out.push("## Nominations, and who is spent");
   out.push("");
   out.push(
-    `Each entrant nominates one player they may pick **twice** in the season; everyone else is once only.${
+    `Each entrant nominates one player they may pick **twice** in the season; every other player is once only, and a hat-trick puts a player back to zero.${
       seasonConfig?.nominations_lock_after_gameweek
         ? ` Nominations lock once gameweek ${seasonConfig.nominations_lock_after_gameweek} has settled.`
         : ""
@@ -175,16 +204,29 @@ export function buildState({
   );
   out.push("");
   out.push(
+    "**A nomination is not a pick.** The nomination is the one player an entrant may use twice; it says nothing about who they have actually picked. The last column is what constrains them now: those players cannot be picked again this season.",
+  );
+  out.push("");
+  out.push(
     table(
-      ["entrant", "nomination", "club", "used"],
+      ["entrant", "nomination", "club", "nomination used", "players spent"],
       entrants.map((e) => {
         const code = e.nomination_player_code;
-        const uses = picks.filter((p) => p.entrant_id === e.id && p.player_code === code);
+        const mine = picks.filter((p) => p.entrant_id === e.id);
+        const counts = usedCounts(mine);
+        const gameweeks = code === null ? [] : usesSinceReset(mine, code);
+        // Same test the picker applies: two goes at your nomination, one at
+        // everybody else.
+        const spent = [...counts.entries()]
+          .filter(([playerCode, count]) => count >= (playerCode === code ? 2 : 1))
+          .map(([playerCode]) => name(playerCode))
+          .sort();
         return [
           e.display_name,
           code ? name(code) : "_none set_",
           code ? club(code) : "",
-          code ? `${uses.length}/2${uses.length ? ` (GW ${uses.map((p) => p.gameweek).join(", ")})` : ""}` : "—",
+          code ? `${gameweeks.length}/2${gameweeks.length ? ` (GW ${gameweeks.join(", ")})` : ""}` : "—",
+          spent.length ? spent.join(", ") : "_nobody yet_",
         ];
       }),
     ),

@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Mon 7 Sep 2026, 09:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Mon 7 Sep 2026, 11:45 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -23,17 +23,19 @@ Read this first: it is the whole season in one file, so a session can answer que
 | 4 | Tom Petrie | 2 | 1 |
 | 5 | Alex Beetles | 2 | 1 |
 
-## Nominations
+## Nominations, and who is spent
 
-Each entrant nominates one player they may pick **twice** in the season; everyone else is once only. Nominations lock once gameweek 2 has settled.
+Each entrant nominates one player they may pick **twice** in the season; every other player is once only, and a hat-trick puts a player back to zero. Nominations lock once gameweek 2 has settled.
 
-| entrant | nomination | club | used |
-| --- | --- | --- | --- |
-| Alex Beetles | Haaland | MCI | 1/2 (GW 3) |
-| Casra Abedian | Haaland | MCI | 1/2 (GW 3) |
-| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) |
-| Nick Petrie | Haaland | MCI | 1/2 (GW 3) |
-| Tom Petrie | João Pedro | CHE | 0/2 |
+**A nomination is not a pick.** The nomination is the one player an entrant may use twice; it says nothing about who they have actually picked. The last column is what constrains them now: those players cannot be picked again this season.
+
+| entrant | nomination | club | nomination used | players spent |
+| --- | --- | --- | --- | --- |
+| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gyökeres |
+| Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Mbeumo |
+| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Haaland |
+| Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Havertz, Isak |
+| Tom Petrie | João Pedro | CHE | 0/2 | Haaland, Havertz |
 
 ## Every pick so far
 
@@ -53,7 +55,7 @@ The in-app feed always gets everything. The other channels only deliver if they 
 | --- | --- | --- | --- | --- |
 | Alex Beetles | on | **0 — gets no push** | on | off |
 | Casra Abedian | on | 1 | on | on |
-| Henry Kirby | on | 1 | on | on |
+| Henry Kirby | on | 1 | on | off |
 | Nick Petrie | on | 1 | on | on |
 | Tom Petrie | on | 1 | on | off |
 
@@ -71,6 +73,6 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Mon 7 Sep 2026, 09:00 UTC | 16m ago |
+| players | Mon 7 Sep 2026, 11:00 UTC | 45m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.

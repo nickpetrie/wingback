@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildState } from "./state.mjs";
+import { buildState, usedCounts } from "./state.mjs";
+import { computeUsedCounts } from "../lib/rules";
 
 const NOW = Date.parse("2026-09-07T04:10:00Z");
 
@@ -60,6 +61,14 @@ describe("buildState", () => {
     expect(buildState(base)).toContain("1/2 (GW 1)");
   });
 
+  it("names the players an entrant can no longer pick, not just the nomination", () => {
+    // The nomination column alone reads as if Tom were unconstrained, when the
+    // player he actually burned is the thing that limits him. Reading one
+    // without the other is how a nomination gets mistaken for a pick.
+    const md = buildState(base);
+    expect(md).toContain("| Tom | _none set_ |  | — | Gabriel |");
+  });
+
   it("flags an entrant who wants push but has registered no device", () => {
     const md = buildState({
       ...base,
@@ -75,6 +84,37 @@ describe("buildState", () => {
 
   it("formats times in UTC so the daily diff does not depend on the runner", () => {
     expect(buildState(base)).toContain("Sat 12 Sep 2026, 12:30 UTC");
+  });
+
+  it("agrees with the picker about who is spent, hat-tricks included", () => {
+    // Two implementations of one rule: this one under plain node on a GitHub
+    // runner, computeUsedCounts in the app's TypeScript. A digest that
+    // disagreed with the picker about who is still available would be worse
+    // than no digest, so they are run over the same histories here.
+    const histories = [
+      [],
+      [{ gameweek: 1, player_code: 100, goals: 1, stake: 3 }],
+      [
+        { gameweek: 1, player_code: 100, goals: 0, stake: 3 },
+        { gameweek: 2, player_code: 100, goals: 1, stake: 6 },
+      ],
+      // The reset, and a use after it.
+      [
+        { gameweek: 1, player_code: 100, goals: 3, stake: 3 },
+        { gameweek: 2, player_code: 100, goals: 0, stake: 3 },
+      ],
+      // Out of order on the way in, which is the case that made sorting matter.
+      [
+        { gameweek: 3, player_code: 200, goals: 0, stake: 3 },
+        { gameweek: 1, player_code: 200, goals: 4, stake: 6 },
+      ],
+    ];
+
+    for (const history of histories) {
+      expect([...usedCounts(history).entries()].sort()).toEqual(
+        [...computeUsedCounts(history).entries()].sort(),
+      );
+    }
   });
 
   it("survives an empty database rather than throwing", () => {
