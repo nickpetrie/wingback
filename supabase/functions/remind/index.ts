@@ -40,6 +40,34 @@ function middayUk(day: Date): Date {
   return new Date(noonUtc.getTime() + offsetMs);
 }
 
+/** Lock time as e.g. "Sat 12 Sep, 1:30pm" — the deadline is the one fact
+ * that decides whether you act on a reminder now, so it belongs in the
+ * subject line, not just the body. Built the same way `middayUk` is, for
+ * the same October-clock-change reason.
+ *
+ * en-US, oddly, for a message only ever read in England: the settled-week
+ * alert formats the same instant in Postgres with `to_char`, and en-GB
+ * abbreviates September as "Sept" where `to_char` gives "Sep". One gameweek
+ * quoted with two different deadlines is how an alert stops being believed,
+ * so the locale here is chosen to match the other side exactly. */
+function formatDeadline(d: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: UK,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const hour = get("hour");
+  const minute = get("minute");
+  const ampm = get("dayPeriod").toLowerCase();
+  const time = minute === "00" ? `${hour}${ampm}` : `${hour}:${minute}${ampm}`;
+  return `${get("weekday")} ${get("day")} ${get("month")}, ${time}`;
+}
+
 Deno.serve(async () => {
   try {
     const supabase = serviceClient();
@@ -81,7 +109,7 @@ Deno.serve(async () => {
 
     const [{ data: entrants, error: entrantsError }, { data: picked, error: pickedError }] =
       await Promise.all([
-        supabase.from("alert_prefs").select("entrant_id").eq("pick_reminders", true),
+        supabase.from("alert_prefs").select("entrant_id, results").eq("pick_reminders", true),
         supabase.from("picks").select("entrant_id").eq("gameweek", gw.id),
       ]);
     if (entrantsError) throw entrantsError;
@@ -93,10 +121,20 @@ Deno.serve(async () => {
     );
 
     const hoursLeft = Math.round((lockAt.getTime() - now.getTime()) / (60 * 60 * 1000));
+    const deadline = formatDeadline(lockAt);
     let sent = 0;
 
     for (const window of windows) {
-      for (const entrant of owing) {
+      for (const entrant of owing as { entrant_id: string; results: boolean }[]) {
+        // The results alert (a DB trigger, not this function) carries the
+        // next gameweek's opening and deadline in the same message. Measured
+        // before it did: "Gameweek 3 is settled" at 17:30:01 and "Gameweek 4
+        // is open" at 17:30:02, two mails about one event. So `open` is
+        // skipped for anyone who gets that. Entrants with `results` off never
+        // see it, which is the only reason this is a condition rather than
+        // the window being dropped outright.
+        if (window === "open" && entrant.results) continue;
+
         // The marker is the lock. If it's already there, this window has been
         // done for this entrant and there is nothing to do.
         const { error: markerError } = await supabase
@@ -112,16 +150,19 @@ Deno.serve(async () => {
         const { error: noteError } = await supabase.from("notifications").insert({
           entrant_id: entrant.entrant_id,
           kind: "pick_reminder",
+          gameweek: gw.id,
           title:
             window === "t1h"
-              ? `Gameweek ${gw.id} locks within the hour`
+              ? `Gameweek ${gw.id} locks at ${deadline} — you haven't picked`
               : window === "open"
-                ? `Gameweek ${gw.id} is open`
-                : `Still no pick for gameweek ${gw.id}`,
+                ? `Gameweek ${gw.id} is open — pick by ${deadline}`
+                : `Still no pick for gameweek ${gw.id} — ${hoursLeft}h left`,
           body:
             window === "t1h"
               ? `Last chance to pick for gameweek ${gw.id}.`
-              : `You haven't picked for gameweek ${gw.id} yet — about ${hoursLeft} hours left.`,
+              : window === "open"
+                ? `Gameweek ${gw.id} is open. The deadline is ${deadline}, about ${hoursLeft} hours away.`
+                : `You haven't picked for gameweek ${gw.id} yet. The deadline is ${deadline}.`,
           url: "/",
         });
         if (noteError) {

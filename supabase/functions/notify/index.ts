@@ -24,6 +24,7 @@ interface Row {
   kind: string;
   title: string;
   body: string;
+  detail: string | null;
   url: string;
 }
 
@@ -34,7 +35,7 @@ Deno.serve(async () => {
 
     const { data: pending, error: pendingError } = await supabase
       .from("notifications")
-      .select("id, entrant_id, kind, title, body, url")
+      .select("id, entrant_id, kind, title, body, detail, url")
       .is("delivered_at", null)
       .gte("created_at", since)
       .order("created_at", { ascending: true })
@@ -116,7 +117,10 @@ Deno.serve(async () => {
 
       if (pref.email && person.email) {
         try {
-          await sendReminderEmail(person.email, `Wingback: ${note.title}`, note.body);
+          // `detail` is the long form — a results alert's standings table,
+          // say. Push and SMS below stay on `body`: that table must never
+          // reach a phone's notification shade or a text message.
+          await sendReminderEmail(person.email, `Wingback: ${note.title}`, note.detail ?? note.body);
           emailed++;
         } catch (err) {
           failed++;

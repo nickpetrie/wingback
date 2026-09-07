@@ -199,6 +199,61 @@ describe("home, with the picker open", () => {
   });
 });
 
+/** The table, with the prize pot breakdown above it — the three-column
+ * split is the piece most likely to force the page wider than the phone,
+ * so a long entrant name is deliberately used here rather than "Nick". */
+function leaderboardPage(): string {
+  return `<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>${css}:root{--font-archivo:system-ui}body{margin:0}</style></head><body>
+<main class="wb-in wb-page" style="padding:32px 24px 64px">
+  <h1 style="margin:0;font-size:22px">The table</h1>
+  <div class="wb-prize">
+    <div class="wb-prize-head">
+      <div>
+        <p class="wb-prize-label">Prize pot</p>
+        <p class="wb-prize-pot">£60.00</p>
+      </div>
+      <p class="wb-prize-sub">£3 a gameweek per entrant, £6 when they double — 3 gameweeks locked in so far, whether or not everyone picked.</p>
+    </div>
+    <div class="wb-prize-splits">
+      <div class="wb-prize-split">
+        <p class="wb-prize-split-label">Winner · 60%</p>
+        <p class="wb-prize-split-amount">£36.00</p>
+        <p class="wb-prize-split-who">Christopher-Alexander, if it ended today</p>
+      </div>
+      <div class="wb-prize-split">
+        <p class="wb-prize-split-label">Runner-up · 25%</p>
+        <p class="wb-prize-split-amount">£15.00</p>
+        <p class="wb-prize-split-who">Bartholomew, if it ended today</p>
+      </div>
+      <div class="wb-prize-split">
+        <p class="wb-prize-split-label">Shared pot · 15%</p>
+        <p class="wb-prize-split-amount">£9.00</p>
+        <p class="wb-prize-split-who">£1.80 each, everyone</p>
+      </div>
+    </div>
+  </div>
+</main></body></html>`;
+}
+
+describe("the table, with the prize pot breakdown", () => {
+  for (const width of WIDTHS) {
+    it(`does not scroll sideways at ${width}px`, async () => {
+      const context = await browser.newContext({ viewport: { width, height: 800 } });
+      const page = await context.newPage();
+      await page.setContent(leaderboardPage());
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+
+      await context.close();
+      expect(overflow, `at ${width}px`).toBe(0);
+    });
+  }
+});
+
 /** The sign-in screen, in the state everyone meets it in: signed out, one
  * email field. Two things broke here and both are asserted below. */
 function loginPage(): string {
