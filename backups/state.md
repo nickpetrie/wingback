@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Mon 7 Sep 2026, 06:48 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Mon 7 Sep 2026, 09:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -53,7 +53,7 @@ The in-app feed always gets everything. The other channels only deliver if they 
 | --- | --- | --- | --- | --- |
 | Alex Beetles | on | **0 — gets no push** | on | off |
 | Casra Abedian | on | 1 | on | on |
-| Henry Kirby | on | **0 — gets no push** | on | off |
+| Henry Kirby | on | 1 | on | on |
 | Nick Petrie | on | 1 | on | on |
 | Tom Petrie | on | 1 | on | off |
 
@@ -71,6 +71,6 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Mon 7 Sep 2026, 06:00 UTC | 49m ago |
+| players | Mon 7 Sep 2026, 09:00 UTC | 16m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
