@@ -2,10 +2,10 @@
 //
 // Three sources disagree about this and each is wrong on its own:
 //
-//   - `started` and `minutes` are mirrored from FPL by `score`, which runs
-//     every ten minutes while a gameweek is live. So `started` can be up to
-//     ten minutes behind a kickoff — long enough that a badge waiting on it
-//     appears after the first goal.
+//   - `started` and `minutes` are mirrored from FPL by `score`, which runs on
+//     a cron. So `started` lags a real kickoff by however long is left of the
+//     current tick — long enough that a badge waiting on it appears after the
+//     first goal.
 //   - The clock alone doesn't know about a postponement, and would light up
 //     a match that never began.
 //   - `finished` is not flipped at full time (see CLAUDE.md), which is why

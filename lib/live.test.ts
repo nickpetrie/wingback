@@ -18,8 +18,8 @@ describe("isFixtureLive", () => {
   });
 
   it("goes live on the clock, without waiting for the sync to say started", () => {
-    // The whole point: `score` runs every ten minutes, so `started` lags a
-    // real kickoff. The badge should not lag with it.
+    // The whole point: `started` is only refreshed on `score`'s cron, so it
+    // lags a real kickoff. The badge should not lag with it.
     expect(isFixtureLive(fixture(), KICKOFF + 1000)).toBe(true);
   });
 
