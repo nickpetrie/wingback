@@ -9,6 +9,7 @@ import { initialsFor } from "@/lib/avatar";
 import { AvatarUploader } from "../AvatarUploader";
 import { ThemeToggle } from "../ThemeToggle";
 import { updateNomination } from "./actions";
+import { runAction } from "@/lib/actions";
 
 export function SettingsForm({
   entrantId,
@@ -42,7 +43,7 @@ export function SettingsForm({
     setChangingNomination(false);
     setNominationMessage(null);
     startNominationTransition(async () => {
-      const result = await updateNomination(player.code);
+      const result = await runAction(() => updateNomination(player.code));
       setNominationMessage(result.ok ? "Saved." : `Could not save: ${result.error}`);
     });
   }

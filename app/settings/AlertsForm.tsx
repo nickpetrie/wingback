@@ -5,6 +5,7 @@ import { ALERT_TYPES, CHANNELS, type AlertPrefs } from "@/lib/alerts";
 import { usePush } from "@/lib/usePush";
 import { PushTest } from "../PushTest";
 import { updateAlertPrefs, updatePhone } from "./actions";
+import { runAction } from "@/lib/actions";
 
 /** Alerts: what you want to hear about, and how you want to hear it.
  *
@@ -50,7 +51,7 @@ export function AlertsForm({
     setPrefs(next);
     setError(null);
     startTransition(async () => {
-      const result = await updateAlertPrefs(next);
+      const result = await runAction(() => updateAlertPrefs(next));
       if (result.ok) {
         setStatus("saved");
       } else {
@@ -65,7 +66,7 @@ export function AlertsForm({
     e.preventDefault();
     setPhoneMessage(null);
     startPhoneTransition(async () => {
-      const result = await updatePhone(phone);
+      const result = await runAction(() => updatePhone(phone));
       setPhoneMessage(result.ok ? "Saved." : `Could not save: ${result.error}`);
     });
   }
