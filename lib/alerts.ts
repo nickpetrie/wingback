@@ -51,8 +51,8 @@ export const ALERT_TYPES: { key: AlertType; label: string; note: string }[] = [
   },
   {
     key: "goal_alerts",
-    label: "Goals",
-    note: "Any time anyone's pick scores — including your own.",
+    label: "Goals and what else happens",
+    note: "Any time anyone's pick scores — including your own — plus a sending-off or an own goal, which change nothing but are worth knowing.",
   },
   {
     key: "injury_alerts",

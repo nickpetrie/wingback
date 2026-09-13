@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(66);
+select plan(73);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -748,6 +748,85 @@ select is(
   (select prosecdef from pg_proc where proname = 'standings_at'),
   false,
   'standings_at does not run as its owner'
+);
+
+-- ---------------------------------------------------------------------
+-- Cards and own goals: commentary, never scoring
+-- ---------------------------------------------------------------------
+-- A gameweek where your striker was sent off in the twentieth minute used to
+-- read exactly like one where he had a quiet game. These say so — but they are
+-- deliberately outside pick_points(), so nothing here can move the table.
+select test_as_admin();
+delete from notifications;
+insert into players (code, fpl_id, web_name, first_name, second_name, team_id, element_type, status, news)
+values (903, 903, 'AlertCard', 'Al', 'Card', 1, 4, 'a', '');
+insert into gameweeks (id, deadline_time, finished) values (36, now() + interval '3 days', false);
+insert into fixtures (id, event, team_h, team_a, kickoff_time)
+values (3600, 36, 1, 2, now() + interval '3 days');
+insert into picks (entrant_id, gameweek, player_code, stake) values
+  ('11111111-1111-1111-1111-111111111111', 36, 903, 3),
+  ('22222222-2222-2222-2222-222222222222', 36, 903, 3);
+
+-- An entrant cannot send their own player off, or un-send him off, any more
+-- than they can award themselves a goal.
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select throws_ok(
+  $$update picks set red_cards = 1 where gameweek = 36
+      and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  'P0001',
+  'goals are set by the results sync, not by entrants',
+  'an entrant cannot write a red card onto their own pick'
+);
+
+select test_as_service();
+update picks set red_cards = 1 where gameweek = 36;
+
+select is(
+  (select count(*)::int from notifications where kind = 'red_card'),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  'a sending-off reaches everyone who asked, once each'
+);
+
+select alike(
+  (select title from notifications
+    where kind = 'red_card' and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  'AlertCard sent off%',
+  'and the subject line names the player and what happened'
+);
+
+-- score rewrites every pick on each run, so the same dismissal arriving again
+-- must not buzz anyone twice — the dedupe key goals already rely on.
+select test_as_service();
+update picks set red_cards = 1 where gameweek = 36;
+select is(
+  (select count(*)::int from notifications where kind = 'red_card'),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  're-syncing the same red card sends nothing further'
+);
+
+-- An own goal is the same shape, and the message has to lead with the fact
+-- that it costs nothing, because that is the first thing anyone asks.
+select test_as_service();
+update picks set own_goals = 1 where gameweek = 36;
+select is(
+  (select count(*)::int from notifications where kind = 'own_goal'),
+  (select count(*)::int from alert_prefs where goal_alerts),
+  'an own goal reaches everyone who asked, once each'
+);
+select alike(
+  (select body from notifications
+    where kind = 'own_goal' and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  '%doesn''t count against anyone%',
+  'and says plainly that it costs nothing'
+);
+
+-- The whole point of keeping them off pick_points(): a dismissal and an own
+-- goal in the same gameweek leave the score exactly where it was.
+select is(
+  (select points::int from pick_scores
+    where gameweek = 36 and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  0,
+  'neither a red card nor an own goal moves anybody''s points'
 );
 
 select * from finish();

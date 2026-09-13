@@ -64,7 +64,7 @@ export interface FplFixture {
 
 export interface FplLiveElement {
   id: number;
-  stats: { goals_scored: number };
+  stats: { goals_scored: number; red_cards: number; own_goals: number };
 }
 
 export interface FplLive {
