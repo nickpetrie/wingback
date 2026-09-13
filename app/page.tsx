@@ -11,6 +11,7 @@ import { FixtureDayList } from "./FixtureDayList";
 import { LiveTick } from "./LiveTick";
 import { STATUS_LABEL } from "./PlayerSearchInput";
 import { TeamBadge } from "./TeamBadge";
+import { TeamSheetCard } from "./TeamSheetCard";
 import { PickForm } from "./pick/PickForm";
 
 /** The one on-screen indicator that a picked player is out there now. Its
@@ -306,6 +307,10 @@ export default async function DashboardPage() {
               </div>
             </section>
           </div>
+
+          {/* Only once the gameweek has locked — before that, picks are
+              still changing, so there's nothing final to snapshot yet. */}
+          {gameweek.state === "locked" && <TeamSheetCard gameweekId={gameweek.id} />}
 
           <details className="wb-fixtures" open>
             <summary className="wb-fixtures-head">

@@ -332,3 +332,55 @@ describe("sign in", () => {
     }
   });
 });
+
+/** The team sheet card on home, once a gameweek has locked. The image the
+ * compositor produces is intrinsically 1200×530 — much wider than a phone —
+ * so the thing actually worth pinning here is that .wb-team-sheet-img's
+ * width:100% keeps it from ever being the thing that forces the page wide,
+ * even before it has loaded (the src 404s in this fixture on purpose; the
+ * reserved aspect-ratio box is what's under test, not the network). */
+function teamSheetCard(): string {
+  return `<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>${css}:root{--font-archivo:system-ui}body{margin:0}</style></head><body>
+<main class="wb-in wb-page" style="padding:20px 24px 64px">
+  <section class="wb-team-sheet">
+    <div class="wb-team-sheet-head">
+      <h6 style="margin:0">Team of the week</h6>
+      <span class="wb-team-sheet-note">Gameweek 4 is locked — share the five picks</span>
+    </div>
+    <img class="wb-team-sheet-img" src="/api/team-sheet/4" alt="Gameweek 4 team sheet">
+    <button type="button" class="btn btn-primary wb-tap">Share to WhatsApp</button>
+  </section>
+</main></body></html>`;
+}
+
+describe("team of the week card", () => {
+  for (const width of WIDTHS) {
+    it(`does not scroll sideways at ${width}px`, async () => {
+      const context = await browser.newContext({ viewport: { width, height: 800 } });
+      const page = await context.newPage();
+      await page.setContent(teamSheetCard());
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+
+      await context.close();
+      expect(overflow, `at ${width}px`).toBe(0);
+    });
+  }
+
+  it("never renders the image wider than the viewport", async () => {
+    const context = await browser.newContext({ viewport: { width: 320, height: 800 } });
+    const page = await context.newPage();
+    await page.setContent(teamSheetCard());
+
+    const imgWidth = await page.evaluate(
+      () => document.querySelector(".wb-team-sheet-img")!.getBoundingClientRect().width,
+    );
+
+    await context.close();
+    expect(imgWidth).toBeLessThanOrEqual(320);
+  });
+});

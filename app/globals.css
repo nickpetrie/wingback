@@ -1228,6 +1228,44 @@ img {
   }
 }
 
+/* — Team sheet: the shareable gameweek image + one Share button, understated
+   on purpose (a card, not a takeover) since it only ever appears once a
+   gameweek has already locked. The image is intrinsically 1200×530 — width
+   100% + height auto is what lets it shrink to a 320px phone without ever
+   forcing the page wider than the screen. */
+.wb-team-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0 24px;
+  border-top: 2px solid var(--color-divider);
+}
+.wb-team-sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wb-team-sheet-note {
+  margin: 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-team-sheet-img {
+  width: 100%;
+  height: auto;
+  /* Reserves the right box before the PNG has loaded (or if it never does),
+     so the page doesn't jump once it does — same 1200×530 the compositor in
+     lib/teamSheet.ts actually renders at. */
+  aspect-ratio: 1200 / 530;
+  border: 1px solid var(--color-divider);
+}
+.wb-team-sheet-error {
+  font-size: 12px;
+  color: var(--color-closed);
+}
+
 .wb-install {
   position: fixed;
   left: 12px;
