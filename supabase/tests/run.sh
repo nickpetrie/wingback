@@ -40,6 +40,7 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000026_nomination_lock.sql \
          supabase/migrations/20260101000029_gameweek_finished_latch.sql \
          supabase/migrations/20260101000030_alert_tidy.sql \
+         supabase/migrations/20260101000031_cards_and_own_goals.sql \
          supabase/tests/01_local_grants.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done

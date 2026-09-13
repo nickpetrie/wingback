@@ -209,6 +209,8 @@ export interface Database {
           fixture_id: number | null;
           stake: Stake;
           goals: number;
+          red_cards: number;
+          own_goals: number;
           is_substitution: boolean;
           substituted_from_player_code: number | null;
           created_at: string;
@@ -228,6 +230,8 @@ export interface Database {
           stake: Stake;
           is_substitution: boolean;
           goals: number;
+          red_cards: number;
+          own_goals: number;
         }>;
         // Both foreign keys to `players` are listed. They have to be: with
         // only one here the types happily accept `.select("players(...)")`,

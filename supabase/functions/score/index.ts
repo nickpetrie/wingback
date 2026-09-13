@@ -121,15 +121,22 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
   // Per-gameweek totals (correct even across a double gameweek).
   const { data: picks, error: picksError } = await supabase
     .from("picks")
-    // `goals` too: the loop below skips a write when the value is unchanged,
-    // which keeps the notify_goal trigger off the hot path of a 3-minute cron.
-    .select("id, player_code, goals")
+    // The current values too: the loop below skips a write when nothing has
+    // changed, which keeps the notify triggers off the hot path of a 3-minute
+    // cron.
+    .select("id, player_code, goals, red_cards, own_goals")
     .eq("gameweek", gwId);
   if (picksError) throw picksError;
 
-  const totalByFplId: Record<number, number> = {};
+  const statsByFplId: Record<number, { goals: number; red_cards: number; own_goals: number }> = {};
   for (const el of live.elements) {
-    totalByFplId[el.id] = el.stats.goals_scored;
+    statsByFplId[el.id] = {
+      goals: el.stats.goals_scored,
+      // A second yellow reaches us as a red: FPL reports the dismissal, not
+      // the bookings that caused it.
+      red_cards: el.stats.red_cards ?? 0,
+      own_goals: el.stats.own_goals ?? 0,
+    };
   }
 
   for (const pick of picks ?? []) {
@@ -140,15 +147,25 @@ async function syncGameweek(supabase: ServiceClient, gwId: number) {
     // not yet in `players`) wipes a real score, and the next good run puts it
     // back 0 -> 2, which re-fires the goal alert for a goal from hours ago:
     // notify_goal only guards against downward moves.
-    const goals = fplId === undefined ? undefined : totalByFplId[fplId];
-    if (goals === undefined) {
+    const stats = fplId === undefined ? undefined : statsByFplId[fplId];
+    if (stats === undefined) {
       console.warn(
         `score: gameweek ${gwId} pick ${pick.id} (player ${pick.player_code}) not in the live payload — left at ${pick.goals}`,
       );
       continue;
     }
-    if (goals === pick.goals) continue; // nothing to write, no trigger to fire
-    const { error } = await supabase.from("picks").update({ goals }).eq("id", pick.id);
+    // Nothing to write, no trigger to fire.
+    if (
+      stats.goals === pick.goals &&
+      stats.red_cards === pick.red_cards &&
+      stats.own_goals === pick.own_goals
+    ) {
+      continue;
+    }
+    const { error } = await supabase
+      .from("picks")
+      .update({ goals: stats.goals, red_cards: stats.red_cards, own_goals: stats.own_goals })
+      .eq("id", pick.id);
     if (error) throw error;
   }
 
