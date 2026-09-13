@@ -207,7 +207,7 @@ function SeasonCellView({ cell }: { cell: SeasonCell }) {
       style={{
         aspectRatio: "1",
         position: "relative",
-        outline: cell.hat ? "2px solid var(--color-accent)" : "none",
+        outline: cell.hat ? "3px solid var(--color-gold)" : "none",
         outlineOffset: -2,
       }}
       title={title}

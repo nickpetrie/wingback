@@ -247,6 +247,19 @@ reading the project URL and service key from Supabase Vault at call time.
   the cause to something actionable and says whether retrying is worth it;
   retrying is safe because `submitPick` resolves to one row per entrant per
   gameweek.
+- **`--color-gold` is the third colour outside the neutral ramp**, after
+  `--color-closed`. Same reasoning, opposite direction: a hat-trick is the
+  rarest good thing that happens here and marking it in the accent made it
+  look like every other piece of good news. Nothing else in the system is
+  gold, and it is picked to read as gold *on top of a club colour* — the
+  first attempt (`#9a6f10`) went olive against a red shirt, which was caught
+  by rendering it rather than by reading the hex.
+- **Anything that moves checks `prefers-reduced-motion` before it moves.**
+  The hat-trick confetti is not rendered at all for someone who has asked not
+  to be animated — read at the moment it would fire, not at mount, because
+  the setting can change while a tab is open — and the urgent countdown drops
+  its animation in the same media query. The gold frame and the toast still
+  happen: the information is not the animation.
 - **A browser-invoked edge function must deploy with `verify_jwt` off and
   check the caller itself** (`_shared/cors.ts`). The CORS preflight carries no
   credentials by design, so the gateway 401s it before the function runs; the

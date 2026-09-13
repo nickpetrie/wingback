@@ -63,6 +63,12 @@
      borrowing the accent for it made a closed deadline look like every other
      piece of good news on the screen. */
   --color-closed: #b4231f;
+
+  /* Outside the ramp for the same reason --color-closed is, and the opposite
+     reason: a hat-trick is the rarest good thing that happens here, and
+     marking it in the accent made it look like every other bit of good news.
+     Nothing else in the system is gold. */
+  --color-gold: #c8951b;
 }
 
 /* — Dark theme. Only the 22 colour tokens change; every component reads them
@@ -114,6 +120,10 @@
   /* Lifted off the light theme's #b4231f, which reads as brown on a dark
      ground — the same treatment the accent gets above. */
   --color-closed: #e0483f;
+
+  /* The light theme's gold survives a dark ground better than the other
+     non-ramp colours do, so this is a nudge rather than a lift. */
+  --color-gold: #e8c05a;
 }
 
 /* Form controls and scrollbars follow the theme without being styled one by
@@ -808,6 +818,59 @@ img {
   margin-top: 10px;
   border-color: var(--color-closed);
   color: var(--color-closed);
+}
+
+/* — The countdown's last hour. It was Tailwind's red and Tailwind's pulse,
+   which is the one place in the app that reached outside the colour tokens,
+   and --color-closed is exactly the colour this wants: the deadline about to
+   stop you acting. Tabular figures because it ticks every second and
+   proportional digits shift everything beside it on every tick. — */
+.wb-countdown {
+  font-variant-numeric: tabular-nums;
+}
+.wb-countdown-urgent {
+  color: var(--color-closed);
+  font-weight: 700;
+  animation: wb-countdown-beat 1s steps(1, end) infinite;
+}
+@keyframes wb-countdown-beat {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.45; }
+}
+
+/* — A hat-trick. Rare enough to be worth interrupting for, and it has a
+   mechanical consequence too — the player comes back off that entrant's
+   used list — so it earns more than a toast. Pieces are positioned and
+   coloured in the event handler, not here: this only knows how to fall. — */
+.wb-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+}
+.wb-confetti-piece {
+  position: absolute;
+  top: -24px;
+  width: 9px;
+  height: 14px;
+  will-change: transform;
+  animation-name: wb-confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes wb-confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+
+/* Someone who has asked not to be moved gets the gold frame and the toast and
+   nothing that flies. The confetti is never rendered for them at all — this
+   is the belt to that braces. */
+@media (prefers-reduced-motion: reduce) {
+  .wb-confetti { display: none; }
+  .wb-countdown-urgent { animation: none; }
 }
 
 .wb-pick-detail {

@@ -12,6 +12,36 @@ interface Toast {
   color: string;
 }
 
+interface ConfettiPiece {
+  id: number;
+  left: number;
+  delay: number;
+  duration: number;
+  color: string;
+}
+
+/** Built in the event handler rather than during render: Math.random() in a
+ * component body is impure, and two renders disagreeing about where a piece
+ * starts is exactly the class of bug React's compiler rejects. */
+function makeConfetti(teamColour: string): ConfettiPiece[] {
+  const palette = [teamColour, "var(--color-gold)", "var(--color-accent)", "var(--color-text)"];
+  return Array.from({ length: 44 }, (_, id) => ({
+    id,
+    left: Math.random() * 100,
+    // Spread over a second so it falls as a shower rather than a curtain.
+    delay: Math.random() * 1000,
+    duration: 2200 + Math.random() * 1400,
+    color: palette[id % palette.length],
+  }));
+}
+
+/** Someone who has asked their device not to animate things is not opted into
+ * this one either. Read at the moment it would fire, not at mount, because
+ * the setting can change while a tab is open. */
+function motionAllowed(): boolean {
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 interface PickRow {
   entrant_id: string;
   player_code: number;
@@ -25,6 +55,7 @@ interface PickRow {
  * so the toast leads with the headline instead of a clock time. */
 export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [confetti, setConfetti] = useState<ConfettiPiece[] | null>(null);
 
   useEffect(() => {
     if (!gameweekId) return;
@@ -53,18 +84,35 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
 
             const pts = scored * (newRow.stake === 6 ? 2 : 1);
             const id = `${newRow.entrant_id}-${Date.now()}`;
+            const colour = player?.teams?.short_name ? teamColor(player.teams.short_name) : "#605d5d";
+            // The third goal, not a third goal: this fires on the update that
+            // crosses the line, so a fourth doesn't do it all again.
+            const hatTrick = (newRow.goals ?? 0) >= 3 && (oldRow.goals ?? 0) < 3;
+            const who = entrant?.display_name ?? "Someone";
+            const name = player?.web_name ?? "Goal";
+
             setToasts((t) =>
               [
                 ...t,
                 {
                   id,
-                  headline: `${player?.web_name ?? "Goal"} scores`,
-                  sub: `${entrant?.display_name ?? "Someone"}${newRow.stake === 6 ? " ×2" : ""} — ${pts} pt${pts === 1 ? "" : "s"}`,
-                  color: player?.teams?.short_name ? teamColor(player.teams.short_name) : "#605d5d",
+                  headline: hatTrick ? `${name} — HAT-TRICK` : `${name} scores`,
+                  // A hat-trick puts that player back on this entrant's board,
+                  // which is a bigger deal than the points and the one thing
+                  // they might actually act on.
+                  sub: hatTrick
+                    ? `${who} — ${pts} pts, and ${name} is theirs to pick again`
+                    : `${who}${newRow.stake === 6 ? " ×2" : ""} — ${pts} pt${pts === 1 ? "" : "s"}`,
+                  color: colour,
                 },
               ].slice(-3),
             );
-            setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5200);
+            setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), hatTrick ? 9000 : 5200);
+
+            if (hatTrick && motionAllowed()) {
+              setConfetti(makeConfetti(colour));
+              setTimeout(() => setConfetti(null), 4200);
+            }
           })();
         },
       )
@@ -75,9 +123,26 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
     };
   }, [gameweekId]);
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0 && confetti === null) return null;
 
   return (
+    <>
+      {confetti && (
+        <div className="wb-confetti" aria-hidden="true">
+          {confetti.map((piece) => (
+            <span
+              key={piece.id}
+              className="wb-confetti-piece"
+              style={{
+                left: `${piece.left}%`,
+                background: piece.color,
+                animationDelay: `${piece.delay}ms`,
+                animationDuration: `${piece.duration}ms`,
+              }}
+            />
+          ))}
+        </div>
+      )}
     <div
       style={{
         position: "fixed",
@@ -115,5 +180,6 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
         </div>
       ))}
     </div>
+    </>
   );
 }
