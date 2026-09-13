@@ -27,5 +27,7 @@ export function Countdown({ lockAt }: { lockAt: string }) {
 
   const urgent = remaining > 0 && remaining <= URGENT_THRESHOLD_MS;
 
-  return <span className={urgent ? "animate-pulse text-red-400" : undefined}>{format(remaining)}</span>;
+  return (
+    <span className={`wb-countdown${urgent ? " wb-countdown-urgent" : ""}`}>{format(remaining)}</span>
+  );
 }
