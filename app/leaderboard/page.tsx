@@ -8,7 +8,9 @@ import {
   SHARED_POT_SHARE_PCT,
   WINNER_SHARE_PCT,
 } from "@/lib/prize";
+import { computeSeasonAwards, type AwardPick } from "@/lib/awards";
 import { LeaderboardTable, type BoardRow, type Nomination, type SeasonCell } from "./LeaderboardTable";
+import { SeasonAwards, type AwardEntrant } from "./SeasonAwards";
 
 const TOTAL_GAMEWEEKS = 38;
 
@@ -34,19 +36,23 @@ export default async function LeaderboardPage() {
   // Two tiers. Only the nominee names genuinely depend on anything above
   // them — they need the codes from `entrants` — so the other five queries
   // were serialised for no reason on the page the standings strip taps into.
-  const [{ data: leaderboard }, { data: entrantRows }, starCounts, { data: gameweeks }, { data: allPicks }] =
+  const [{ data: leaderboard }, { data: entrantRows }, starCounts, { data: gameweeks }, { data: pickScores }, { data: allPicks }] =
     await Promise.all([
       supabase.from("leaderboard").select("entrant_id, display_name, total_points, scoring_gameweeks"),
       supabase.from("entrants").select("id, avatar_updated_at, nomination_player_code"),
       getStarCounts(supabase),
       supabase.from("gameweeks").select("id, finished, lock_at"),
+      // Per-pick points, from the same view the standings are built on. The
+      // awards need points for subsets of picks, and deriving them here
+      // instead would be a third copy of a rule that lives in SQL.
+      supabase.from("pick_scores").select("entrant_id, gameweek, points"),
       supabase
         .from("picks")
         // The FK hint is load-bearing — see lib/picks.ts. Without it this
         // query returns nothing and every season record renders as 38 empty
         // gameweeks.
         .select(
-          "entrant_id, gameweek, player_code, stake, goals, players!picks_player_code_fkey(web_name, teams(short_name))",
+          "entrant_id, gameweek, player_code, stake, goals, created_at, players!picks_player_code_fkey(web_name, teams(short_name))",
         ),
     ]);
 
@@ -165,6 +171,30 @@ export default async function LeaderboardPage() {
       };
     });
 
+  // (entrant, gameweek) is unique on picks, so it keys the two queries
+  // together without needing the pick id in either.
+  const pointsByPick = new Map(
+    (pickScores ?? []).map((s) => [`${s.entrant_id}:${s.gameweek}`, s.points]),
+  );
+  const awardPicks: AwardPick[] = (allPicks ?? []).map((p) => ({
+    entrantId: p.entrant_id,
+    gameweek: p.gameweek,
+    playerCode: p.player_code,
+    stake: p.stake,
+    goals: p.goals,
+    points: pointsByPick.get(`${p.entrant_id}:${p.gameweek}`) ?? 0,
+    createdAt: p.created_at,
+  }));
+  const seasonAwards = computeSeasonAwards(
+    awardPicks,
+    (gameweeks ?? []).map((g) => ({ id: g.id, finished: g.finished, lockAt: g.lock_at })),
+  );
+  const awardEntrants: AwardEntrant[] = rows.map((r) => ({
+    id: r.entrant_id,
+    name: r.name,
+    avatar_updated_at: r.avatar_updated_at,
+  }));
+
   return (
     <main className="wb-in wb-page" style={{ padding: "32px 24px 64px" }}>
       <div style={{ borderBottom: "2px solid var(--color-divider)", paddingBottom: 8 }}>
@@ -203,6 +233,8 @@ export default async function LeaderboardPage() {
           </div>
         </div>
       </div>
+
+      <SeasonAwards awards={seasonAwards} entrants={awardEntrants} />
 
       <LeaderboardTable rows={rows} />
 
