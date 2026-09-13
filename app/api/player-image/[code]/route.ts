@@ -1,7 +1,5 @@
-import sharp from "sharp";
 import { createClient } from "@/lib/supabase/server";
-import { hexToRgb, teamColor } from "@/lib/teamColors";
-import { monogramCardSvg } from "@/lib/monogramCard";
+import { renderPlayerCard } from "@/lib/playerCard";
 
 // s-maxage is the one Vercel's edge network keys shared caching on, and it was
 // missing — so every cold miss (a new device, another entrant, anything past a
@@ -14,12 +12,6 @@ import { monogramCardSvg } from "@/lib/monogramCard";
 const CACHE_CONTROL = "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800";
 
 export const runtime = "nodejs";
-
-function svgResponse(svg: string) {
-  return new Response(svg, {
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": CACHE_CONTROL },
-  });
-}
 
 export async function GET(
   _request: Request,
@@ -42,43 +34,17 @@ export async function GET(
     return new Response("not found", { status: 404 });
   }
 
-  const color = teamColor(player.teams?.short_name ?? "");
+  const card = await renderPlayerCard({
+    code,
+    webName: player.web_name,
+    photo: player.photo,
+    teamShortName: player.teams?.short_name ?? "",
+  });
 
-  if (!player.photo) {
-    return svgResponse(monogramCardSvg(player.web_name, color));
-  }
-
-  try {
-    const cdnUrl = `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png`;
-    const imageRes = await fetch(cdnUrl);
-    if (!imageRes.ok) throw new Error(`CDN responded ${imageRes.status}`);
-    const sourceBuffer = Buffer.from(await imageRes.arrayBuffer());
-
-    // Posterise the headshot (palette-quantise it) onto the club colour so
-    // the whole set reads as one deliberately-styled deck rather than raw
-    // scraped photos.
-    const { r, g, b } = hexToRgb(color);
-    const posterised = await sharp(sourceBuffer)
-      .resize(160, 160, { fit: "cover" })
-      .png({ palette: true, colors: 10 })
-      .toBuffer();
-
-    const card = await sharp({
-      create: { width: 200, height: 200, channels: 3, background: { r, g, b } },
-    })
-      .composite([{ input: posterised, top: 20, left: 20 }])
-      .png()
-      .toBuffer();
-
-    return new Response(new Uint8Array(card), {
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": CACHE_CONTROL,
-      },
-    });
-  } catch {
-    // New signing, CDN reorganised its path again, network hiccup —
-    // whatever the reason, always fall back rather than break the card.
-    return svgResponse(monogramCardSvg(player.web_name, color));
-  }
+  return new Response(new Uint8Array(card), {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": CACHE_CONTROL,
+    },
+  });
 }
