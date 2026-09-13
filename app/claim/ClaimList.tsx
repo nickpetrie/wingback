@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { claimProfile } from "./actions";
+import { runAction } from "@/lib/actions";
 
 interface Profile {
   id: string;
@@ -19,7 +20,7 @@ export function ClaimList({ profiles }: { profiles: Profile[] }) {
     setError(null);
     setPendingId(id);
     startTransition(async () => {
-      const result = await claimProfile(id);
+      const result = await runAction(() => claimProfile(id));
       if (!result.ok) {
         setError(result.error ?? "Could not claim that profile.");
         setPendingId(null);

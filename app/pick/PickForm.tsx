@@ -6,10 +6,18 @@ import { kickoffLabel, type GameweekFixture } from "@/lib/fixtures";
 import type { Stake } from "@/lib/supabase/types";
 import { STATUS_LABEL } from "../PlayerSearchInput";
 import { TeamBadge } from "../TeamBadge";
+import { runAction } from "@/lib/actions";
+import { describePickFailure, type PickFailure } from "@/lib/pick-errors";
 import { PlayerBrowser, usedReason } from "./PlayerBrowser";
 import { submitPick } from "./actions";
 
 const MUTED = "color-mix(in srgb, var(--color-text) 58%, transparent)";
+
+/** Two quick retries before giving up. A gateway blip is usually over inside a
+ * second, and the alternative is telling someone their pick failed when one
+ * more attempt would have landed it. */
+const RETRIES = 2;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function fixtureFor(fixtures: GameweekFixture[], teamId: number) {
   const f = fixtures.find((fx) => fx.team_h === teamId || fx.team_a === teamId);
@@ -43,7 +51,10 @@ export function PickForm({
   const [selectedCode, setSelectedCode] = useState<number | null>(currentPick?.player_code ?? null);
   const [stake, setStake] = useState<Stake>(currentPick?.stake ?? 3);
   const [savedPick, setSavedPick] = useState(currentPick);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<PickFailure | null>(null);
+  // Bumped by "Try again". The save effect is otherwise driven by `dirty`,
+  // which a failure leaves true, so this is what re-runs it on demand.
+  const [attempt, setAttempt] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   // The search is a tool for changing your mind, not the resting state of the
@@ -61,7 +72,7 @@ export function PickForm({
 
   function pick(player: PlayerOption) {
     setSelectedCode(player.code);
-    setError(null);
+    setFailure(null);
     // The picker collapses back to the pick card once a choice is made; the
     // card, not the search, is the resting state of this screen.
     setSearching(false);
@@ -77,19 +88,38 @@ export function PickForm({
   useEffect(() => {
     if (!selected || burned || !dirty) return;
     const code = selected.code;
+    let cancelled = false;
     const timer = setTimeout(() => {
-      setError(null);
+      setFailure(null);
       startTransition(async () => {
-        const result = await submitPick(gameweek, code, stake);
-        if (!result.ok) {
-          setError(result.error ?? "Could not save.");
-          return;
+        for (let tryNumber = 0; tryNumber <= RETRIES; tryNumber++) {
+          if (tryNumber > 0) await sleep(400 * tryNumber);
+
+          const result = await runAction(() => submitPick(gameweek, code, stake));
+          // The player or stake changed under us — that render owns the save
+          // now, and finishing this one would write a pick nobody asked for.
+          if (cancelled) return;
+
+          if (result.ok) {
+            setSavedPick({ player_code: code, stake });
+            return;
+          }
+
+          const described = describePickFailure(result.error, gameweek);
+          // Retrying is safe: submitPick resolves to one row per entrant per
+          // gameweek, so a reply lost on the way back cannot become two picks.
+          if (!described.transient || tryNumber === RETRIES) {
+            setFailure(described);
+            return;
+          }
         }
-        setSavedPick({ player_code: code, stake });
       });
     }, 600);
-    return () => clearTimeout(timer);
-  }, [selected, burned, dirty, gameweek, stake]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [selected, burned, dirty, gameweek, stake, attempt]);
 
   return (
     <div className="wb-pickform">
@@ -108,7 +138,7 @@ export function PickForm({
       )}
 
       {selected && !searching && (
-        <div className="wb-pick-card">
+        <div className={`wb-pick-card${failure ? " wb-pick-card--failed" : ""}`}>
           <div className="wb-pick-photo">
             {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
             <img src={`/api/player-image/${selected.code}`} alt={selected.web_name} />
@@ -169,10 +199,10 @@ export function PickForm({
               <span
                 className="wb-pick-status"
                 aria-live="polite"
-                style={{ color: error ? "var(--color-accent-700)" : MUTED }}
+                style={{ color: failure ? "var(--color-closed)" : MUTED }}
               >
-                {error ? (
-                  error
+                {failure ? (
+                  <strong>Not registered</strong>
                 ) : burned ? (
                   "Not saved"
                 ) : isPending || dirty ? (
@@ -187,7 +217,7 @@ export function PickForm({
                 )}
                 {/* £3 is the default and needs no explaining — only the double
                     has a consequence worth mentioning. */}
-                {!error && stake === 6 && (
+                {!failure && stake === 6 && (
                   <span style={{ color: freeDoubles === 0 ? "var(--color-accent-700)" : "inherit" }}>
                     {freeDoubles === 0
                       ? "· both doubles spent, a blank costs −2"
@@ -197,6 +227,27 @@ export function PickForm({
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Loud, and above everything else on the screen that isn't the card
+          itself. The old failure state was one line of small text in the
+          corner of the controls, which is how a 502 came to read as a saved
+          pick. role="alert" so a screen reader is interrupted by it too. */}
+      {selected && !searching && failure && (
+        <div className="wb-pick-alarm" role="alert">
+          <p className="wb-pick-alarm-head">Your pick has not been registered</p>
+          <p className="wb-pick-alarm-body">{failure.message}</p>
+          {failure.transient && (
+            <button
+              type="button"
+              className="wb-control wb-tap wb-pick-alarm-retry"
+              onClick={() => setAttempt((n) => n + 1)}
+              disabled={isPending}
+            >
+              {isPending ? "Trying\u2026" : "Try again"}
+            </button>
+          )}
         </div>
       )}
 

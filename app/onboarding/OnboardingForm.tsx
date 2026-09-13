@@ -8,6 +8,7 @@ import { PlayerSearchInput } from "../PlayerSearchInput";
 import { AvatarUploader } from "../AvatarUploader";
 import { updateNomination } from "../settings/actions";
 import { savePhoneStep } from "./actions";
+import { runAction } from "@/lib/actions";
 
 type Step = 1 | 2 | 3;
 
@@ -39,7 +40,7 @@ export function OnboardingForm({
   function continuePhone() {
     setPhoneError(null);
     startPhoneTransition(async () => {
-      const result = await savePhoneStep(phone, smsOptIn);
+      const result = await runAction(() => savePhoneStep(phone, smsOptIn));
       if (!result.ok) {
         setPhoneError(result.error ?? "Could not save.");
         return;
@@ -52,7 +53,7 @@ export function OnboardingForm({
     setNomination(player);
     setNominationError(null);
     startNominationTransition(async () => {
-      const result = await updateNomination(player.code);
+      const result = await runAction(() => updateNomination(player.code));
       if (!result.ok) setNominationError(result.error ?? "Could not save.");
     });
   }

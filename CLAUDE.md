@@ -231,6 +231,22 @@ reading the project URL and service key from Supabase Vault at call time.
   named constants that must sum to 100 or the module refuses to load, and the
   labels on `/leaderboard` render from those same constants rather than
   repeating the numbers as text.
+- **Never `await` a server action bare** — go through `runAction()` in
+  `lib/actions.ts`. A server action call is a network request, so it rejects
+  when the gateway 502s or the phone sleeps mid-tap, and every call site here
+  awaited one inside a transition where nothing caught the throw. Measured on
+  Casra's gameweek 4 pick: the card showed Palmer looking picked while no row
+  existed, nobody else saw it, and no alert fired. `runAction` turns the throw
+  into the `{ ok: false }` every caller already handles.
+- **A pick that did not save must not look like one that did.** The pick card
+  renders from the *selection*, not from what was written, so the save state is
+  the only thing distinguishing them — it used to be one line of small text in
+  the corner of the controls. A failure now greys the photo, outlines it in
+  `--color-closed`, and puts a `role="alert"` banner under the card whose
+  first words are that the pick is not registered. `lib/pick-errors.ts` maps
+  the cause to something actionable and says whether retrying is worth it;
+  retrying is safe because `submitPick` resolves to one row per entrant per
+  gameweek.
 - **A browser-invoked edge function must deploy with `verify_jwt` off and
   check the caller itself** (`_shared/cors.ts`). The CORS preflight carries no
   credentials by design, so the gateway 401s it before the function runs; the
