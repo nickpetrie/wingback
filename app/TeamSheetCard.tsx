@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 type ShareSupport = "unsupported" | "supported";
 
@@ -27,6 +27,41 @@ function shareSupport(): ShareSupport {
 const subscribeNothing = () => () => {};
 const serverSupport = (): ShareSupport => "unsupported";
 
+// Dismissal lives in localStorage, which React cannot see changing, so it is
+// read as an external store rather than copied into state from an effect —
+// the same shape `shareSupport` above uses, and the shape the compiler's
+// set-state-in-effect rule is pointing at. The listener set is what makes the
+// card disappear the moment the button is pressed rather than on the next
+// unrelated render.
+const dismissListeners = new Set<() => void>();
+
+function subscribeDismissed(onChange: () => void) {
+  dismissListeners.add(onChange);
+  return () => {
+    dismissListeners.delete(onChange);
+  };
+}
+
+function readDismissed(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    // Unavailable (private mode, site data blocked). Leaving the card showing
+    // is the better failure: a card you can close again beats one that has
+    // silently vanished.
+    return false;
+  }
+}
+
+function writeDismissed(key: string) {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    // It still closes for this visit; the choice just isn't remembered.
+  }
+  for (const listener of dismissListeners) listener();
+}
+
 /** The gameweek's team sheet, with a one-tap share to the WhatsApp group —
  * the actual point of the image. There's no way to post to a group
  * automatically (see CLAUDE.md-adjacent brief: the Cloud API has no
@@ -42,6 +77,18 @@ export function TeamSheetCard({ gameweekId }: { gameweekId: number }) {
   const support = useSyncExternalStore(subscribeNothing, shareSupport, serverSupport);
   const [status, setStatus] = useState<"idle" | "sharing" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Per gameweek, not forever: this is a thing you share once and then don't
+  // want lying across the middle of the home page for the rest of the week.
+  // Next gameweek's sheet is new news, so it comes back on its own.
+  const dismissKey = `wingback:team-sheet-dismissed:${gameweekId}`;
+  const dismissed = useSyncExternalStore(
+    subscribeDismissed,
+    useCallback(() => readDismissed(dismissKey), [dismissKey]),
+    () => false,
+  );
+
+  if (dismissed) return null;
 
   const src = `/api/team-sheet/${gameweekId}`;
 
@@ -75,7 +122,15 @@ export function TeamSheetCard({ gameweekId }: { gameweekId: number }) {
     <section className="wb-team-sheet">
       <div className="wb-team-sheet-head">
         <h6 style={{ margin: 0 }}>Team of the week</h6>
-        <span className="wb-team-sheet-note">Gameweek {gameweekId} is locked — share the five picks</span>
+        <span className="wb-team-sheet-note">Gameweek {gameweekId} is locked</span>
+        <button
+          type="button"
+          className="wb-team-sheet-dismiss wb-tap"
+          onClick={() => writeDismissed(dismissKey)}
+          aria-label="Hide the team sheet for this gameweek"
+        >
+          &#10005;
+        </button>
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element -- server-composited PNG, not eligible for next/image */}
       <img className="wb-team-sheet-img" src={src} alt={`Gameweek ${gameweekId} team sheet`} />

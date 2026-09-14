@@ -1310,6 +1310,20 @@ img {
   gap: 12px;
   flex-wrap: wrap;
 }
+.wb-team-sheet-dismiss {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 15px;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.wb-team-sheet-dismiss:hover {
+  color: var(--color-text);
+}
+
 .wb-team-sheet-note {
   margin: 0;
   font-size: 12px;
