@@ -1,21 +1,21 @@
 # Wingback — season state
 
-Generated Sat 12 Sep 2026, 08:35 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Mon 14 Sep 2026, 09:46 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
 ## Right now
 
-**Gameweek 4** is the one in play — open for picks.
+**Gameweek 4** is the one in play — locked.
 
-- Deadline: Sat 12 Sep 2026, 12:30 UTC (in 4h)
-- Picks lock: Sat 12 Sep 2026, 13:00 UTC (in 4h)
-- Picked: 4 of 5
-- Still to pick: Alex Beetles
+- Deadline: Sat 12 Sep 2026, 12:30 UTC (2d ago)
+- Picks lock: Sat 12 Sep 2026, 13:00 UTC (2d ago)
+- Picked: 5 of 5
 
 | entrant | player | club | stake | goals | points |
 | --- | --- | --- | --- | --- | --- |
-| Nick Petrie | Saka | ARS | £3 | 0 | 0 |
+| Nick Petrie | Saka | ARS | £3 | 1 | 1 |
+| Alex Beetles | João Pedro | CHE | £3 | 1 | 1 |
 | Tom Petrie | Isak | LIV | £3 | 0 | 0 |
 | Henry Kirby | Isak | LIV | £3 | 0 | 0 |
 | Casra Abedian | Palmer | CHE | £3 | 0 | 0 |
@@ -24,11 +24,11 @@ Read this first: it is the whole season in one file, so a session can answer que
 
 | # | entrant | points | scoring GWs |
 | --- | --- | --- | --- |
-| 1 | Nick Petrie | 4 | 3 |
+| 1 | Nick Petrie | 5 | 4 |
 | 2 | Henry Kirby | 4 | 2 |
-| 3 | Casra Abedian | 3 | 2 |
-| 4 | Tom Petrie | 2 | 1 |
-| 5 | Alex Beetles | 2 | 1 |
+| 3 | Alex Beetles | 3 | 2 |
+| 4 | Casra Abedian | 3 | 2 |
+| 5 | Tom Petrie | 2 | 1 |
 
 ## Nominations, and who is spent
 
@@ -38,7 +38,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 
 | entrant | nomination | club | nomination used | players spent |
 | --- | --- | --- | --- | --- |
-| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gyökeres |
+| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gyökeres, João Pedro |
 | Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Mbeumo, Palmer |
 | Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Haaland, Isak |
 | Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Havertz, Isak, Saka |
@@ -51,7 +51,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | 1 | Gyökeres | — | — | Havertz — 1pt | — |
 | 2 | Cunha | Mbeumo — 1pt | Haaland — 2pt | Isak — 1pt | Havertz |
 | 3 | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt |
-| 4 | — | Palmer | Isak | Saka | Isak |
+| 4 | João Pedro — 1pt | Palmer | Isak | Saka — 1pt | Isak |
 
 `×2` is a £6 stake (double points). Per-pick goals and clubs are in `picks.csv`.
 
@@ -61,7 +61,7 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | entrant | push | devices | email | SMS |
 | --- | --- | --- | --- | --- |
-| Alex Beetles | on | **0 — gets no push** | on | off |
+| Alex Beetles | on | **0 — gets no push** | on | on |
 | Casra Abedian | on | 1 | on | on |
 | Henry Kirby | on | 2 | on | on |
 | Nick Petrie | on | 1 | on | on |
@@ -71,16 +71,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 4 | Sat 12 Sep 2026, 12:30 UTC | in 4h |
-| 5 | Fri 18 Sep 2026, 17:30 UTC | in 6d |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 28d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 35d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 41d |
+| 4 | Sat 12 Sep 2026, 12:30 UTC | 2d ago |
+| 5 | Fri 18 Sep 2026, 17:30 UTC | in 4d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 26d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 33d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 39d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Sat 12 Sep 2026, 08:30 UTC | 5m ago |
+| players | Mon 14 Sep 2026, 08:00 UTC | 2h ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
