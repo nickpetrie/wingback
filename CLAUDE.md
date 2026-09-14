@@ -260,6 +260,17 @@ reading the project URL and service key from Supabase Vault at call time.
   the setting can change while a tab is open — and the urgent countdown drops
   its animation in the same media query. The gold frame and the toast still
   happen: the information is not the animation.
+- **Nothing rasterised server-side may ask for a font by name.** The team
+  sheet's first deployed version drew every glyph as a tofu box — fine
+  locally, boxes on Vercel — because its SVG asked for `system-ui,
+  sans-serif` and nothing in the serverless runtime matched. A missing font
+  does not raise; it silently draws boxes, which is the same trap
+  `scripts/icons.mjs` documents for the app icons and solves by drawing the W
+  as stroked paths. `lib/teamSheet.ts` instead renders every string through
+  `sharp`'s text API pointed at `assets/fonts/DejaVuSans*.ttf` by absolute
+  path. Nothing imports those files, so Next's tracing cannot see them —
+  `outputFileTracingIncludes` in `next.config.ts` is what actually ships them
+  with the function, and removing it brings the boxes straight back.
 - **A browser-invoked edge function must deploy with `verify_jwt` off and
   check the caller itself** (`_shared/cors.ts`). The CORS preflight carries no
   credentials by design, so the gateway 401s it before the function runs; the
