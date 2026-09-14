@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { escapeXml, estimateTextWidth, fitFontSize, fitLabel } from "./textFit";
+import { WIDTH_FACTOR, escapeXml, estimateTextWidth, fitFontSize, fitLabel } from "./textFit";
 
 describe("estimateTextWidth", () => {
   it("grows with both length and font size", () => {
-    expect(estimateTextWidth("Haaland", 24)).toBeCloseTo(7 * 24 * 0.6);
+    // Against the exported constant, not a copy of it: the factor is
+    // calibrated against measurement and has already moved once.
+    expect(estimateTextWidth("Haaland", 24)).toBeCloseTo(7 * 24 * WIDTH_FACTOR.caption);
     expect(estimateTextWidth("", 24)).toBe(0);
   });
 });
@@ -48,5 +50,34 @@ describe("escapeXml", () => {
 
   it("leaves ordinary names alone", () => {
     expect(escapeXml("Bruno Fernandes")).toBe("Bruno Fernandes");
+  });
+});
+
+describe("WIDTH_FACTOR", () => {
+  // These are not taste. Each was measured through the real render path —
+  // drawing the string with sharp and trimming to the ink — and the estimate
+  // existing at all is only useful if it never comes in under the truth:
+  // an under-estimate doesn't shorten a name, it lets the renderer paint it
+  // off the edge of its caption plate and across the photo, which is exactly
+  // what a flat 0.6 was doing to "ALEXANDER BEETLES · £6" (385px measured,
+  // 343px estimated).
+  const MEASURED = {
+    caption: 0.673, // "ALEXANDER BEETLES · £6", 26px, weight 700, uppercase
+    display: 0.648, // "Gyökeres", 32px, weight 800, mixed case
+  };
+
+  it("never estimates narrower than the widest string actually measured", () => {
+    expect(WIDTH_FACTOR.caption).toBeGreaterThanOrEqual(MEASURED.caption);
+    expect(WIDTH_FACTOR.display).toBeGreaterThanOrEqual(MEASURED.display);
+  });
+
+  it("keeps a fitted label inside the width it was fitted to", () => {
+    const names = ["Isak", "Gyökeres", "Bruno Fernandes", "ALEXANDER BEETLES · £6", "Mac Allister"];
+    for (const name of names) {
+      for (const width of [120, 200, 272, 400]) {
+        const label = fitLabel(name, width, 26);
+        expect(estimateTextWidth(label, 26)).toBeLessThanOrEqual(width);
+      }
+    }
   });
 });
