@@ -49,26 +49,36 @@ export async function GET(
 
   const { data: playersRaw } = await supabase
     .from("players")
-    .select("code, photo")
+    .select("code, photo, element_type")
     .in(
       "code",
       sorted.map((p) => p.player_code),
     );
-  const photoByCode = new Map((playersRaw ?? []).map((p) => [p.code, p.photo]));
+  const playerInfoByCode = new Map(
+    (playersRaw ?? []).map((p) => [p.code, { photo: p.photo, elementType: p.element_type }]),
+  );
 
   const entries: TeamSheetEntry[] = await Promise.all(
-    sorted.map(async (pick) => ({
-      entrantName: pick.entrant_name,
-      playerName: pick.player_name,
-      teamShortName: pick.team_short_name,
-      stake: pick.stake,
-      cardBuffer: await renderPlayerCard({
-        code: pick.player_code,
-        webName: pick.player_name,
-        photo: photoByCode.get(pick.player_code) ?? null,
+    sorted.map(async (pick) => {
+      const info = playerInfoByCode.get(pick.player_code);
+      return {
+        entrantName: pick.entrant_name,
+        playerName: pick.player_name,
         teamShortName: pick.team_short_name,
-      }),
-    })),
+        stake: pick.stake,
+        // Falls back to midfielder (the most common pick) rather than
+        // crashing the render on the rare row where the join misses —
+        // wrong shirt-position on the pitch is a far smaller problem than a
+        // 500 where a team sheet used to be.
+        elementType: info?.elementType ?? 3,
+        cardBuffer: await renderPlayerCard({
+          code: pick.player_code,
+          webName: pick.player_name,
+          photo: info?.photo ?? null,
+          teamShortName: pick.team_short_name,
+        }),
+      };
+    }),
   );
 
   const png = await renderTeamSheet(gameweekId, entries);
