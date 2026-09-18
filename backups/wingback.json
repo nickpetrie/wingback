@@ -1,5 +1,5 @@
 {
-  "taken_at": "2026-09-17T09:22:55.498Z",
+  "taken_at": "2026-09-18T08:57:24.899Z",
   "entrants": [
     {
       "id": "a1000000-0000-0000-0000-000000000003",
@@ -268,6 +268,45 @@
       "substituted_from_player_code": null,
       "created_at": "2026-09-12T07:05:49.270422+00:00",
       "updated_at": "2026-09-12T07:05:49.270422+00:00"
+    },
+    {
+      "id": 18,
+      "entrant_id": "a1000000-0000-0000-0000-000000000001",
+      "gameweek": 5,
+      "player_code": 177815,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-09-17T15:22:56.668437+00:00",
+      "updated_at": "2026-09-17T15:22:56.668437+00:00"
+    },
+    {
+      "id": 19,
+      "entrant_id": "a1000000-0000-0000-0000-000000000002",
+      "gameweek": 5,
+      "player_code": 463034,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-09-17T15:40:16.317124+00:00",
+      "updated_at": "2026-09-17T15:40:16.317124+00:00"
+    },
+    {
+      "id": 20,
+      "entrant_id": "a1000000-0000-0000-0000-000000000005",
+      "gameweek": 5,
+      "player_code": 222531,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-09-17T20:40:33.812429+00:00",
+      "updated_at": "2026-09-17T20:40:33.812429+00:00"
     }
   ],
   "season_winners": [
