@@ -1,22 +1,23 @@
 # Wingback — season state
 
-Generated Fri 18 Sep 2026, 08:57 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Sat 19 Sep 2026, 08:44 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
 ## Right now
 
-**Gameweek 5** is the one in play — open for picks.
+**Gameweek 5** is the one in play — locked.
 
-- Deadline: Fri 18 Sep 2026, 17:30 UTC (in 9h)
-- Picks lock: Fri 18 Sep 2026, 18:00 UTC (in 9h)
-- Picked: 3 of 5
-- Still to pick: Alex Beetles, Henry Kirby
+- Deadline: Fri 18 Sep 2026, 17:30 UTC (15h ago)
+- Picks lock: Fri 18 Sep 2026, 18:00 UTC (15h ago)
+- Picked: 5 of 5
 
 | entrant | player | club | stake | goals | points |
 | --- | --- | --- | --- | --- | --- |
 | Nick Petrie | Calvert-Lewin | LEE | £3 | 0 | 0 |
 | Tom Petrie | Delap | NFO | £3 | 0 | 0 |
+| Alex Beetles | Gibbs-White | NFO | £3 | 0 | 0 |
+| Henry Kirby | Barry | EVE | £3 | 0 | 0 |
 | Casra Abedian | Gibbs-White | NFO | £3 | 0 | 0 |
 
 ## Standings (after gameweek 4)
@@ -37,9 +38,9 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 
 | entrant | nomination | club | nomination used | players spent |
 | --- | --- | --- | --- | --- |
-| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gyökeres, João Pedro |
+| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gibbs-White, Gyökeres, João Pedro |
 | Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Gibbs-White, Mbeumo, Palmer |
-| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Haaland, Isak |
+| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Barry, Haaland, Isak |
 | Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Calvert-Lewin, Havertz, Isak, Saka |
 | Tom Petrie | João Pedro | CHE | 0/2 | Delap, Haaland, Havertz, Isak |
 
@@ -51,7 +52,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | 2 | Cunha | Mbeumo — 1pt | Haaland — 2pt | Isak — 1pt | Havertz |
 | 3 | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt |
 | 4 | João Pedro — 1pt | Palmer | Isak | Saka — 1pt | Isak |
-| 5 | — | Gibbs-White | — | Calvert-Lewin | Delap |
+| 5 | Gibbs-White | Gibbs-White | Barry | Calvert-Lewin | Delap |
 
 `×2` is a £6 stake (double points). Per-pick goals and clubs are in `picks.csv`.
 
@@ -71,16 +72,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 5 | Fri 18 Sep 2026, 17:30 UTC | in 9h |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 22d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 29d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 35d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 43d |
+| 5 | Fri 18 Sep 2026, 17:30 UTC | 15h ago |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 21d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 28d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 34d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 42d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Fri 18 Sep 2026, 08:00 UTC | 57m ago |
+| players | Sat 19 Sep 2026, 08:00 UTC | 45m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.

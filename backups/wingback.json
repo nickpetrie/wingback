@@ -1,5 +1,5 @@
 {
-  "taken_at": "2026-09-18T08:57:24.899Z",
+  "taken_at": "2026-09-19T08:44:55.344Z",
   "entrants": [
     {
       "id": "a1000000-0000-0000-0000-000000000003",
@@ -7,7 +7,7 @@
       "email": "alexanderbeetles@gmail.com",
       "auth_user_id": "426123e6-e523-4a69-892f-8f71421dd7f1",
       "nomination_player_code": 223094,
-      "avatar_updated_at": null,
+      "avatar_updated_at": "2026-09-18T12:50:04.02+00:00",
       "created_at": "2026-08-24T11:40:06.386869+00:00"
     },
     {
@@ -294,6 +294,32 @@
       "substituted_from_player_code": null,
       "created_at": "2026-09-17T15:40:16.317124+00:00",
       "updated_at": "2026-09-17T15:40:16.317124+00:00"
+    },
+    {
+      "id": 21,
+      "entrant_id": "a1000000-0000-0000-0000-000000000003",
+      "gameweek": 5,
+      "player_code": 222531,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-09-18T12:44:10.232661+00:00",
+      "updated_at": "2026-09-18T12:44:10.232661+00:00"
+    },
+    {
+      "id": 22,
+      "entrant_id": "a1000000-0000-0000-0000-000000000004",
+      "gameweek": 5,
+      "player_code": 586309,
+      "fixture_id": null,
+      "stake": 3,
+      "goals": 0,
+      "is_substitution": false,
+      "substituted_from_player_code": null,
+      "created_at": "2026-09-18T16:11:04.345526+00:00",
+      "updated_at": "2026-09-18T16:11:04.345526+00:00"
     },
     {
       "id": 20,
