@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Sat 19 Sep 2026, 08:44 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Sun 20 Sep 2026, 09:13 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -8,16 +8,16 @@ Read this first: it is the whole season in one file, so a session can answer que
 
 **Gameweek 5** is the one in play — locked.
 
-- Deadline: Fri 18 Sep 2026, 17:30 UTC (15h ago)
-- Picks lock: Fri 18 Sep 2026, 18:00 UTC (15h ago)
+- Deadline: Fri 18 Sep 2026, 17:30 UTC (2d ago)
+- Picks lock: Fri 18 Sep 2026, 18:00 UTC (2d ago)
 - Picked: 5 of 5
 
 | entrant | player | club | stake | goals | points |
 | --- | --- | --- | --- | --- | --- |
+| Henry Kirby | Barry | EVE | £3 | 1 | 1 |
 | Nick Petrie | Calvert-Lewin | LEE | £3 | 0 | 0 |
 | Tom Petrie | Delap | NFO | £3 | 0 | 0 |
 | Alex Beetles | Gibbs-White | NFO | £3 | 0 | 0 |
-| Henry Kirby | Barry | EVE | £3 | 0 | 0 |
 | Casra Abedian | Gibbs-White | NFO | £3 | 0 | 0 |
 
 ## Standings (after gameweek 4)
@@ -25,7 +25,7 @@ Read this first: it is the whole season in one file, so a session can answer que
 | # | entrant | points | scoring GWs |
 | --- | --- | --- | --- |
 | 1 | Nick Petrie | 5 | 4 |
-| 2 | Henry Kirby | 4 | 2 |
+| 2 | Henry Kirby | 5 | 3 |
 | 3 | Alex Beetles | 3 | 2 |
 | 4 | Casra Abedian | 3 | 2 |
 | 5 | Tom Petrie | 2 | 1 |
@@ -52,7 +52,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | 2 | Cunha | Mbeumo — 1pt | Haaland — 2pt | Isak — 1pt | Havertz |
 | 3 | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt |
 | 4 | João Pedro — 1pt | Palmer | Isak | Saka — 1pt | Isak |
-| 5 | Gibbs-White | Gibbs-White | Barry | Calvert-Lewin | Delap |
+| 5 | Gibbs-White | Gibbs-White | Barry — 1pt | Calvert-Lewin | Delap |
 
 `×2` is a £6 stake (double points). Per-pick goals and clubs are in `picks.csv`.
 
@@ -72,16 +72,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 5 | Fri 18 Sep 2026, 17:30 UTC | 15h ago |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 21d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 28d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 34d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 42d |
+| 5 | Fri 18 Sep 2026, 17:30 UTC | 2d ago |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 20d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 27d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 33d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 41d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Sat 19 Sep 2026, 08:00 UTC | 45m ago |
+| players | Sun 20 Sep 2026, 09:00 UTC | 14m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
