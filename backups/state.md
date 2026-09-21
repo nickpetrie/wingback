@@ -1,26 +1,19 @@
 # Wingback — season state
 
-Generated Sun 20 Sep 2026, 09:13 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Mon 21 Sep 2026, 09:51 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
 ## Right now
 
-**Gameweek 5** is the one in play — locked.
+**Gameweek 6** is the one in play — open for picks.
 
-- Deadline: Fri 18 Sep 2026, 17:30 UTC (2d ago)
-- Picks lock: Fri 18 Sep 2026, 18:00 UTC (2d ago)
-- Picked: 5 of 5
+- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 19d)
+- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 19d)
+- Picked: 0 of 5
+- Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Nick Petrie, Tom Petrie
 
-| entrant | player | club | stake | goals | points |
-| --- | --- | --- | --- | --- | --- |
-| Henry Kirby | Barry | EVE | £3 | 1 | 1 |
-| Nick Petrie | Calvert-Lewin | LEE | £3 | 0 | 0 |
-| Tom Petrie | Delap | NFO | £3 | 0 | 0 |
-| Alex Beetles | Gibbs-White | NFO | £3 | 0 | 0 |
-| Casra Abedian | Gibbs-White | NFO | £3 | 0 | 0 |
-
-## Standings (after gameweek 4)
+## Standings (after gameweek 5)
 
 | # | entrant | points | scoring GWs |
 | --- | --- | --- | --- |
@@ -72,16 +65,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 5 | Fri 18 Sep 2026, 17:30 UTC | 2d ago |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 20d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 27d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 33d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 41d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 19d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 26d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 32d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 40d |
+| 10 | Sat 7 Nov 2026, 13:30 UTC | in 47d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Sun 20 Sep 2026, 09:00 UTC | 14m ago |
+| players | Mon 21 Sep 2026, 09:00 UTC | 51m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
