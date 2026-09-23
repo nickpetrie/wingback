@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Tue 22 Sep 2026, 09:14 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Wed 23 Sep 2026, 09:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -8,8 +8,8 @@ Read this first: it is the whole season in one file, so a session can answer que
 
 **Gameweek 6** is the one in play — open for picks.
 
-- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 18d)
-- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 18d)
+- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 17d)
+- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 17d)
 - Picked: 0 of 5
 - Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Nick Petrie, Tom Petrie
 
@@ -65,16 +65,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 18d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 25d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 31d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 39d |
-| 10 | Fri 6 Nov 2026, 18:30 UTC | in 45d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 17d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 24d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 30d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 38d |
+| 10 | Fri 6 Nov 2026, 18:30 UTC | in 44d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Tue 22 Sep 2026, 09:00 UTC | 15m ago |
+| players | Wed 23 Sep 2026, 09:00 UTC | 15m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
