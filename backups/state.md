@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Wed 23 Sep 2026, 09:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Thu 24 Sep 2026, 09:14 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -8,10 +8,14 @@ Read this first: it is the whole season in one file, so a session can answer que
 
 **Gameweek 6** is the one in play — open for picks.
 
-- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 17d)
-- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 17d)
-- Picked: 0 of 5
-- Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Nick Petrie, Tom Petrie
+- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 16d)
+- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 16d)
+- Picked: 1 of 5
+- Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Tom Petrie
+
+| entrant | player | club | stake | goals | points |
+| --- | --- | --- | --- | --- | --- |
+| Nick Petrie | Bruno G. | ARS | £3 | 0 | 0 |
 
 ## Standings (after gameweek 5)
 
@@ -34,7 +38,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gibbs-White, Gyökeres, João Pedro |
 | Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Gibbs-White, Mbeumo, Palmer |
 | Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Barry, Haaland, Isak |
-| Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Calvert-Lewin, Havertz, Isak, Saka |
+| Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Bruno G., Calvert-Lewin, Havertz, Isak, Saka |
 | Tom Petrie | João Pedro | CHE | 0/2 | Delap, Haaland, Havertz, Isak |
 
 ## Every pick so far
@@ -46,6 +50,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | 3 | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt |
 | 4 | João Pedro — 1pt | Palmer | Isak | Saka — 1pt | Isak |
 | 5 | Gibbs-White | Gibbs-White | Barry — 1pt | Calvert-Lewin | Delap |
+| 6 | — | — | — | Bruno G. | — |
 
 `×2` is a £6 stake (double points). Per-pick goals and clubs are in `picks.csv`.
 
@@ -65,16 +70,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 17d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 24d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 30d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 38d |
-| 10 | Fri 6 Nov 2026, 18:30 UTC | in 44d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 16d |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 23d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 29d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 37d |
+| 10 | Fri 6 Nov 2026, 18:30 UTC | in 43d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Wed 23 Sep 2026, 09:00 UTC | 15m ago |
+| players | Thu 24 Sep 2026, 09:00 UTC | 14m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
