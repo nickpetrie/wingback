@@ -59,7 +59,38 @@ reading the project URL and service key from Supabase Vault at call time.
   lock check fires on a *choice* change (player or stake); the reuse check
   fires only on a *player* change. Recording goals (an update touching
   neither) must trip neither — conflating them lets a goal-sync run
-  retroactively invalidate an unrelated gameweek's pick.
+  retroactively invalidate an unrelated gameweek's pick. The substitution
+  exemption from the lock is narrower than `is_substitution`: it covers a
+  *player* swap at an unchanged stake, within the pick's own fixture, before
+  that fixture kicks off, for a player who plays in it, once per pick and
+  twice a season (`20260101000032`). Anything else after lock — a stake
+  change, un-flagging a substitution, moving `fixture_id` — is just a locked
+  pick. Measured hole: `{stake: 6, is_substitution: true}` sent straight to
+  PostgREST after lock doubled the stake, because the stake path never
+  reached the substitution checks. Pinned by pgTAP.
+- **`entrants.email` and `entrants.phone` are column-privileged, not
+  row-privileged.** `entrants readable` is `using (true)` because everyone
+  needs everyone's display name, so the contact columns are withheld by
+  revoking table-level SELECT and granting the other columns back one by one
+  (`20260101000032`). An entrant reads their own via `my_contact()`
+  (security definer, keyed on `auth.uid()`). Never add `email`/`phone` to an
+  entrants `.select()` in the app or to a `security_invoker` view — the
+  query is refused (42501), not empty. UPDATE is untouched, and supabase-js
+  sends `return=minimal` unless `.select()` is chained, so the settings and
+  claim writes still work. The test harness applies Supabase's grants as
+  *default privileges before* the migrations for exactly this reason: a
+  blanket grant run afterwards would hand the columns back and the test
+  would pass for the wrong reason.
+- **An entrant's `email` is whatever `auth.users` says.**
+  `entrants_guard_contact` overwrites it on every authenticated update, so
+  the address alerts go to is always the one they signed in with, never one
+  an entrant typed into a PATCH. `display_name` is 1–40 characters by check
+  constraint because it is interpolated into everyone's alert subjects.
+- **Nobody self-registers.** `sendMagicLink` passes `shouldCreateUser:
+  false`, and the hosted project has sign-ups off (DEPLOY.md §1). Without
+  both, a stranger typing their own address at `/login` got an
+  `authenticated` JWT, and `authenticated` is the role every policy grants
+  to. A sixth entrant is invited from the dashboard and claims a seeded row.
 - **Never `.upsert()` a pick from the app.** An upsert's BEFORE INSERT
   trigger still fires for the candidate row even when it resolves via ON
   CONFLICT DO UPDATE, which re-runs the once-per-season reuse check as if
@@ -97,11 +128,33 @@ reading the project URL and service key from Supabase Vault at call time.
   all of them waiting on nothing. Both are now `Promise.all` tiers with only
   the genuine dependencies (the gameweek; the nomination's player name)
   sequenced. If you add a query, put it in the tier it actually belongs to.
-- **`notify` claims rows before it sends, not after.** `delivered_at` is
-  stamped on the whole batch up front, so an isolate killed mid-loop cannot
-  make the next tick re-send what already went out. That is what
-  "the dispatcher has considered this" always meant: at-most-once, which for
-  a goal alert is the right way to be wrong.
+- **`notify` claims rows before it sends, not after — and the claim is
+  conditional.** `delivered_at` is stamped up front with `delivered_at is
+  null` in the WHERE and only the rows that come back are dispatched, so an
+  isolate killed mid-loop cannot make the next tick re-send what already went
+  out, and two overlapping runs (it ticks every minute and a send has no
+  upper bound) cannot both send the same batch: Postgres serialises the two
+  updates and the second matches nothing. An unconditional stamp is not a
+  claim. That is what "the dispatcher has considered this" always meant:
+  at-most-once, which for a goal alert is the right way to be wrong. Every
+  outbound send has a 10s timeout for the same reason — a hung provider
+  after the claim is a lost alert.
+- **Cron-driven edge functions accept only the service-role bearer**
+  (`_shared/auth.ts`, `assertServiceCaller`). The gateway's `verify_jwt` only
+  checks that the token is *a* project JWT, and the anon key in every page is
+  one, so anyone who had opened the app could invoke `sync-fpl` in a loop and
+  trip the Fastly bans below. `call_edge_function` sends the Vault
+  `service_role_key`; the platform injects the same key as
+  `SUPABASE_SERVICE_ROLE_KEY`. If the two differ, nothing scheduled runs and
+  every job 401s — DEPLOY.md §2 says to keep them identical. `push-test` is
+  the one exception (see the browser-invoked bullet below).
+- **`push_subscriptions.endpoint` is allow-listed to the four browser push
+  services** (FCM, Apple, Mozilla, WNS), in `lib/push.ts` and as a CHECK
+  constraint. `notify` POSTs to that URL from the service role's egress, so an
+  arbitrary endpoint is a request the platform makes on the entrant's behalf,
+  and `push-test` used to hand the first 200 bytes of the response back. A new
+  browser with its own push host needs the regex widened in both places, not
+  the constraint dropped.
 - **`score` never writes `goals` for a player absent from the live payload.**
   "Not in this response" is not "scored nothing" — writing 0 wipes a real
   score, and the next good run restoring it 0→2 re-fires the goal alert
@@ -300,7 +353,11 @@ reading the project URL and service key from Supabase Vault at call time.
   `backups/state.md` (from `scripts/state.mjs`) — the season as one readable
   page, which is where to look first for who is in play, who still has to
   pick, and how much of each nomination is spent. It is derived, never
-  restored from.
+  restored from. The repository is the one place this copy lives, so the
+  entrants array carries no `email` or `auth_user_id` — a restore gets both
+  back from each person claiming their profile again. `vercel.json` skips the
+  production build for commits that touch only `backups/`; before that every
+  daily backup redeployed the site and purged the CDN's cached player images.
 - `supabase/functions/` — `sync-fpl` (hourly between gameweeks, every 10
   minutes for the 5 hours before a lock), `score` (every 3 minutes inside a
   fixture's match window, plus a daily settle), `notify` (every minute — the
@@ -375,8 +432,11 @@ supabase/tests/run.sh
 ```
 
 This is the thing to run after touching any migration in
-`supabase/migrations/000000`–`000003`. It seeds its own fixtures and drops
-the scratch database each time; never point it at a real project.
+`supabase/migrations/000000`–`000003` or `000032`. It seeds its own fixtures
+and drops the scratch database each time; never point it at a real project.
+`01_local_grants.sql` runs *before* the migrations, as default privileges,
+because that is when Supabase's own grants apply — and because running a
+blanket grant afterwards would undo the column privileges on `entrants`.
 
 ## Conventions
 
