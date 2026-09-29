@@ -15,12 +15,16 @@ run -c "drop database if exists ${DB};"
 run -c "create database ${DB};"
 run -d "$DB" -c "create extension if not exists pgtap; create extension if not exists pgcrypto;"
 
-# 20260101000004_cron.sql, 20260101000014_score_on_match_windows.sql and
-# 20260101000008_avatars_storage.sql are deliberately excluded: the first two
-# need pg_cron/pg_net/Vault and the last needs Supabase's storage schema,
-# none of which exist in a plain local Postgres. None has anything to do with
-# the rules engine anyway.
+# 20260101000004_cron.sql, 20260101000014_score_on_match_windows.sql,
+# 20260101000008_avatars_storage.sql and 20260101000033_avatar_bucket_limits.sql
+# are deliberately excluded: the first two need pg_cron/pg_net/Vault and the
+# last two need Supabase's storage schema, none of which exist in a plain local
+# Postgres. None has anything to do with the rules engine anyway.
+#
+# 01_local_grants.sql runs before the migrations, as Supabase's default
+# privileges do, so a migration that narrows a grant is tested as deployed.
 for f in supabase/tests/00_local_harness.sql \
+         supabase/tests/01_local_grants.sql \
          supabase/migrations/20260101000000_schema.sql \
          supabase/migrations/20260101000001_functions.sql \
          supabase/migrations/20260101000002_views.sql \
@@ -31,6 +35,7 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000009_public_picks.sql \
          supabase/migrations/20260101000011_team_code.sql \
          supabase/migrations/20260101000015_fixture_played.sql \
+         supabase/migrations/20260101000017_avatar_updated_at.sql \
          supabase/migrations/20260101000020_player_season_stats.sql \
          supabase/migrations/20260101000019_push_subscriptions.sql \
          supabase/tests/02_local_realtime.sql \
@@ -41,7 +46,7 @@ for f in supabase/tests/00_local_harness.sql \
          supabase/migrations/20260101000029_gameweek_finished_latch.sql \
          supabase/migrations/20260101000030_alert_tidy.sql \
          supabase/migrations/20260101000031_cards_and_own_goals.sql \
-         supabase/tests/01_local_grants.sql; do
+         supabase/migrations/20260101000032_review_hardening.sql; do
   run -d "$DB" -f "$f" > /dev/null
 done
 

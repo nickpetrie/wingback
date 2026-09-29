@@ -7,11 +7,16 @@ export default async function OnboardingPage() {
   const user = await getSessionUser();
   if (!user) return null;
 
-  const { data: entrant } = await supabase
-    .from("entrants")
-    .select("id, display_name, phone, nomination_player_code")
-    .eq("auth_user_id", user.id)
-    .single();
+  // The phone comes from my_contact(): the entrants table no longer grants an
+  // entrant SELECT on email or phone, their own row included.
+  const [{ data: entrant }, { data: contact }] = await Promise.all([
+    supabase
+      .from("entrants")
+      .select("id, display_name, nomination_player_code")
+      .eq("auth_user_id", user.id)
+      .single(),
+    supabase.rpc("my_contact").maybeSingle(),
+  ]);
 
   if (!entrant) return null; // middleware sends anyone without a claim to /claim first
 
@@ -36,7 +41,7 @@ export default async function OnboardingPage() {
         <OnboardingForm
           entrantId={entrant.id}
           initials={initials}
-          initialPhone={entrant.phone ?? ""}
+          initialPhone={contact?.phone ?? ""}
           players={players}
           initialNomination={initialNomination}
         />

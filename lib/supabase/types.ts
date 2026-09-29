@@ -334,6 +334,13 @@ export interface Database {
         Args: { element_type: number; stake: number; goals: number };
         Returns: number;
       };
+      // The only way an entrant reads their own email/phone: 20260101000032
+      // withdrew the column privilege on entrants, so a select of either
+      // column there is refused, not empty.
+      my_contact: {
+        Args: Record<PropertyKey, never>;
+        Returns: { email: string | null; phone: string | null }[];
+      };
     };
   };
 }

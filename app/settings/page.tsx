@@ -9,11 +9,16 @@ export default async function SettingsPage() {
   const user = await getSessionUser();
   if (!user) return null;
 
-  const { data: entrant } = await supabase
-    .from("entrants")
-    .select("id, display_name, email, phone, nomination_player_code, avatar_updated_at")
-    .eq("auth_user_id", user.id)
-    .single();
+  // Contact details come from my_contact(): the entrants table no longer
+  // grants an entrant SELECT on email or phone, their own row included.
+  const [{ data: entrant }, { data: contact }] = await Promise.all([
+    supabase
+      .from("entrants")
+      .select("id, display_name, nomination_player_code, avatar_updated_at")
+      .eq("auth_user_id", user.id)
+      .single(),
+    supabase.rpc("my_contact").maybeSingle(),
+  ]);
 
   if (!entrant) return null; // middleware sends anyone without a claim to /claim first
 
@@ -41,8 +46,8 @@ export default async function SettingsPage() {
       </div>
       <AlertsForm
         initialPrefs={prefs}
-        initialPhone={entrant.phone ?? ""}
-        email={entrant.email ?? user.email ?? null}
+        initialPhone={contact?.phone ?? ""}
+        email={contact?.email ?? user.email ?? null}
       />
       <SettingsForm
         entrantId={entrant.id}

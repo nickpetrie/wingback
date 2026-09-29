@@ -18,7 +18,7 @@
 -- Never run this against the production database: it inserts fixture data.
 
 begin;
-select plan(73);
+select plan(104);
 
 grant anon, authenticated, service_role to current_user;
 
@@ -36,6 +36,14 @@ create or replace function test_as_service() returns void language plpgsql as $$
 begin
   execute 'set local role service_role';
   perform set_config('request.jwt.claim.role', 'service_role', true);
+end;
+$$;
+
+create or replace function test_as_anon() returns void language plpgsql as $$
+begin
+  execute 'set local role anon';
+  perform set_config('request.jwt.claim.role', 'anon', true);
+  perform set_config('request.jwt.claim.sub', '', true);
 end;
 $$;
 
@@ -827,6 +835,261 @@ select is(
     where gameweek = 36 and entrant_id = '11111111-1111-1111-1111-111111111111'),
   0,
   'neither a red card nor an own goal moves anybody''s points'
+);
+
+-- ---------------------------------------------------------------------
+-- The free substitution is a player swap and nothing else
+-- ---------------------------------------------------------------------
+-- The lock exemption used to key off `is_substitution` alone, so after lock
+-- an entrant could PATCH {stake: 6, is_substitution: true} — the stake moved,
+-- the player did not, and the substitution block never ran. A real
+-- substitution also never checked its fixture belonged to the gameweek, had
+-- yet to kick off, or that the new player was in it.
+select test_as_admin();
+insert into teams (id, name, short_name) values (3, 'Spurs', 'TOT');
+insert into players (code, fpl_id, web_name, first_name, second_name, team_id, element_type, status, news) values
+  (800, 800, 'SubA', 'Su', 'BA', 1, 4, 'a', ''),
+  (801, 801, 'SubB', 'Su', 'BB', 1, 4, 'a', ''),
+  (802, 802, 'SubC', 'Su', 'BC', 1, 4, 'a', ''),
+  (803, 803, 'SubD', 'Su', 'BD', 1, 4, 'a', ''),
+  (804, 804, 'SubE', 'Su', 'BE', 1, 4, 'a', ''),
+  (805, 805, 'SubF', 'Su', 'BF', 1, 4, 'a', ''),
+  (806, 806, 'SubIn1', 'Su', 'BIn1', 1, 4, 'a', ''),
+  (807, 807, 'SubIn2', 'Su', 'BIn2', 1, 4, 'a', ''),
+  (810, 810, 'SubAway', 'Su', 'BAway', 2, 4, 'a', ''),
+  (820, 820, 'SubElsewhere', 'Su', 'BElse', 3, 4, 'a', '');
+insert into gameweeks (id) select generate_series(40, 45);
+insert into fixtures (id, event, team_h, team_a, kickoff_time)
+select gw * 100, gw, 1, 2, now() + interval '3 days' from generate_series(40, 45) as gw;
+
+-- Picked while open; then the clock is moved so each gameweek has locked but
+-- its fixture (bar one) is still half an hour from kickoff.
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+insert into picks (entrant_id, gameweek, player_code, fixture_id, stake) values
+  ('11111111-1111-1111-1111-111111111111', 40, 800, 4000, 3),
+  ('11111111-1111-1111-1111-111111111111', 41, 801, 4100, 3),
+  ('11111111-1111-1111-1111-111111111111', 42, 802, 4200, 3),
+  ('11111111-1111-1111-1111-111111111111', 43, 803, 4300, 3),
+  ('11111111-1111-1111-1111-111111111111', 44, 804, null, 3),
+  -- A fixture from a different gameweek: nothing at pick time stops this.
+  ('11111111-1111-1111-1111-111111111111', 45, 805, 4000, 3);
+
+select test_as_admin();
+update fixtures set kickoff_time = now() + interval '30 minutes' where id in (4000, 4100, 4200, 4400, 4500);
+update fixtures set kickoff_time = now() - interval '10 minutes' where id = 4300;
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select throws_like(
+  $$update picks set stake = 6
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%locked%',
+  'a stake change after lock is refused'
+);
+select throws_like(
+  $$update picks set stake = 6, is_substitution = true
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%locked%',
+  'calling the stake change a substitution does not let it through'
+);
+select throws_like(
+  $$update picks set player_code = 806, is_substitution = true
+     where gameweek = 44 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%same fixture%',
+  'a pick with no fixture has nothing to substitute within'
+);
+select throws_like(
+  $$update picks set player_code = 806, is_substitution = true
+     where gameweek = 45 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%fixture of gameweek 45%',
+  'the fixture must belong to the pick''s own gameweek'
+);
+select throws_like(
+  $$update picks set player_code = 810, is_substitution = true
+     where gameweek = 43 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%kicks off%',
+  'a fixture already under way takes no substitutions'
+);
+select throws_like(
+  $$update picks set player_code = 820, is_substitution = true
+     where gameweek = 41 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%player in fixture%',
+  'the substitute must be playing in that fixture'
+);
+select lives_ok(
+  $$update picks set player_code = 806, is_substitution = true
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  'a swap within the fixture, before kickoff, at the same stake goes through'
+);
+select is(
+  (select player_code from picks
+    where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  806,
+  'and the new player is on the pick'
+);
+select is(
+  (select substituted_from_player_code from picks
+    where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'),
+  800,
+  'with the replaced player recorded by the trigger, not the caller'
+);
+select throws_like(
+  $$update picks set is_substitution = false
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%handed back%',
+  'un-flagging a substitution after lock is refused — that was the counter reset'
+);
+select throws_like(
+  $$update picks set player_code = 800, is_substitution = true
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%already used%',
+  'a substituted pick cannot be substituted again'
+);
+select throws_like(
+  $$update picks set fixture_id = 4100
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%locked%',
+  'the fixture is frozen with the rest of the pick after lock'
+);
+select throws_like(
+  $$update picks set is_substitution = true
+     where gameweek = 42 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%change the player%',
+  'a substitution with no substitute is refused'
+);
+
+-- The two-conditions invariant: the results sync touches neither player nor
+-- stake, so nothing above is in its way, substituted pick or not.
+select test_as_service();
+select lives_ok(
+  $$update picks set goals = 1, red_cards = 1
+     where gameweek = 40 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  'the results sync still writes goals and cards to a substituted, locked pick'
+);
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select lives_ok(
+  $$update picks set player_code = 810, is_substitution = true
+     where gameweek = 41 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  'the second substitution of the season goes through'
+);
+select throws_like(
+  $$update picks set player_code = 807, is_substitution = true
+     where gameweek = 42 and entrant_id = '11111111-1111-1111-1111-111111111111'$$,
+  '%limit (2 per season)%',
+  'and the third is refused'
+);
+
+-- ---------------------------------------------------------------------
+-- Contact details are yours alone
+-- ---------------------------------------------------------------------
+-- "entrants readable" is `using (true)` because everyone needs everyone's
+-- display name; email and phone sat on the same row. The fix is a column
+-- privilege, so an entrant reading those two columns is refused outright
+-- (42501) rather than handed nulls.
+select test_as_admin();
+update entrants set phone = '+447700900123' where id = '11111111-1111-1111-1111-111111111111';
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select throws_ok(
+  $$select email from entrants$$,
+  '42501',
+  null,
+  'an entrant cannot read email addresses off the entrants table'
+);
+select throws_ok(
+  $$select phone from entrants$$,
+  '42501',
+  null,
+  'nor phone numbers'
+);
+select lives_ok(
+  $$select display_name, nomination_player_code, avatar_updated_at from entrants$$,
+  'the rest of the row is still readable by everyone'
+);
+select lives_ok(
+  $$select * from leaderboard$$,
+  'and the leaderboard view, which runs as the caller, still works'
+);
+select is(
+  (select email from my_contact()),
+  'alice@example.com',
+  'my_contact() returns the caller''s own email'
+);
+select is(
+  (select phone from my_contact()),
+  '+447700900123',
+  'and their own phone'
+);
+
+-- dave signed in but claimed nothing: no row, no contact.
+select test_as_entrant('44444444-4444-4444-4444-444444444444'::uuid);
+select is(
+  (select count(*)::int from my_contact()),
+  0,
+  'my_contact() returns nothing for a user with no profile'
+);
+
+select test_as_anon();
+select throws_ok(
+  $$select display_name from entrants$$,
+  '42501',
+  null,
+  'anon cannot read entrants at all'
+);
+
+-- ---------------------------------------------------------------------
+-- An entrant's email is the one they sign in with, whatever they send
+-- ---------------------------------------------------------------------
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select lives_ok(
+  $$update entrants set email = 'someone-else@example.com'
+     where id = '11111111-1111-1111-1111-111111111111'$$,
+  'writing another address to your own row is accepted'
+);
+select test_as_admin();
+select is(
+  (select email from entrants where id = '11111111-1111-1111-1111-111111111111'),
+  'alice@example.com',
+  'but what lands is the address on the auth user'
+);
+
+select test_as_entrant('11111111-1111-1111-1111-111111111111'::uuid);
+select throws_ok(
+  $$update entrants set display_name = repeat('x', 41)
+     where id = '11111111-1111-1111-1111-111111111111'$$,
+  '23514',
+  null,
+  'a 41-character display name is refused'
+);
+
+-- ---------------------------------------------------------------------
+-- A push endpoint must be a push service
+-- ---------------------------------------------------------------------
+-- `notify` POSTs to whatever URL the row holds with the service role's
+-- egress, so an endpoint an entrant wrote is a request the platform makes.
+select throws_ok(
+  $$insert into push_subscriptions (endpoint, entrant_id, p256dh, auth)
+     values ('http://169.254.169.254/x', '11111111-1111-1111-1111-111111111111', 'k', 'a')$$,
+  '23514',
+  null,
+  'a metadata-service endpoint is refused'
+);
+select throws_ok(
+  $$insert into push_subscriptions (endpoint, entrant_id, p256dh, auth)
+     values ('https://evil.example/', '11111111-1111-1111-1111-111111111111', 'k', 'a')$$,
+  '23514',
+  null,
+  'an arbitrary https host is refused'
+);
+select lives_ok(
+  $$insert into push_subscriptions (endpoint, entrant_id, p256dh, auth)
+     values ('https://fcm.googleapis.com/fcm/send/abc', '11111111-1111-1111-1111-111111111111', 'k', 'a')$$,
+  'Chrome''s push service is accepted'
+);
+select lives_ok(
+  $$insert into push_subscriptions (endpoint, entrant_id, p256dh, auth)
+     values ('https://web.push.apple.com/abc', '11111111-1111-1111-1111-111111111111', 'k', 'a')$$,
+  'Safari''s push service is accepted'
 );
 
 select * from finish();
