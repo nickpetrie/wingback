@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { isThemeChoice, THEME_BG, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
+import { isThemeChoice, paintThemeColor, THEME_STORAGE_KEY, type ThemeChoice } from "@/lib/theme";
 
 const OPTIONS: { value: ThemeChoice; label: string }[] = [
   { value: "light", label: "Light" },
@@ -42,9 +42,7 @@ function apply(choice: ThemeChoice) {
     choice === "dark" ||
     (choice === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", THEME_BG[dark ? "dark" : "light"]);
+  paintThemeColor(dark);
 }
 
 function setTheme(choice: ThemeChoice) {
@@ -70,33 +68,18 @@ export function ThemeToggle() {
   }, [choice]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ display: "flex", border: "1px solid var(--color-divider)" }}>
-        {OPTIONS.map((o) => {
-          const active = choice === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => setTheme(o.value)}
-              aria-pressed={active}
-              style={{
-                padding: "6px 12px",
-                border: 0,
-                borderLeft: o.value === "light" ? 0 : "1px solid var(--color-divider)",
-                cursor: "pointer",
-                fontFamily: "var(--font-heading)",
-                fontWeight: 800,
-                fontSize: 12,
-                background: active ? "var(--color-text)" : "transparent",
-                color: active ? "var(--color-bg)" : "var(--color-text)",
-              }}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
+    <div className="wb-seg" role="group" aria-label="Theme">
+      {OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          className="wb-seg-btn"
+          onClick={() => setTheme(o.value)}
+          aria-pressed={choice === o.value}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

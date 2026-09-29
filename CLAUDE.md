@@ -168,6 +168,34 @@ reading the project URL and service key from Supabase Vault at call time.
   wraps it in React `cache()`, which is per-request. Don't reach for it inside a
   server action that signs someone in or out: there the whole point is to
   observe the change this request just made.
+- **`viewport-fit=cover` is load-bearing** (the `viewport` export in
+  `layout.tsx`). Without it every `env(safe-area-inset-*)` in `globals.css`
+  evaluates to 0, and with the status bar set to `black-translucent` the
+  header sat under the clock and the Dynamic Island once installed. The
+  header, the toasts, the install prompt and `body`'s side gutters all read
+  those insets. Pinned statically by `tests/responsive.test.ts`; Chromium
+  can't emulate the insets themselves.
+- **Touch targets are 44pt on coarse pointers, and that block is last in
+  `globals.css`.** `@media (pointer: coarse)` restates `.btn`, `.btn-icon`,
+  `.wb-control`, the segmented control and the fixture-day summary at 44px;
+  it must stay after the base rules or source order silently loses. The
+  Playwright fixture walks every button on the main pages with `hasTouch`
+  and asserts the boxes, and also asserts `.btn-icon` stays 36 under a mouse
+  so the pass isn't vacuous.
+- **Muted and accent *text* have their own tokens** — `--color-text-muted`,
+  `--color-text-faint`, `--color-accent-text` — as literal hex, not
+  `color-mix`, because `tests/contrast.test.ts` parses them out of
+  `globals.css` and checks the ratios. The light accent `#1b8a52` is 3.9:1 on
+  the page and fine for fills, not for 11px text; `#167445` is the text
+  version and the `.btn-primary` fill. Club colours pick their text by
+  comparing both ratios (`contrastText` in `lib/teamColors.ts`), because a
+  luminance cut-off still put white on Manchester City's sky blue.
+- **`HeaderSkeleton` is built from the header's own classes**, so the
+  `Suspense` fallback in `layout.tsx` is the header's exact box and the page
+  doesn't shift when `Nav` resolves; `.wb-header-gw` has a `min-height` so
+  the open and locked states are the same height. `paintThemeColor` sets
+  *every* `theme-color` meta, because the `viewport` export emits one per
+  colour scheme and the chosen theme may not be the OS's.
 - **Inputs are 16px on coarse pointers** (`.input`, in `globals.css`). Below
   that, iOS Safari zooms the page in on focus and the layout viewport ends up
   wider than the screen — felt as the field flying off the side when you tap

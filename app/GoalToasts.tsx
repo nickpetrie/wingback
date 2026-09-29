@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { teamColor } from "@/lib/teamColors";
+import { contrastText, teamColor } from "@/lib/teamColors";
 import type { Stake } from "@/lib/supabase/types";
 
 interface Toast {
@@ -10,6 +10,9 @@ interface Toast {
   headline: string;
   sub: string;
   color: string;
+  /** Text on `color`: white on most shirts, dark on City's blue or Leeds'
+   * yellow, where white was 2.5:1 and 1.5:1. */
+  fg: string;
 }
 
 interface ConfettiPiece {
@@ -104,6 +107,7 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
                     ? `${who} — ${pts} pts, and ${name} is theirs to pick again`
                     : `${who}${newRow.stake === 6 ? " ×2" : ""} — ${pts} pt${pts === 1 ? "" : "s"}`,
                   color: colour,
+                  fg: contrastText(colour),
                 },
               ].slice(-3),
             );
@@ -123,8 +127,6 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
     };
   }, [gameweekId]);
 
-  if (toasts.length === 0 && confetti === null) return null;
-
   return (
     <>
       {confetti && (
@@ -143,43 +145,33 @@ export function GoalToasts({ gameweekId }: { gameweekId: number | null }) {
           ))}
         </div>
       )}
-    <div
-      style={{
-        position: "fixed",
-        right: 24,
-        bottom: 24,
-        zIndex: 70,
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        alignItems: "flex-end",
-        pointerEvents: "none",
-      }}
-    >
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className="wb-toast"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "12px 16px",
-            minWidth: 280,
-            background: t.color,
-            color: "#fff",
-            boxShadow: "var(--shadow-lg)",
-          }}
-        >
-          <span style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>
-              {t.headline}
+      {/* Rendered even when empty — see .wb-toasts — so that a screen reader
+          hears a goal land as it does, without being interrupted by it. */}
+      <div className="wb-toasts" role="status" aria-live="polite">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="wb-toast"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              minWidth: 280,
+              background: t.color,
+              color: t.fg,
+              boxShadow: "var(--shadow-lg)",
+            }}
+          >
+            <span style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>
+                {t.headline}
+              </span>
+              <span style={{ fontSize: 11, opacity: 0.85 }}>{t.sub}</span>
             </span>
-            <span style={{ fontSize: 11, opacity: 0.85 }}>{t.sub}</span>
-          </span>
-        </div>
-      ))}
-    </div>
+          </div>
+        ))}
+      </div>
     </>
   );
 }

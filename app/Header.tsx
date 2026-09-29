@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { AppNotification } from "@/lib/alerts";
@@ -10,6 +10,7 @@ import { Avatar } from "./Avatar";
 import { Countdown } from "./pick/Countdown";
 import { GoalToasts } from "./GoalToasts";
 import { LiveRefresh } from "./LiveRefresh";
+import { useDialog } from "./useDialog";
 import { usePresence } from "./usePresence";
 import { signOut } from "./actions";
 
@@ -41,6 +42,11 @@ export function Header({
   notifications: AppNotification[];
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const menuClose = useRef<HTMLButtonElement>(null);
+  useDialog(menuOpen, closeMenu, menuButton, menuClose);
+
   const pathname = usePathname();
   const router = useRouter();
 
@@ -48,86 +54,46 @@ export function Header({
   const sorted = [...standings].sort((a, b) => b.total_points - a.total_points);
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--color-bg)" }}>
-      <div className="wb-page" style={{ padding: "14px 24px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <Link
-            href="/"
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 800,
-              fontSize: 20,
-              letterSpacing: "-.02em",
-              color: "var(--color-accent)",
-              textDecoration: "none",
-            }}
-          >
+    <header className="wb-header">
+      <div className="wb-page wb-header-bar">
+        <div className="wb-header-row">
+          <Link href="/" className="wb-wordmark">
             WINGBACK
           </Link>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-          <AlertBell initial={notifications} />
+          <div className="wb-header-actions">
+            <AlertBell initial={notifications} />
 
-          <button
-            type="button"
-            className="btn btn-secondary wb-tap btn-icon"
-            aria-label="Menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(true)}
-          >
-            <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" fill="none">
-              <path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </button>
+            <button
+              ref={menuButton}
+              type="button"
+              className="btn btn-secondary wb-tap btn-icon"
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              aria-controls={menuOpen ? "wb-menu" : undefined}
+              onClick={() => setMenuOpen(true)}
+            >
+              <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true" fill="none">
+                <path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
           </div>
         </div>
 
         {gameweek && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-            <span
-              style={{
-                background: "var(--color-text)",
-                color: "var(--color-bg)",
-                fontFamily: "var(--font-heading)",
-                fontWeight: 800,
-                fontSize: 11,
-                letterSpacing: ".1em",
-                padding: "3px 8px",
-              }}
-            >
-              GW {gameweek.id}
-            </span>
+          <div className="wb-header-gw">
+            <span className="wb-header-badge">GW {gameweek.id}</span>
             {/* Once the deadline passes, "locked" is the single most useful
                 thing the header can say, so it gets the same badge treatment
                 as the gameweek number rather than a line of grey prose. */}
             {gameweek.state === "locked" && (
-              <span
-                style={{
-                  background: "var(--color-closed)",
-                  color: "#fff",
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: 800,
-                  fontSize: 11,
-                  letterSpacing: ".1em",
-                  padding: "3px 8px",
-                }}
-              >
-                LOCKED
-              </span>
+              <span className="wb-header-badge wb-header-badge-locked">LOCKED</span>
             )}
-            <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <span className="wb-header-status">
               {gameweek.state === "open" ? (
                 <>
                   locks in{" "}
-                  <span
-                    style={{
-                      fontFamily: "var(--font-heading)",
-                      fontWeight: 800,
-                      fontSize: 18,
-                      color: "var(--color-accent)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
+                  <span className="wb-header-countdown">
                     <Countdown lockAt={gameweek.lock_at!} />
                   </span>
                 </>
@@ -145,18 +111,16 @@ export function Header({
 
       {menuOpen && (
         <>
-          <div className="wb-scrim" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-          <nav className="wb-drawer" aria-label="Main menu">
+          <div className="wb-scrim" onClick={closeMenu} aria-hidden="true" />
+          <div id="wb-menu" className="wb-drawer" role="dialog" aria-modal="true" aria-label="Menu">
             <div className="wb-drawer-head">
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Menu
-              </span>
+              <span className="wb-drawer-title">Menu</span>
               <button
+                ref={menuClose}
                 type="button"
-                className="btn btn-ghost wb-tap"
+                className="btn btn-ghost wb-tap btn-icon"
                 aria-label="Close menu"
-                style={{ padding: "4px 8px" }}
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none">
                   <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" />
@@ -164,29 +128,21 @@ export function Header({
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {MENU.map((m) => {
-                const active = pathname === m.href;
-                return (
-                  <button
-                    key={m.href}
-                    type="button"
-                    className="wb-drawer-item"
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      router.push(m.href);
-                    }}
-                    style={{
-                      background: active ? "var(--color-accent)" : "none",
-                      color: active ? "var(--color-bg)" : "var(--color-text)",
-                    }}
-                  >
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Links, not buttons that push a route: VoiceOver then says
+                "link", and a long press offers to open in a new tab. */}
+            <nav aria-label="Main menu" style={{ display: "flex", flexDirection: "column" }}>
+              {MENU.map((m) => (
+                <Link
+                  key={m.href}
+                  href={m.href}
+                  className="wb-drawer-item"
+                  aria-current={pathname === m.href ? "page" : undefined}
+                  onClick={closeMenu}
+                >
+                  {m.label}
+                </Link>
+              ))}
+            </nav>
 
             {/* Sign out lives at the bottom, away from the things you actually
                 came here to tap. */}
@@ -197,17 +153,11 @@ export function Header({
             >
               Sign out
             </button>
-          </nav>
+          </div>
         </>
       )}
 
-      <div
-        style={{
-          borderTop: "2px solid var(--color-divider)",
-          borderBottom: "2px solid var(--color-divider)",
-          background: "var(--color-bg)",
-        }}
-      >
+      <div className="wb-header-standings">
         <div className="wb-page wb-standings" aria-label="Standings">
           {sorted.map((row, i) => {
             const isMe = row.entrant_id === entrantId;
@@ -233,7 +183,7 @@ export function Header({
                   <span className="wb-standing-name">{row.display_name.split(" ")[0]}</span>
                   {row.stars > 0 && (
                     <span className="wb-standing-stars" aria-hidden="true">
-                      {"\u2605".repeat(row.stars)}
+                      {"★".repeat(row.stars)}
                     </span>
                   )}
                 </span>

@@ -37,8 +37,16 @@ export function PlayerSearchInput({
   return (
     <div style={{ position: "relative" }}>
       <input
-        type="text"
+        type="search"
         placeholder={placeholder}
+        // The placeholder is the only label on screen, and a placeholder is
+        // not a name.
+        aria-label={placeholder.replace(/…$/, "")}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        enterKeyHint="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="input"
@@ -73,6 +81,7 @@ export function PlayerSearchInput({
                   width: "100%",
                   alignItems: "center",
                   justifyContent: "space-between",
+                  minHeight: 44,
                   padding: "10px 14px",
                   textAlign: "left",
                   fontSize: 14,
@@ -90,7 +99,7 @@ export function PlayerSearchInput({
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                      color: "var(--color-text-muted)",
                     }}
                   >
                     · <TeamBadge code={p.team_code} size={14} /> {p.team_short_name}

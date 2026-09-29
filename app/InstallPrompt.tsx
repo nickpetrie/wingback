@@ -87,7 +87,7 @@ export function InstallPrompt() {
         <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 14 }}>
           Put Wingback on your home screen
         </p>
-        <p style={{ margin: "2px 0 0", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+        <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-text-muted)" }}>
           {showIosHint ? (
             <>
               Tap Share, then <strong style={{ fontWeight: 600 }}>Add to Home Screen</strong>.

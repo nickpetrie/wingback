@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Avatar } from "../Avatar";
+
+function ordinal(n: number): string {
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
+  return `${n}${suffix}`;
+}
 
 export type SeasonCell =
   | { state: "empty"; gw: number }
@@ -42,13 +47,25 @@ export interface BoardRow {
 
 export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const idPrefix = useId();
 
   return (
     <div>
-      {rows.map((row) => (
+      {rows.map((row) => {
+        const open = openId === row.entrant_id;
+        const panelId = `${idPrefix}-${row.entrant_id}`;
+        const scoring = `${row.scoring} scoring ${row.scoring === 1 ? "GW" : "GWs"}`;
+        return (
         <div key={row.entrant_id}>
-          <div
+          {/* A button, so it can be reached and its state heard; the name
+              carries what the eye gets from the row, since the glyph and the
+              big number on their own say nothing to a screen reader. */}
+          <button
+            type="button"
             className="wb-row wb-board-row"
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={`${row.name}, ${ordinal(row.rank)}, ${row.points} point${row.points === 1 ? "" : "s"}, ${scoring}${row.note ? `, ${row.note}` : ""}. Season record`}
             onClick={() => setOpenId((id) => (id === row.entrant_id ? null : row.entrant_id))}
           >
             <span className="wb-board-rank">{row.rank}</span>
@@ -58,24 +75,24 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
               {row.stars > 0 && <span style={{ fontSize: 12, marginLeft: 6 }}>{"\u2605".repeat(row.stars)}</span>}
             </span>
             <span className="wb-board-points">{row.points}</span>
-            <span style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
-              {openId === row.entrant_id ? "\u25b2" : "\u25bc"}
+            <span className="wb-board-chev" aria-hidden="true">
+              {open ? "\u25b2" : "\u25bc"}
             </span>
             <span className="wb-board-meta">
-              {row.scoring} {row.scoring === 1 ? "scoring GW" : "scoring GWs"}
+              {scoring}
               {row.note ? ` \u00b7 ${row.note}` : ""}
             </span>
-          </div>
+          </button>
 
-          {openId === row.entrant_id && (
-            <div className="wb-in" style={{ padding: "18px 0 26px", borderBottom: "1px solid var(--color-divider)" }}>
+          {open && (
+            <div id={panelId} className="wb-in" style={{ padding: "18px 0 26px", borderBottom: "1px solid var(--color-divider)" }}>
               <p
                 style={{
                   margin: "0 0 10px",
                   fontSize: 11,
                   letterSpacing: ".08em",
                   textTransform: "uppercase",
-                  color: "color-mix(in srgb, var(--color-text) 55%, transparent)",
+                  color: "var(--color-text-muted)",
                 }}
               >
                 Season record · 38 gameweeks
@@ -85,7 +102,7 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
                   <SeasonCellView key={cell.gw} cell={cell} />
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 20, marginTop: 12, flexWrap: "wrap", fontSize: 11, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              <div style={{ display: "flex", gap: 20, marginTop: 12, flexWrap: "wrap", fontSize: 11, color: "var(--color-text-muted)" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ width: 10, height: 10, background: "var(--color-neutral-500)", display: "block" }} />
                   scored
@@ -105,13 +122,14 @@ export function LeaderboardTable({ rows }: { rows: BoardRow[] }) {
               </div>
               <NominationView nomination={row.nomination} />
 
-              <p style={{ margin: "12px 0 0", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+              <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
                 {row.summary}
               </p>
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -161,6 +179,7 @@ function NominationView({ nomination }: { nomination: Nomination | null }) {
       <span
         className={`wb-nom-count${used >= 2 ? " wb-nom-count-spent" : ""}`}
         title={`${used} of 2 uses spent`}
+        aria-label={`${used} of 2 uses spent`}
       >
         {used}/2
       </span>
@@ -168,10 +187,16 @@ function NominationView({ nomination }: { nomination: Nomination | null }) {
   );
 }
 
+/** One gameweek of the season record. Each cell is role="img" named by the
+ * same sentence its tooltip shows: a tooltip reaches a mouse and nothing
+ * else, and the photo's own alt would only ever have said the name. */
 function SeasonCellView({ cell }: { cell: SeasonCell }) {
   if (cell.state === "empty") {
+    const title = `GW${cell.gw} — no pick`;
     return (
       <div
+        role="img"
+        aria-label={title}
         style={{
           aspectRatio: "1",
           border: "1px dashed var(--color-divider)",
@@ -179,9 +204,9 @@ function SeasonCellView({ cell }: { cell: SeasonCell }) {
           placeItems: "center",
           position: "relative",
         }}
-        title={`GW${cell.gw} — no pick`}
+        title={title}
       >
-        <span style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", color: "color-mix(in srgb, var(--color-text) 30%, transparent)" }}>
+        <span style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", color: "var(--color-text-faint)" }}>
           {cell.gw}
         </span>
       </div>
@@ -189,10 +214,11 @@ function SeasonCellView({ cell }: { cell: SeasonCell }) {
   }
 
   if (cell.state === "pending") {
+    const title = `GW${cell.gw} — ${cell.webName}, pending`;
     return (
-      <div style={{ aspectRatio: "1", position: "relative", border: "1px solid var(--color-accent)" }} title={`GW${cell.gw} — ${cell.webName}, pending`}>
+      <div role="img" aria-label={title} style={{ aspectRatio: "1", position: "relative", border: "1px solid var(--color-accent)" }} title={title}>
         {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
-        <img src={`/api/player-image/${cell.playerCode}`} alt={cell.webName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={`/api/player-image/${cell.playerCode}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <span style={{ position: "absolute", left: 2, top: 1, fontSize: 7, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,.8)" }}>
           {cell.gw}
         </span>
@@ -204,6 +230,8 @@ function SeasonCellView({ cell }: { cell: SeasonCell }) {
 
   return (
     <div
+      role="img"
+      aria-label={title}
       style={{
         aspectRatio: "1",
         position: "relative",
@@ -215,7 +243,7 @@ function SeasonCellView({ cell }: { cell: SeasonCell }) {
       {/* eslint-disable-next-line @next/next/no-img-element -- server-posterised card */}
       <img
         src={`/api/player-image/${cell.playerCode}`}
-        alt={cell.webName}
+        alt=""
         style={{
           width: "100%",
           height: "100%",

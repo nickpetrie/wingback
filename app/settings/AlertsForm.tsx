@@ -82,7 +82,7 @@ export function AlertsForm({
           aria-live="polite"
           style={{
             fontSize: 11,
-            color: status === "error" ? "var(--color-closed)" : "color-mix(in srgb, var(--color-text) 50%, transparent)",
+            color: status === "error" ? "var(--color-closed)" : "var(--color-text-muted)",
           }}
         >
           {status === "error" ? error : status === "saved" ? "Saved" : ""}
@@ -138,6 +138,7 @@ export function AlertsForm({
               className="input"
               type="tel"
               inputMode="tel"
+              autoComplete="tel"
               placeholder="+44…"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}

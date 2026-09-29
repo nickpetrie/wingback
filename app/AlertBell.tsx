@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AppNotification } from "@/lib/alerts";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relativeTime";
 import { markAlertsRead } from "./settings/actions";
+import { useDialog } from "./useDialog";
 
 const KIND_GLYPH: Record<string, string> = {
   goal: "⚽",
@@ -27,6 +28,11 @@ export function AlertBell({ initial: items }: { initial: AppNotification[] }) {
   // of the page, and a local copy could only ever be a staler version of it.
   const [readHere, setReadHere] = useState<ReadonlySet<number>>(new Set());
   const router = useRouter();
+
+  const close = useCallback(() => setOpen(false), []);
+  const bell = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useDialog(open, close, bell, closeButton);
 
   // New rows arrive live, so a goal reaches the bell while you're looking at
   // the page rather than on your next navigation.
@@ -64,10 +70,12 @@ export function AlertBell({ initial: items }: { initial: AppNotification[] }) {
   return (
     <>
       <button
+        ref={bell}
         type="button"
         className="btn btn-secondary wb-tap btn-icon wb-bell"
         aria-label={unread > 0 ? `Alerts, ${unread} unread` : "Alerts"}
         aria-expanded={open}
+        aria-controls={open ? "wb-alerts" : undefined}
         onClick={toggle}
       >
         <svg width="16" height="17" viewBox="0 0 16 17" aria-hidden="true" fill="none">
@@ -88,16 +96,16 @@ export function AlertBell({ initial: items }: { initial: AppNotification[] }) {
 
       {open && (
         <>
-          <div className="wb-scrim" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="wb-alerts-panel" role="dialog" aria-label="Alerts">
+          <div className="wb-scrim" onClick={close} aria-hidden="true" />
+          <div id="wb-alerts" className="wb-alerts-panel" role="dialog" aria-modal="true" aria-label="Alerts">
             <div className="wb-drawer-head">
-              <span className="wb-alerts-panel-title">Alerts</span>
+              <span className="wb-drawer-title">Alerts</span>
               <button
+                ref={closeButton}
                 type="button"
-                className="btn btn-ghost wb-tap"
+                className="btn btn-ghost wb-tap btn-icon"
                 aria-label="Close alerts"
-                style={{ padding: "4px 8px" }}
-                onClick={() => setOpen(false)}
+                onClick={close}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none">
                   <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" />

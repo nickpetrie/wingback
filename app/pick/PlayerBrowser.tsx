@@ -207,7 +207,13 @@ export function PlayerBrowser({
           className="input wb-picker-input"
           type="search"
           role="combobox"
+          // A surname is not a word the keyboard should be correcting, and
+          // "Gyökeres" capitalised or "autocompleted" is a miss, not a match.
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="search"
           aria-expanded={options.length > 0}
           aria-controls={listId}
           aria-autocomplete="list"

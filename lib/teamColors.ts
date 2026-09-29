@@ -61,3 +61,40 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const n = parseInt(hex.slice(1), 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
+
+/** The two colours text on a shirt can be. Literal, not `var(--color-text)`:
+ * that token flips light in the dark theme, and a club's yellow does not. */
+export const ON_DARK_SHIRT = "#ffffff";
+export const ON_LIGHT_SHIRT = "#201e1d";
+
+function channel(c: number): number {
+  const s = c / 255;
+  return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+
+/** WCAG relative luminance, 0 (black) to 1 (white). */
+export function relativeLuminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** White or dark, whichever reads better on the colour given. Chosen by
+ * comparing the two ratios rather than by a luminance cut-off: City's blue
+ * (#6CABDD) has a luminance of 0.375, which a "0.4 means light" threshold
+ * would still have called dark enough for white — at 2.47:1, against 6.73:1
+ * for dark text on it. */
+export function contrastText(hex: string): string {
+  return contrastRatio(ON_LIGHT_SHIRT, hex) > contrastRatio(ON_DARK_SHIRT, hex)
+    ? ON_LIGHT_SHIRT
+    : ON_DARK_SHIRT;
+}
+
+/** Text colour for anything painted in `teamColor(shortName)`. */
+export function teamTextColor(shortName: string): string {
+  return contrastText(teamColor(shortName));
+}

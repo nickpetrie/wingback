@@ -38,6 +38,43 @@ export function SkelBlock({
   );
 }
 
+/** The header while Nav is still asking Supabase who you are. Built from the
+ * header's own classes (.wb-header, .wb-header-gw, .wb-standing) rather than
+ * copied dimensions, so the two are the same height by construction — the
+ * icon boxes are literally `.btn-icon`, which is also what makes them 44px
+ * under a finger and 36 under a mouse, exactly as the real buttons are. */
+export function HeaderSkeleton() {
+  return (
+    <header className="wb-header" aria-busy="true">
+      <div className="wb-page wb-header-bar">
+        <div className="wb-header-row">
+          <SkelBlock width={112} height={20} />
+          <div className="wb-header-actions">
+            <span className="wb-skel btn-icon" style={{ display: "block" }} />
+            <span className="wb-skel wb-skel-2 btn-icon" style={{ display: "block" }} />
+          </div>
+        </div>
+        <div className="wb-header-gw">
+          <SkelBlock width={44} height={23} />
+          <SkelBlock width={120} height={13} delay={2} />
+        </div>
+      </div>
+      <div className="wb-header-standings">
+        <div className="wb-page wb-standings">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className="wb-standing" style={{ cursor: "default" }}>
+              <SkelBlock width={14} height={10} />
+              <SkelBlock width={24} height={24} delay={i % 2 ? 2 : undefined} />
+              <SkelBlock width={48} height={13} />
+              <SkelBlock width={22} height={22} delay={3} />
+            </span>
+          ))}
+        </div>
+      </div>
+    </header>
+  );
+}
+
 /** The row of four rival picks, in the shape of `.wb-other`. */
 export function SkelOthers() {
   return (

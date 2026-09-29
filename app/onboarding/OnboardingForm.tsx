@@ -66,13 +66,16 @@ export function OnboardingForm({
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <h6 style={{ margin: "0 0 4px" }}>Mobile number</h6>
-            <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
               For the nudge two hours before lock, if you still haven&rsquo;t picked.
             </p>
           </div>
           <input
             className="input"
             type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            aria-label="Mobile number"
             placeholder="+44 7…"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -102,7 +105,7 @@ export function OnboardingForm({
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <h6 style={{ margin: "0 0 4px" }}>Your nominated player</h6>
-            <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
               {initialNomination
                 ? "Pulled in from last season's sheet — confirm it's still right, or change it below."
                 : "The one player you can pick twice this season, for double points."}
@@ -117,7 +120,7 @@ export function OnboardingForm({
               )}
               <div>
                 <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: 16 }}>{nomination.web_name}</p>
-                <p style={{ margin: 0, fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>
                   {nomination.team_short_name}
                 </p>
               </div>
@@ -125,7 +128,7 @@ export function OnboardingForm({
           )}
 
           <PlayerSearchInput players={players} placeholder="Search players…" onSelect={chooseNomination} />
-          {nominationPending && <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>Saving…</p>}
+          {nominationPending && <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>Saving…</p>}
           {nominationError && (
             <p style={{ margin: 0, background: "var(--color-accent-100)", color: "var(--color-accent-800)", fontSize: 12, padding: "8px 10px", borderLeft: "3px solid var(--color-accent)" }}>
               {nominationError}
@@ -147,7 +150,7 @@ export function OnboardingForm({
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           <div style={{ textAlign: "center" }}>
             <h6 style={{ margin: "0 0 4px" }}>Add a photo</h6>
-            <p style={{ margin: 0, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
               Shows up next to your picks. Optional.
             </p>
           </div>
@@ -158,7 +161,7 @@ export function OnboardingForm({
         </div>
       )}
 
-      <p style={{ marginTop: 20, textAlign: "center", fontSize: 12, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+      <p style={{ marginTop: 20, textAlign: "center", fontSize: 12, color: "var(--color-text-muted)" }}>
         Everything here can be changed anytime in Settings.
       </p>
     </div>

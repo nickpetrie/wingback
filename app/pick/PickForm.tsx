@@ -11,7 +11,7 @@ import { describePickFailure, type PickFailure } from "@/lib/pick-errors";
 import { PlayerBrowser, usedReason } from "./PlayerBrowser";
 import { submitPick } from "./actions";
 
-const MUTED = "color-mix(in srgb, var(--color-text) 58%, transparent)";
+const MUTED = "var(--color-text-muted)";
 
 /** Two quick retries before giving up. A gateway blip is usually over inside a
  * second, and the alternative is telling someone their pick failed when one

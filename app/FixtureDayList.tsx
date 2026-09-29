@@ -1,9 +1,9 @@
 import { groupFixturesByDay, kickoffTimeLabel, type GameweekFixture } from "@/lib/fixtures";
 import type { GameweekPick } from "@/lib/picks";
-import { teamColor } from "@/lib/teamColors";
+import { teamColor, teamTextColor } from "@/lib/teamColors";
 import { TeamBadge } from "./TeamBadge";
 
-const MUTED = "color-mix(in srgb, var(--color-text) 55%, transparent)";
+const MUTED = "var(--color-text-muted)";
 
 function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? "" : "es"}`;
@@ -66,7 +66,7 @@ export function FixtureDayList({
                           fontSize: 11,
                           padding: "2px 7px",
                           background: teamColor(p.team_short_name),
-                          color: "#fff",
+                          color: teamTextColor(p.team_short_name),
                           whiteSpace: "nowrap",
                         }}
                       >
