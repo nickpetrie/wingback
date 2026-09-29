@@ -35,9 +35,12 @@ async function select(path) {
 // the database that cannot be rebuilt from somewhere else, so nothing that is
 // merely nice to have shares a Promise.all with them — a hiccup fetching the
 // leaderboard must not be able to stop the one copy of the season getting out.
+// No email or auth_user_id: the repository is the one place this copy lives,
+// and a restore does not need either — the address comes back from auth.users
+// and the link to it from claiming the profile again (see backups/README.md).
 const [entrants, picks, winners] = await Promise.all([
   select(
-    "entrants?select=id,display_name,email,auth_user_id,nomination_player_code,avatar_updated_at,created_at&order=display_name",
+    "entrants?select=id,display_name,nomination_player_code,avatar_updated_at,created_at&order=display_name",
   ),
   select(
     "picks?select=id,entrant_id,gameweek,player_code,fixture_id,stake,goals,is_substitution,substituted_from_player_code,created_at,updated_at&order=gameweek,entrant_id",

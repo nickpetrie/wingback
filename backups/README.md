@@ -42,9 +42,13 @@ ability to push to someone's phone. `state.md` only ever needs the count.
 `state.md` is not part of a restore — regenerate it, don't replay it.
 `wingback.json` is three arrays matching the `entrants`, `picks` and
 `season_winners` tables column for column, so a restore is an insert per array
-followed by a `sync-fpl` run to repopulate the reference data. Note that
-`picks_guard` refuses writes to a locked gameweek: restore with the trigger
-disabled inside a transaction, or the season's history won't go back in.
+followed by a `sync-fpl` run to repopulate the reference data. The entrants
+array deliberately carries no `email` or `auth_user_id`: after a restore each
+person signs in and claims their profile again, which re-establishes both.
+Note that `picks_guard` refuses writes to a locked gameweek, and
+`picks_notify_made` would announce every restored pick as new: restore with
+both triggers disabled inside a transaction, or the season's history won't go
+back in and everyone gets a hundred alerts.
 
 ## Setup
 
