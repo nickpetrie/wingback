@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isAllowedPushEndpoint } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signOut() {
@@ -57,6 +58,11 @@ export async function savePushSubscription(
 
   if (!sub.endpoint || !sub.p256dh || !sub.auth) {
     return { ok: false, error: "incomplete subscription" };
+  }
+  // Checked here as well as by the column's CHECK, so the refusal is a
+  // sentence rather than a constraint name.
+  if (!isAllowedPushEndpoint(sub.endpoint)) {
+    return { ok: false, error: "That browser's push service isn't one Wingback can send to." };
   }
 
   const { error } = await supabase

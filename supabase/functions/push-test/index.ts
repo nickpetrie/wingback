@@ -82,7 +82,11 @@ Deno.serve(async (req) => {
         await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
         errors.push(`${result.status} (subscription expired, removed)`);
       } else {
-        errors.push(result.error ?? String(result.status));
+        // The push service's reply body is for the function log, not the
+        // client: it is an upstream response echoed to whoever asked, and
+        // the status code is all Settings needs to say something useful.
+        console.error(`push-test to ${entrant.id} failed: ${result.error ?? result.status}`);
+        errors.push(`push service responded ${result.status}`);
       }
     }
 

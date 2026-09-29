@@ -8,12 +8,15 @@
 //     fixture_goals, which is what the double-gameweek penalty in the
 //     pick_scores view needs (a per-gameweek total can't tell you which of
 //     two fixtures was the goalless one).
+import { assertServiceCaller } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { fetchFixturesForEvent, fetchLive, startFplBudget } from "../_shared/fpl.ts";
 
 type ServiceClient = ReturnType<typeof serviceClient>;
 
 Deno.serve(async (req) => {
+  const denied = await assertServiceCaller(req);
+  if (denied) return denied;
   try {
     startFplBudget();
     const supabase = serviceClient();

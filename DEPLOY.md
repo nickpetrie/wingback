@@ -23,6 +23,13 @@ Functions), Vercel (Hobby), Resend (email), Twilio (SMS).
    (Authentication → URL Configuration) to your Vercel domain plus
    `http://localhost:3000` for local dev, both with `/auth/confirm`
    allowed as a redirect target.
+4. Turn **off** "Allow new users to sign up" (Authentication → Sign In /
+   Providers, at the top). The app also passes `shouldCreateUser: false`
+   on every magic link, so an unknown address gets "That address isn't one
+   of the five" rather than a fresh account — but the dashboard switch is
+   the copy that survives a bad deploy. `supabase/config.toml` sets the
+   same thing (`enable_signup = false`) and only applies to local/CLI-run
+   projects; the hosted project reads the dashboard.
 
 ## 2. Vault secrets — the step that fails silently
 
@@ -47,13 +54,27 @@ If you ever rotate the service-role key, update the secret with
 `vault.update_secret`, not a fresh `create_secret` — the lookup in
 `call_edge_function()` matches on `name`.
 
+The value must be the *same* `service_role` key the platform injects into
+the functions as `SUPABASE_SERVICE_ROLE_KEY` (the legacy JWT-shaped one from
+Project Settings → API, not a newer `sb_secret_…` key). Every cron-driven
+function compares the bearer token it was called with against that variable
+(`_shared/auth.ts`) and answers 401 to anything else — the gateway's own
+check accepts the anon key, which ships in every page of the app. If the
+two keys differ, the crons tick, the functions refuse them, and nothing
+scheduled runs; the function logs show the 401s.
+
 ## 3. Deploy the edge functions
 
 ```bash
 supabase functions deploy sync-fpl
 supabase functions deploy score
 supabase functions deploy remind
+supabase functions deploy notify
 ```
+
+`notify` is the only one that sends anything — the others write rows to
+`notifications` and it delivers them — so a deployment without it is one
+where every alert quietly stays in the in-app feed.
 
 Then set their secrets (Resend/Twilio — `SUPABASE_URL` and
 `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by the platform,
@@ -77,6 +98,11 @@ has no players/gameweeks yet:
 curl -X POST https://<project-ref>.supabase.co/functions/v1/sync-fpl \
   -H "Authorization: Bearer <service-role-key>"
 ```
+
+It has to be the service-role key: `sync-fpl`, `score`, `remind`, `notify`
+and `sheets-backup` all refuse any other bearer token with a 401, the anon
+key included (see §2). `push-test` is the one exception — the browser calls
+it with the entrant's own session.
 
 ## 3a. The daily backup (do this one)
 
@@ -166,6 +192,11 @@ runs once a day, which is useless for a T-2h reminder, and pg_cron
 already covers it from inside Postgres — which also happens to be what
 keeps the free Supabase project from pausing after a week of no traffic.
 
+`vercel.json` carries an `ignoreCommand` that skips the build when a commit
+touches nothing outside `backups/`, so the daily backup commit (§3a) no
+longer spends a Hobby-tier deployment on a CSV nobody serves. A commit that
+changes anything else still deploys as normal.
+
 ## 4b. The FPL proxy — why the app has a route that just forwards
 
 `app/api/fpl/[...path]/route.ts` proxies three FPL URLs from Vercel's
@@ -200,12 +231,20 @@ the allowlist it would be an open proxy for anyone who learned the secret.
 
 ## 5. Five sign-ins
 
-Send each person the app URL. First magic-link sign-in creates their
-`entrants` row automatically (`on_auth_user_created` trigger) with
-`display_name` defaulted from their email's local part — have each of
-them set their `nomination_player_code` once (SQL editor, or add a
-settings UI later) before gameweek 1 locks, since the brief's nomination
-exception only applies to a player picked *before the season starts*.
+The five `entrants` rows are seeded by `20260101000007_seed_entrants.sql`
+with `auth_user_id` empty. Each person signs in with a magic link and
+claims their own row on `/claim` (`app/claim/actions.ts` — the UPDATE only
+matches a row nobody has claimed, so two people tapping the same name
+cannot both get it), then sets their nomination on `/onboarding` before
+gameweek 1 locks, since the brief's nomination exception only applies to a
+player picked *before the season starts*. All five have done this.
+
+With sign-ups off (§1 step 4), a magic link only ever goes to an address
+that already exists in auth. To add a sixth entrant later: create the auth
+user first from the dashboard (Authentication → Users → Add user → Send
+invitation, or Create new user), insert their `entrants` row with
+`auth_user_id` null, and let them claim it as the others did — claiming
+only needs a signed-in user, it does not care how the account came to be.
 
 ## Local development
 

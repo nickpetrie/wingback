@@ -46,3 +46,27 @@ describe("auth cookie options", () => {
     expect(AUTH_COOKIE_OPTIONS.path).toBe("/");
   });
 });
+
+describe("the middleware matcher", () => {
+  // Next compiles the matcher itself; what is pinned here is the regex it is
+  // given, which is close enough to catch a path being routed through session
+  // refresh that must not be. Both of these are fetched by the browser with
+  // no cookies, so running updateSession on them meant a redirect to /login
+  // in place of a worker script or a manifest.
+  it("leaves the service worker and the manifest alone", async () => {
+    const { config } = await import("../../proxy");
+    const matcher = new RegExp(`^${config.matcher[0]}$`);
+    expect(matcher.test("/sw.js")).toBe(false);
+    expect(matcher.test("/manifest.webmanifest")).toBe(false);
+    expect(matcher.test("/api/fpl/bootstrap-static")).toBe(false);
+    expect(matcher.test("/icon-192.png")).toBe(false);
+  });
+
+  it("still covers the pages", async () => {
+    const { config } = await import("../../proxy");
+    const matcher = new RegExp(`^${config.matcher[0]}$`);
+    for (const path of ["/", "/pick", "/leaderboard", "/settings", "/login", "/auth/confirm"]) {
+      expect(matcher.test(path), path).toBe(true);
+    }
+  });
+});

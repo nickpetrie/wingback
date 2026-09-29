@@ -2,10 +2,13 @@
 // and fixtures from FPL and mirrors them into Postgres. lock_at is not
 // touched here directly — it's recomputed by the fixtures_recompute_lock
 // trigger the moment a fixture's kickoff_time changes.
+import { assertServiceCaller } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { fetchAllFixtures, fetchBootstrap, startFplBudget } from "../_shared/fpl.ts";
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const denied = await assertServiceCaller(req);
+  if (denied) return denied;
   try {
     startFplBudget();
     const supabase = serviceClient();

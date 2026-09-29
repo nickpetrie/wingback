@@ -14,6 +14,7 @@
 // primary key reject the duplicate. Since the write is now a local insert
 // rather than a call to Resend, there is no failure to roll back — which is
 // what used to have this retrying a null email address every fifteen minutes.
+import { assertServiceCaller } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 
 type Window = "open" | "midpoint" | "t1h";
@@ -68,7 +69,9 @@ function formatDeadline(d: Date): string {
   return `${get("weekday")} ${get("day")} ${get("month")}, ${time}`;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const denied = await assertServiceCaller(req);
+  if (denied) return denied;
   try {
     const supabase = serviceClient();
     const now = new Date();

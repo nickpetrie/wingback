@@ -1,12 +1,20 @@
 // Resend (email) and Twilio (SMS) senders. Both read their keys from
 // function secrets (`supabase secrets set ...`), never from source.
 
+// Every outbound send gives up after this. `notify` claims its rows before
+// it sends, so a provider that accepts the connection and then says nothing
+// would otherwise hold the isolate until the platform kills it — with the
+// rest of the batch stamped delivered and never sent. A timeout surfaces as
+// a thrown error, which the caller already counts as one failed send.
+export const SEND_TIMEOUT_MS = 10_000;
+
 export async function sendReminderEmail(to: string, subject: string, text: string) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) throw new Error("RESEND_API_KEY is not set");
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
+    signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
@@ -48,6 +56,7 @@ export async function sendReminderSms(to: string, body: string) {
 
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
     method: "POST",
+    signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     headers: {
       Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
       "Content-Type": "application/x-www-form-urlencoded",

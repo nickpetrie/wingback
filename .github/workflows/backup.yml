@@ -7,6 +7,9 @@
 # being paused, wiped or deleted outright.
 #
 # Needs one repository secret, SUPABASE_SERVICE_ROLE_KEY. Nothing else.
+#
+# The daily commit no longer redeploys the app: vercel.json's ignoreCommand
+# skips the build when a push touches nothing outside backups/.
 name: Backup
 
 on:

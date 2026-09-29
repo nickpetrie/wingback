@@ -10,6 +10,8 @@
 // Nothing here touches Deno globals, so the same module runs under Node for
 // that test.
 
+import { SEND_TIMEOUT_MS } from "./notify.ts";
+
 export interface PushSubscription {
   endpoint: string;
   p256dh: string;
@@ -208,6 +210,10 @@ export async function sendPush(
   const body = await encryptPayload(payload, subscription.p256dh, subscription.auth);
   const res = await fetch(subscription.endpoint, {
     method: "POST",
+    // Same reason as SEND_TIMEOUT_MS in notify.ts: the rows are already
+    // claimed by the time this runs, so a silent push service must fail
+    // rather than wait.
+    signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     headers: {
       Authorization: await vapidAuthorization(subscription.endpoint, vapid),
       "Content-Encoding": "aes128gcm",

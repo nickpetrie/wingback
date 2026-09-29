@@ -6,12 +6,15 @@
 // top-left cell every run — simple and idempotent, at the cost of never
 // shrinking a range that's already grown (picks only ever accumulate
 // within a season, so that's not a real problem in practice).
+import { assertServiceCaller } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { getGoogleAccessToken, writeSheetRange } from "../_shared/google.ts";
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const denied = await assertServiceCaller(req);
+  if (denied) return denied;
   try {
     const clientEmail = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_EMAIL");
     const privateKeyRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");

@@ -9,9 +9,10 @@
 // whether or not any of this works. That is deliberate — email needs a
 // provider key, SMS needs a number, push needs an installed PWA — so the
 // channel that cannot fail is the one that needs no configuration at all.
+import { assertServiceCaller } from "../_shared/auth.ts";
 import { serviceClient } from "../_shared/supabase.ts";
 import { sendReminderEmail, sendReminderSms, smsConfigured } from "../_shared/notify.ts";
-import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
+import { type PushResult, sendPush, type VapidKeys } from "../_shared/webpush.ts";
 
 // Anything older than this on a first run is history, not news. Without it,
 // switching the dispatcher on for the first time would post every alert ever
@@ -28,7 +29,9 @@ interface Row {
   url: string;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const denied = await assertServiceCaller(req);
+  if (denied) return denied;
   try {
     const supabase = serviceClient();
     const since = new Date(Date.now() - MAX_AGE_MINUTES * 60 * 1000).toISOString();
@@ -72,24 +75,34 @@ Deno.serve(async () => {
       }
       : null;
 
-    // Claimed *before* anything is sent, not after.
+    // Claimed *before* anything is sent, and only the rows nobody else has.
     //
     // The stamp used to happen once at the end, so an isolate killed mid-loop
     // — a hung Resend call, a wall-clock timeout — left rows that had already
     // been emailed and pushed still marked undelivered, and the next tick
-    // (now every minute) sent them again. Two overlapping runs would likewise
-    // both select the same batch. `delivered_at` already means "the
-    // dispatcher has considered this", never "someone received it", so
-    // stamping first is what that sentence always described: at-most-once,
-    // which for a goal alert is the right way to be wrong.
+    // (now every minute) sent them again. Stamping first fixed that, but an
+    // unconditional stamp is not a claim: this runs every minute and a send
+    // has no upper bound, so two overlapping runs both selected the same
+    // batch, both stamped it, and both sent it. The `is null` is what makes
+    // the update a claim — Postgres serialises the two updates on the row,
+    // and the second one matches nothing. Only what comes back is ours to
+    // send. `delivered_at` already means "the dispatcher has considered
+    // this", never "someone received it", so this is what that sentence
+    // always described: at-most-once, which for a goal alert is the right
+    // way to be wrong.
     const ids = (pending as Row[]).map((n) => n.id);
-    const { error: claimError } = await supabase
+    const { data: claimed, error: claimError } = await supabase
       .from("notifications")
       .update({ delivered_at: new Date().toISOString() })
-      .in("id", ids);
+      .is("delivered_at", null)
+      .in("id", ids)
+      .select("id");
     if (claimError) throw claimError;
+    const claimedIds = new Set((claimed ?? []).map((c: { id: number }) => c.id));
+    const mine = (pending as Row[]).filter((n) => claimedIds.has(n.id));
+    if (mine.length === 0) return Response.json({ ok: true, delivered: 0, claimedElsewhere: pending.length });
 
-    const entrantIds = [...new Set(pending.map((n: Row) => n.entrant_id))];
+    const entrantIds = [...new Set(mine.map((n) => n.entrant_id))];
 
     const [{ data: prefs }, { data: people }, { data: subs }] = await Promise.all([
       supabase.from("alert_prefs").select("*").in("entrant_id", entrantIds),
@@ -110,7 +123,7 @@ Deno.serve(async () => {
     let pushed = 0;
     let failed = 0;
 
-    for (const note of pending as Row[]) {
+    for (const note of mine) {
       const pref = prefsBy.get(note.entrant_id);
       const person = personBy.get(note.entrant_id);
       if (!pref || !person) continue;
@@ -145,20 +158,29 @@ Deno.serve(async () => {
       }
 
       if (pref.push && vapid) {
-        const mine = (subs ?? []).filter(
+        const theirs = (subs ?? []).filter(
           (s: { entrant_id: string }) => s.entrant_id === note.entrant_id,
         );
-        for (const sub of mine) {
-          const result = await sendPush(
-            sub,
-            JSON.stringify({
-              title: note.title,
-              body: note.body,
-              tag: `wb-${note.kind}`,
-              url: note.url,
-            }),
-            vapid,
-          );
+        for (const sub of theirs) {
+          let result: PushResult;
+          try {
+            result = await sendPush(
+              sub,
+              JSON.stringify({
+                title: note.title,
+                body: note.body,
+                tag: `wb-${note.kind}`,
+                url: note.url,
+              }),
+              vapid,
+            );
+          } catch (err) {
+            // The rows are already claimed, so a push service that never
+            // answers must cost one failure here, not the rest of the batch.
+            failed++;
+            console.error(`push to ${note.entrant_id} failed`, err);
+            continue;
+          }
           if (result.ok) {
             pushed++;
           } else if (result.gone) {
@@ -173,7 +195,16 @@ Deno.serve(async () => {
       }
     }
 
-    return Response.json({ ok: true, considered: pending.length, emailed, texted, smsSkipped, pushed, failed });
+    return Response.json({
+      ok: true,
+      considered: mine.length,
+      claimedElsewhere: pending.length - mine.length,
+      emailed,
+      texted,
+      smsSkipped,
+      pushed,
+      failed,
+    });
   } catch (err) {
     console.error("notify failed", err);
     return Response.json(

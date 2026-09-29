@@ -20,7 +20,14 @@ export const config = {
   //    the same refresh token. Those routes read the session from the
   //    cookie directly; the document request that pulled them in has
   //    already been through here, so the token they read is fresh.
+  //
+  // sw.js and manifest.webmanifest are exempt because the browser fetches
+  // both *without* credentials: a service worker script is loaded by the
+  // browser itself, and the manifest by the install prompt. With no session
+  // cookie on the request, updateSession redirected each to /login and the
+  // browser got the login page's HTML where it expected a worker script or
+  // JSON — so push never registered and "Add to Home Screen" had no manifest.
   matcher: [
-    "/((?!api/|_next/static|_next/image|favicon.ico|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|sw\\.js$|manifest\\.webmanifest$|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

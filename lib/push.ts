@@ -32,3 +32,16 @@ export function needsInstallFirst(): boolean {
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
   return isIos && !standalone;
 }
+
+// The four push services a browser can actually hand out an endpoint on.
+// `push_subscriptions.endpoint` is where `notify` POSTs an encrypted payload
+// with a VAPID signature, so an arbitrary URL in that column turns the
+// dispatcher into a request the server makes to wherever someone asked.
+// Mirrors the CHECK on the column; both must agree or a row the app accepts
+// is refused with a message the settings screen cannot explain.
+export const PUSH_ENDPOINT_PATTERN =
+  /^https:\/\/(fcm\.googleapis\.com|([a-z0-9-]+\.)*push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)*notify\.windows\.com)\//;
+
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  return PUSH_ENDPOINT_PATTERN.test(endpoint);
+}
