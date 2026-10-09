@@ -1,6 +1,6 @@
 # Wingback — season state
 
-Generated Thu 8 Oct 2026, 11:17 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Fri 9 Oct 2026, 11:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
@@ -8,8 +8,8 @@ Read this first: it is the whole season in one file, so a session can answer que
 
 **Gameweek 6** is the one in play — open for picks.
 
-- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 2d)
-- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 2d)
+- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 23h)
+- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 23h)
 - Picked: 1 of 5
 - Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Tom Petrie
 
@@ -70,16 +70,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 2d |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 9d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 15d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 23d |
-| 10 | Fri 6 Nov 2026, 18:30 UTC | in 29d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | in 23h |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 8d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 14d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 22d |
+| 10 | Fri 6 Nov 2026, 18:30 UTC | in 28d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Thu 8 Oct 2026, 11:00 UTC | 17m ago |
+| players | Fri 9 Oct 2026, 11:00 UTC | 16m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
