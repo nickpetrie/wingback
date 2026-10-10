@@ -1,21 +1,24 @@
 # Wingback — season state
 
-Generated Fri 9 Oct 2026, 11:15 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
+Generated Sat 10 Oct 2026, 10:32 UTC by `scripts/backup.mjs`, on the same daily run that writes the snapshot beside it.
 
 Read this first: it is the whole season in one file, so a session can answer questions about who picked what without a database connection. `wingback.json` is the restorable copy; this is the readable one, and it is regenerated from scratch every day rather than edited. Absolute times are the truth — anything phrased as *in 5d* or *45m ago* was measured at the moment above and is that much staler now.
 
 ## Right now
 
-**Gameweek 6** is the one in play — open for picks.
+**Gameweek 6** is the one in play — locked.
 
-- Deadline: Sat 10 Oct 2026, 10:00 UTC (in 23h)
-- Picks lock: Sat 10 Oct 2026, 10:30 UTC (in 23h)
-- Picked: 1 of 5
-- Still to pick: Alex Beetles, Casra Abedian, Henry Kirby, Tom Petrie
+- Deadline: Sat 10 Oct 2026, 10:00 UTC (33m ago)
+- Picks lock: Sat 10 Oct 2026, 10:30 UTC (3m ago)
+- Picked: 5 of 5
 
 | entrant | player | club | stake | goals | points |
 | --- | --- | --- | --- | --- | --- |
-| Nick Petrie | Ødegaard | ARS | £3 | 0 | 0 |
+| Nick Petrie | B.Fernandes | MUN | £3 | 0 | 0 |
+| Tom Petrie | Mbeumo | MUN | £3 | 0 | 0 |
+| Alex Beetles | B.Fernandes | MUN | £3 | 0 | 0 |
+| Henry Kirby | Thiago | BRE | £3 | 0 | 0 |
+| Casra Abedian | Gyökeres | ARS | £3 | 0 | 0 |
 
 ## Standings (after gameweek 5)
 
@@ -35,11 +38,11 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 
 | entrant | nomination | club | nomination used | players spent |
 | --- | --- | --- | --- | --- |
-| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | Cunha, Gibbs-White, Gyökeres, João Pedro |
-| Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Gibbs-White, Mbeumo, Palmer |
-| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Barry, Haaland, Isak |
-| Nick Petrie | Haaland | MCI | 1/2 (GW 3) | Calvert-Lewin, Havertz, Isak, Saka, Ødegaard |
-| Tom Petrie | João Pedro | CHE | 0/2 | Delap, Haaland, Havertz, Isak |
+| Alex Beetles | Haaland | MCI | 1/2 (GW 3) | B.Fernandes, Cunha, Gibbs-White, Gyökeres, João Pedro |
+| Casra Abedian | Haaland | MCI | 1/2 (GW 3) | Gibbs-White, Gyökeres, Mbeumo, Palmer |
+| Henry Kirby | Haaland | MCI | 2/2 (GW 2, 3) | Barry, Haaland, Isak, Thiago |
+| Nick Petrie | Haaland | MCI | 1/2 (GW 3) | B.Fernandes, Calvert-Lewin, Havertz, Isak, Saka |
+| Tom Petrie | João Pedro | CHE | 0/2 | Delap, Haaland, Havertz, Isak, Mbeumo |
 
 ## Every pick so far
 
@@ -50,7 +53,7 @@ Each entrant nominates one player they may pick **twice** in the season; every o
 | 3 | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt | Haaland ×2 — 2pt |
 | 4 | João Pedro — 1pt | Palmer | Isak | Saka — 1pt | Isak |
 | 5 | Gibbs-White | Gibbs-White | Barry — 1pt | Calvert-Lewin | Delap |
-| 6 | — | — | — | Ødegaard | — |
+| 6 | B.Fernandes | Gyökeres | Thiago | B.Fernandes | Mbeumo |
 
 `×2` is a £6 stake (double points). Per-pick goals and clubs are in `picks.csv`.
 
@@ -70,16 +73,16 @@ The in-app feed always gets everything. The other channels only deliver if they 
 
 | GW | deadline | when |
 | --- | --- | --- |
-| 6 | Sat 10 Oct 2026, 10:00 UTC | in 23h |
-| 7 | Sat 17 Oct 2026, 10:00 UTC | in 8d |
-| 8 | Fri 23 Oct 2026, 17:30 UTC | in 14d |
-| 9 | Sat 31 Oct 2026, 11:00 UTC | in 22d |
-| 10 | Fri 6 Nov 2026, 18:30 UTC | in 28d |
+| 6 | Sat 10 Oct 2026, 10:00 UTC | 33m ago |
+| 7 | Sat 17 Oct 2026, 10:00 UTC | in 7d |
+| 8 | Fri 23 Oct 2026, 17:30 UTC | in 13d |
+| 9 | Sat 31 Oct 2026, 11:00 UTC | in 21d |
+| 10 | Fri 6 Nov 2026, 18:30 UTC | in 27d |
 
 ## Freshness
 
 | source | last synced | when |
 | --- | --- | --- |
-| players | Fri 9 Oct 2026, 11:00 UTC | 16m ago |
+| players | Sat 10 Oct 2026, 10:20 UTC | 13m ago |
 
 A stale row here means `sync-fpl` or `score` stopped running — the picker would be showing yesterday's injury flags, and goals would stop arriving. Everything above is only as current as this.
